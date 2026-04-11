@@ -81,27 +81,33 @@
   }
   .employee {
     background: var(--dark-3); border: 1px solid transparent;
-    border-radius: 12px; padding: 16px; margin-bottom: 12px;
-    cursor: pointer; transition: all 0.25s ease; position: relative; overflow: hidden;
+    border-radius: 12px; padding: 14px; margin-bottom: 10px;
+    cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; overflow: hidden;
   }
   .employee::before {
     content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
     background: var(--gold); transform: scaleY(0); transform-origin: top;
-    transition: transform 0.3s ease;
+    transition: transform 0.25s ease;
   }
-  .employee:hover { border-color: var(--gold); transform: translateY(-2px); }
+  .employee:hover { border-color: var(--gold); }
   .employee.active { border-color: var(--gold); background: var(--burgundy-dark); }
   .employee.active::before { transform: scaleY(1); }
-  .employee .row1 { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .employee.director {
+    background: linear-gradient(135deg, var(--burgundy-dark), var(--dark-3));
+    border-color: var(--gold);
+  }
+  .employee.director::before { transform: scaleY(1); background: linear-gradient(180deg, var(--gold-bright), var(--gold)); width: 4px; }
+  .employee .row1 { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
   .employee .avatar {
-    width: 44px; height: 44px; border-radius: 50%;
+    width: 42px; height: 42px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px; background: var(--burgundy);
+    font-size: 19px; background: var(--burgundy);
     border: 2px solid var(--gold); flex-shrink: 0;
   }
-  .employee .meta { flex: 1; }
+  .employee.director .avatar { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); }
+  .employee .meta { flex: 1; min-width: 0; }
   .employee .name { font-size: 14px; font-weight: 600; color: var(--ivory); font-family: Georgia, serif; letter-spacing: 1px; }
-  .employee .role { font-size: 11px; color: var(--gold); font-style: italic; }
+  .employee .role { font-size: 10px; color: var(--gold); font-style: italic; }
   .employee .status {
     display: inline-flex; align-items: center; gap: 4px;
     font-size: 10px; padding: 2px 8px;
@@ -112,33 +118,39 @@
   .employee .status .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .employee .status.working .dot { animation: pulse 1.2s infinite; }
   .employee .bio { font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 4px; }
+  .director-tag {
+    display: inline-block; font-size: 9px; padding: 1px 6px;
+    background: var(--gold); color: var(--burgundy-dark);
+    border-radius: 4px; font-weight: 700; letter-spacing: 1px; margin-left: 6px;
+  }
 
   .main { grid-area: main; display: flex; flex-direction: column; overflow: hidden; background: var(--dark); }
   .main-header {
-    padding: 24px 32px 16px; border-bottom: 1px solid var(--burgundy-dark);
+    padding: 22px 32px 14px; border-bottom: 1px solid var(--burgundy-dark);
     display: flex; align-items: center; gap: 20px;
   }
   .main-header .big-av {
-    width: 64px; height: 64px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; font-size: 32px;
+    width: 60px; height: 60px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 28px;
     background: linear-gradient(135deg, var(--burgundy), var(--burgundy-light));
     border: 2px solid var(--gold);
   }
-  .main-header .title h2 { font-family: Georgia, serif; font-size: 26px; letter-spacing: 2px; color: var(--ivory); margin-bottom: 2px; }
-  .main-header .title .sub { font-size: 13px; color: var(--gold); font-style: italic; }
+  .main-header .title h2 { font-family: Georgia, serif; font-size: 24px; letter-spacing: 2px; color: var(--ivory); margin-bottom: 2px; }
+  .main-header .title .sub { font-size: 12px; color: var(--gold); font-style: italic; }
   .main-header .spacer { flex: 1; }
   .main-header .prompt-btn {
     background: transparent; color: var(--gold);
     border: 1px solid var(--gold); padding: 8px 16px;
     border-radius: 20px; font-size: 12px; cursor: pointer;
-    transition: all 0.2s; font-family: inherit;
+    transition: background 0.2s, color 0.2s; font-family: inherit;
   }
   .main-header .prompt-btn:hover { background: var(--gold); color: var(--dark); }
 
-  .conversation { flex: 1; overflow-y: auto; padding: 24px 32px; }
-  .msg { max-width: 85%; margin-bottom: 20px; animation: fadeIn 0.4s ease; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  .msg.user { margin-left: auto; }
+  .conversation { flex: 1; overflow-y: auto; padding: 22px 32px; scroll-behavior: smooth; }
+  .msg { max-width: 92%; margin-bottom: 18px; }
+  .msg.fade-in { animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .msg.user { margin-left: auto; max-width: 80%; }
   .msg.user .bubble {
     background: var(--burgundy); color: var(--ivory);
     border-radius: 16px 16px 4px 16px; padding: 12px 18px;
@@ -158,27 +170,98 @@
   .msg.ai .bubble h4 { font-family: Georgia, serif; color: var(--gold); font-size: 15px; margin: 12px 0 6px; border-bottom: 1px dotted var(--burgundy); padding-bottom: 4px; }
   .msg.ai .bubble h4:first-child { margin-top: 0; }
   .msg.ai .bubble p { margin: 6px 0; line-height: 1.7; font-size: 14px; }
-  .msg.ai .bubble ul { margin: 6px 0 10px 20px; }
+  .msg.ai .bubble ul, .msg.ai .bubble ol { margin: 6px 0 10px 20px; }
   .msg.ai .bubble li { font-size: 14px; line-height: 1.7; margin-bottom: 3px; }
   .msg.ai .bubble strong { color: var(--gold-bright); }
+  .msg.ai .bubble em { color: var(--ivory); font-style: italic; }
+  .msg.ai .bubble code { background: var(--dark); padding: 2px 6px; border-radius: 4px; font-family: Menlo, monospace; font-size: 12px; color: var(--gold-bright); display: inline-block; }
   .msg.ai .bubble .tldr {
     background: var(--burgundy-dark); border-left: 2px solid var(--gold);
-    padding: 10px 14px; margin: 8px 0 12px;
+    padding: 10px 14px; margin: 6px 0 12px;
     font-style: italic; border-radius: 4px; font-size: 13px;
   }
-  .thinking { display: inline-flex; gap: 4px; padding: 8px 0; }
-  .thinking span { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); animation: bounce 1.4s infinite; }
+  .msg.ai .bubble table.data {
+    width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px;
+  }
+  .msg.ai .bubble table.data th {
+    background: var(--burgundy); color: var(--ivory); padding: 6px 10px;
+    text-align: left; font-family: Georgia, serif; font-size: 11px;
+  }
+  .msg.ai .bubble table.data td {
+    border: 1px solid var(--burgundy-dark); padding: 6px 10px; color: var(--ivory);
+  }
+  .thinking { display: inline-flex; gap: 5px; padding: 6px 0; }
+  .thinking span { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); animation: bounce 1.4s infinite; }
   .thinking span:nth-child(2) { animation-delay: 0.2s; }
   .thinking span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes bounce { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
 
-  .input-bar { padding: 16px 32px 24px; border-top: 1px solid var(--burgundy-dark); background: var(--dark-2); }
-  .quick-tasks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  /* Orchestration phase indicator */
+  .phase-card {
+    background: linear-gradient(135deg, var(--burgundy-dark), var(--dark-3));
+    border: 1px solid var(--gold); border-radius: 12px;
+    padding: 14px 18px; margin: 10px 0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .phase-card .phase-icon { font-size: 22px; }
+  .phase-card .phase-text { flex: 1; font-family: Georgia, serif; color: var(--gold); letter-spacing: 1px; font-size: 14px; }
+
+  /* Worker grid for parallel execution */
+  .workers-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px; margin: 14px 0;
+  }
+  .worker-card {
+    background: var(--dark-3); border: 1px solid var(--burgundy-dark);
+    border-radius: 12px; padding: 14px; position: relative; overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .worker-card.working { border-color: var(--amber); }
+  .worker-card.done { border-color: var(--green); }
+  .worker-card.error { border-color: #E85042; }
+  .worker-card .wc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .worker-card .wc-av {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; background: var(--burgundy); border: 1.5px solid var(--gold);
+  }
+  .worker-card .wc-name { font-family: Georgia, serif; font-size: 13px; color: var(--ivory); letter-spacing: 1px; }
+  .worker-card .wc-role { font-size: 10px; color: var(--gold); font-style: italic; }
+  .worker-card .wc-task { font-size: 11px; color: var(--muted); font-style: italic; padding: 6px 0; border-top: 1px dotted var(--burgundy-dark); margin-top: 8px; }
+  .worker-card .wc-output {
+    margin-top: 8px; max-height: 200px; overflow-y: auto;
+    font-size: 11px; line-height: 1.55; color: var(--ivory);
+    background: var(--dark); padding: 10px; border-radius: 6px;
+    border: 1px solid var(--burgundy-dark);
+  }
+  .worker-card .wc-output:empty::before { content: '等待中…'; color: var(--muted); font-style: italic; }
+  .worker-card .wc-output h4 { font-size: 12px; color: var(--gold); margin: 6px 0 4px; }
+  .worker-card .wc-output p { margin: 3px 0; }
+  .worker-card .wc-output ul { margin: 4px 0 6px 16px; }
+  .worker-card .wc-output li { margin-bottom: 2px; }
+  .worker-card .wc-status {
+    position: absolute; top: 12px; right: 12px;
+    font-size: 9px; padding: 2px 8px; border-radius: 10px;
+    background: rgba(232, 181, 75, 0.15); color: var(--amber);
+    letter-spacing: 1px;
+  }
+  .worker-card.done .wc-status { background: rgba(127, 176, 105, 0.18); color: var(--green); }
+  .worker-card.error .wc-status { background: rgba(232, 80, 66, 0.18); color: #E85042; }
+
+  .strategy-box {
+    background: var(--dark-3); border-left: 3px solid var(--gold);
+    padding: 12px 16px; margin: 8px 0 12px; border-radius: 0 8px 8px 0;
+    font-style: italic; color: var(--ivory); font-size: 13px; line-height: 1.7;
+  }
+  .strategy-box .label { font-family: Georgia, serif; color: var(--gold); font-size: 11px; letter-spacing: 2px; display: block; margin-bottom: 4px; font-style: normal; }
+
+  .input-bar { padding: 14px 32px 22px; border-top: 1px solid var(--burgundy-dark); background: var(--dark-2); }
+  .quick-tasks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
   .quick-tasks .chip {
     background: var(--dark-3); color: var(--gold);
     border: 1px solid var(--burgundy); padding: 6px 12px;
     border-radius: 14px; font-size: 11px; cursor: pointer;
-    transition: all 0.2s; font-family: inherit;
+    transition: background 0.2s, color 0.2s; font-family: inherit;
   }
   .quick-tasks .chip:hover { background: var(--burgundy); color: var(--ivory); }
   .input-row { display: flex; gap: 12px; align-items: flex-end; }
@@ -193,10 +276,10 @@
     background: var(--gold); color: var(--dark); border: none;
     padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 600;
     cursor: pointer; font-family: Georgia, serif; letter-spacing: 2px;
-    transition: all 0.2s; height: 44px;
+    transition: background 0.2s; height: 44px;
   }
-  .input-row .send:hover { background: var(--gold-bright); transform: translateY(-1px); }
-  .input-row .send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .input-row .send:hover { background: var(--gold-bright); }
+  .input-row .send:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .activity {
     grid-area: activity; background: var(--dark-2);
@@ -212,17 +295,18 @@
   .activity .tab {
     flex: 1; padding: 8px 12px; font-size: 11px; color: var(--muted);
     text-align: center; cursor: pointer; border-radius: 7px;
-    transition: all 0.2s; font-family: inherit; background: transparent; border: none;
+    transition: background 0.2s, color 0.2s; font-family: inherit; background: transparent; border: none;
   }
   .activity .tab.active { background: var(--burgundy); color: var(--gold); }
   .feed-item {
-    padding: 12px 14px; margin-bottom: 10px; background: var(--dark-3);
+    padding: 10px 12px; margin-bottom: 8px; background: var(--dark-3);
     border-left: 2px solid var(--gold); border-radius: 0 8px 8px 0;
-    animation: fadeIn 0.4s; font-size: 12px;
+    font-size: 11px;
   }
-  .feed-item .time { font-size: 10px; color: var(--muted); font-family: Georgia, serif; margin-bottom: 4px; }
-  .feed-item .who { color: var(--gold); font-weight: 600; font-size: 11px; font-style: italic; }
-  .feed-item .what { color: var(--ivory); margin-top: 4px; line-height: 1.5; }
+  .feed-item.fade-in { animation: fadeIn 0.4s; }
+  .feed-item .time { font-size: 9px; color: var(--muted); font-family: Georgia, serif; margin-bottom: 3px; }
+  .feed-item .who { color: var(--gold); font-weight: 600; font-size: 10px; font-style: italic; }
+  .feed-item .what { color: var(--ivory); margin-top: 3px; line-height: 1.5; }
   .feed-item.active { border-left-color: var(--amber); background: var(--burgundy-dark); }
 
   .modal-backdrop {
@@ -251,18 +335,16 @@
     font-weight: 600; cursor: pointer; font-family: inherit; font-size: 13px;
   }
   .modal button.secondary { background: transparent; color: var(--ivory); border: 1px solid var(--muted); }
-  .modal button:hover { background: var(--gold-bright); }
-  .modal button.secondary:hover { border-color: var(--gold); color: var(--gold); }
 
   .welcome {
     flex: 1; display: flex; flex-direction: column;
     align-items: center; justify-content: center; text-align: center; padding: 40px;
   }
-  .welcome .big-logo { font-family: Georgia, serif; font-size: 48px; color: var(--ivory); letter-spacing: 6px; margin-bottom: 4px; }
+  .welcome .big-logo { font-family: Georgia, serif; font-size: 44px; color: var(--ivory); letter-spacing: 6px; margin-bottom: 4px; }
   .welcome .big-logo .gold { color: var(--gold); }
-  .welcome .tagline { color: var(--gold); font-size: 13px; font-style: italic; margin-bottom: 32px; letter-spacing: 2px; }
-  .welcome .line { width: 80px; height: 1px; background: var(--gold); margin: 20px auto; }
-  .welcome .instruction { color: var(--muted); font-size: 14px; max-width: 460px; line-height: 1.8; }
+  .welcome .tagline { color: var(--gold); font-size: 13px; font-style: italic; margin-bottom: 24px; letter-spacing: 2px; }
+  .welcome .line { width: 80px; height: 1px; background: var(--gold); margin: 16px auto; }
+  .welcome .instruction { color: var(--muted); font-size: 14px; max-width: 480px; line-height: 1.8; }
 
   .schedule-badge {
     display: inline-block; font-size: 10px; padding: 3px 10px;
@@ -272,12 +354,8 @@
   }
 
   @media (max-width: 1100px) {
-    .app { grid-template-columns: 260px 1fr; grid-template-areas: "header header" "sidebar main"; }
+    .app { grid-template-columns: 280px 1fr; grid-template-areas: "header header" "sidebar main"; }
     .activity { display: none; }
-  }
-  @media (max-width: 720px) {
-    .app { grid-template-columns: 1fr; grid-template-areas: "header" "main"; }
-    .sidebar { display: none; }
   }
 </style>
 </head>
@@ -291,7 +369,7 @@
     </div>
     <div class="spacer"></div>
     <div style="font-size:11px;color:var(--muted);">
-      <span class="status-dot"></span><span id="connection-status">四位 AI 員工 · 線上待命</span>
+      <span class="status-dot"></span><span id="connection-status">9 位 AI 員工 · 線上待命</span>
     </div>
     <div class="ceo">
       <div class="av">J</div>
@@ -305,18 +383,18 @@
   <aside class="sidebar" id="sidebar">
     <h2>AI 員工編制</h2>
     <div id="employee-list"></div>
-    <div style="margin-top:24px;padding:14px;background:var(--dark-3);border-radius:10px;border:1px dashed var(--burgundy);">
+    <div style="margin-top:18px;padding:12px;background:var(--dark-3);border-radius:10px;border:1px dashed var(--burgundy);">
       <div style="font-size:10px;color:var(--gold);letter-spacing:2px;font-style:italic;margin-bottom:6px;">自動排程</div>
       <div style="font-size:11px;color:var(--muted);line-height:1.6;">
-        <span class="schedule-badge">週一 09:00</span>　Leon 週策略簡報<br>
-        <span class="schedule-badge">週五 17:00</span>　Dex 週成效報告
+        <span class="schedule-badge">週一 09:00</span>　VICTOR 週簡報<br>
+        <span class="schedule-badge">週五 17:00</span>　DEX 週報
       </div>
     </div>
-    <div style="margin-top:14px;padding:14px;background:var(--dark-3);border-radius:10px;border:1px dashed var(--burgundy);">
+    <div style="margin-top:12px;padding:12px;background:var(--dark-3);border-radius:10px;border:1px dashed var(--gold);">
       <div style="font-size:10px;color:var(--gold);letter-spacing:2px;font-style:italic;margin-bottom:6px;">使用提示</div>
       <div style="font-size:11px;color:var(--muted);line-height:1.6;">
-        點選員工後，直接打字交付任務。<br>
-        回覆由真實 Claude API 產生。
+        選 <strong style="color:var(--gold);">VICTOR</strong> → 整個團隊平行協作<br>
+        選其他員工 → 單獨對話
       </div>
     </div>
   </aside>
@@ -324,24 +402,24 @@
   <main class="main" id="main">
     <div class="welcome" id="welcome">
       <div class="big-logo">MACARON <span class="gold">DE LUXE</span></div>
-      <div class="tagline">── 虛擬辦公室已開門營業 ──</div>
+      <div class="tagline">── 虛擬行銷部已開門營業 ──</div>
       <div class="line"></div>
       <div class="instruction">
-        您的四位 AI 員工已就位。<br><br>
-        從左側選擇一位員工開始交付任務。<br>
-        回覆由真實 Claude API 即時串流生成。
+        9 位 AI 員工已就位。<br><br>
+        交付任務給 <strong style="color:var(--gold);">VICTOR 行銷總監</strong>，他會自動拆解、分派、統整，讓整個團隊同時工作。<br><br>
+        或選擇任一專員直接對話。
       </div>
       <div class="line"></div>
-      <div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:16px;">
+      <div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:14px;">
         『讓 AI 負責重複決策，您只需要做品味決策』
       </div>
     </div>
 
     <div id="workspace" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
       <div class="main-header">
-        <div class="big-av" id="ws-avatar">🎯</div>
+        <div class="big-av" id="ws-avatar">👑</div>
         <div class="title">
-          <h2 id="ws-name">LEON</h2>
+          <h2 id="ws-name">VICTOR</h2>
           <div class="sub" id="ws-role">AI 行銷總監 · Chief Marketing Officer</div>
         </div>
         <div class="spacer"></div>
@@ -372,7 +450,7 @@
 <div class="modal-backdrop" id="modal">
   <div class="modal">
     <h3 id="modal-title">System Prompt</h3>
-    <div class="modal-sub" id="modal-sub">這份 System Prompt 就是後端實際送進 Claude API 的 system 欄位。</div>
+    <div class="modal-sub" id="modal-sub"></div>
     <pre id="modal-content"></pre>
     <div class="actions">
       <button class="secondary" onclick="closeModal()">關閉</button>
@@ -383,11 +461,12 @@
 
 <script>
 // ============ STATE ============
-let EMPLOYEES = {};           // 填入後由 /api/employees 載入
+let EMPLOYEES = {};
 let currentEmployee = null;
-let conversations = {};        // { empId: [{role, content}] }
+let conversations = {};        // { empId: [{role, content, html?}] }
 let feed = [];
-let employeeStatus = {};       // { empId: 'idle'|'working' }
+let employeeStatus = {};
+let isStreaming = false;
 
 // ============ BOOT ============
 async function boot() {
@@ -401,27 +480,30 @@ async function boot() {
     });
     renderEmployees();
     renderFeed();
-    addFeed('SYSTEM', '🟢 虛擬辦公室已啟動 · 四位 AI 員工就緒');
+    addFeed('SYSTEM', `🟢 虛擬辦公室啟動 · ${list.length} 位 AI 員工就緒`);
+    // Auto-select VICTOR
+    if (EMPLOYEES.victor) selectEmployee('victor');
   } catch (err) {
     console.error(err);
-    addFeed('SYSTEM', '⚠️ 無法連接後端，請檢查 server 是否啟動');
+    addFeed('SYSTEM', '⚠️ 無法連接後端');
   }
 }
 
-// ============ RENDERING ============
+// ============ SIDEBAR RENDER (only when state changes, not during streaming) ============
 function renderEmployees() {
   const list = document.getElementById('employee-list');
   list.innerHTML = Object.values(EMPLOYEES).map(emp => {
     const st = employeeStatus[emp.id];
-    const hasHistory = conversations[emp.id] && conversations[emp.id].length;
-    const stLabel = st === 'working' ? '工作中' : (hasHistory ? '待命' : '閒置');
-    const stClass = st === 'working' ? 'working' : (hasHistory ? '' : 'idle');
+    const stLabel = st === 'working' ? '工作中' : '待命';
+    const stClass = st === 'working' ? 'working' : '';
+    const dirCls = emp.isDirector ? 'director' : '';
+    const dirTag = emp.isDirector ? '<span class="director-tag">總監</span>' : '';
     return `
-      <div class="employee ${currentEmployee === emp.id ? 'active' : ''}" onclick="selectEmployee('${emp.id}')">
+      <div class="employee ${dirCls} ${currentEmployee === emp.id ? 'active' : ''}" onclick="selectEmployee('${emp.id}')">
         <div class="row1">
           <div class="avatar">${emp.emoji}</div>
           <div class="meta">
-            <div class="name">${emp.name}</div>
+            <div class="name">${emp.name}${dirTag}</div>
             <div class="role">${emp.role}</div>
           </div>
         </div>
@@ -432,7 +514,25 @@ function renderEmployees() {
   }).join('');
 }
 
+function updateEmployeeStatusOnly() {
+  // Update just the status badges without rebuilding the whole sidebar
+  document.querySelectorAll('.employee').forEach(el => {
+    const onClick = el.getAttribute('onclick') || '';
+    const m = onClick.match(/selectEmployee\('([^']+)'\)/);
+    if (!m) return;
+    const id = m[1];
+    const st = employeeStatus[id] === 'working' ? 'working' : '';
+    const label = employeeStatus[id] === 'working' ? '工作中' : '待命';
+    const badge = el.querySelector('.status');
+    if (badge) {
+      badge.className = `status ${st}`;
+      badge.innerHTML = `<span class="dot"></span>${label}`;
+    }
+  });
+}
+
 function selectEmployee(id) {
+  if (isStreaming) return;
   currentEmployee = id;
   const emp = EMPLOYEES[id];
   document.getElementById('welcome').style.display = 'none';
@@ -441,14 +541,22 @@ function selectEmployee(id) {
   document.getElementById('ws-name').textContent = emp.name;
   document.getElementById('ws-role').textContent = `${emp.role} · ${emp.roleEn}`;
   renderQuickTasks();
-  renderConversation();
-  renderEmployees();
+  rebuildConversation();
+  // Update active state in sidebar without full rebuild
+  document.querySelectorAll('.employee').forEach(el => {
+    el.classList.toggle('active', el.getAttribute('onclick')?.includes(`'${id}'`));
+  });
+  // Update placeholder
+  const placeholder = emp.isDirector
+    ? '交付一個複雜任務，VICTOR 會分派給整個團隊平行執行...'
+    : `交付任務給 ${emp.name}...`;
+  document.getElementById('input').placeholder = placeholder;
 }
 
 function renderQuickTasks() {
   const emp = EMPLOYEES[currentEmployee];
   document.getElementById('quick-tasks').innerHTML = emp.quickTasks.map(
-    t => `<button class="chip" onclick="useQuickTask(${JSON.stringify(t)})">${escapeHtml(t)}</button>`
+    t => `<button class="chip" onclick="useQuickTask(${JSON.stringify(t).replace(/"/g,'&quot;')})">${escapeHtml(t)}</button>`
   ).join('');
 }
 
@@ -457,7 +565,9 @@ function useQuickTask(text) {
   document.getElementById('input').focus();
 }
 
-function renderConversation() {
+// ============ CONVERSATION RENDERING ============
+// rebuildConversation() — full DOM rebuild, only used when switching employees
+function rebuildConversation() {
   const conv = document.getElementById('conv');
   const msgs = conversations[currentEmployee] || [];
   if (!msgs.length) {
@@ -466,23 +576,35 @@ function renderConversation() {
       <div style="text-align:center;color:var(--muted);padding:40px 20px;">
         <div style="font-size:48px;margin-bottom:12px;opacity:0.3;">${emp.emoji}</div>
         <div class="serif" style="color:var(--gold);font-size:18px;letter-spacing:3px;margin-bottom:8px;">${emp.name} 已就位</div>
-        <div style="font-size:12px;font-style:italic;">輸入任務或點選下方快捷任務開始</div>
+        <div style="font-size:12px;font-style:italic;">${emp.isDirector ? '交付任務後，VICTOR 會自動拆解並分派給整個團隊' : '輸入任務或點選下方快捷任務開始'}</div>
       </div>
     `;
     return;
   }
-  conv.innerHTML = msgs.map(m => {
-    if (m.role === 'user') {
-      return `<div class="msg user"><div class="label">您 · JEFFREY</div><div class="bubble">${escapeHtml(m.content)}</div></div>`;
-    } else {
-      return `<div class="msg ai"><div class="label">${EMPLOYEES[currentEmployee].name} · ${EMPLOYEES[currentEmployee].role}</div><div class="bubble">${m.content}</div></div>`;
-    }
-  }).join('');
+  conv.innerHTML = '';
+  msgs.forEach((m) => {
+    appendMessageToDOM(m, false);
+  });
   conv.scrollTop = conv.scrollHeight;
 }
 
+function appendMessageToDOM(msg, animate = true) {
+  const conv = document.getElementById('conv');
+  const div = document.createElement('div');
+  div.className = `msg ${msg.role === 'user' ? 'user' : 'ai'}${animate ? ' fade-in' : ''}`;
+  if (msg.role === 'user') {
+    div.innerHTML = `<div class="label">您 · JEFFREY</div><div class="bubble">${escapeHtml(msg.content)}</div>`;
+  } else {
+    const label = msg.label || `${EMPLOYEES[currentEmployee].name} · ${EMPLOYEES[currentEmployee].role}`;
+    div.innerHTML = `<div class="label">${escapeHtml(label)}</div><div class="bubble" data-stream-id="${msg.streamId || ''}">${msg.content || ''}</div>`;
+  }
+  conv.appendChild(div);
+  conv.scrollTop = conv.scrollHeight;
+  return div;
+}
+
 function escapeHtml(t) {
-  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ============ FEED ============
@@ -490,13 +612,13 @@ function addFeed(who, what, active=false) {
   const now = new Date();
   const tstr = now.toLocaleTimeString('zh-TW', {hour12:false});
   feed.unshift({ time: tstr, who, what, active });
-  if (feed.length > 50) feed.pop();
+  if (feed.length > 60) feed.pop();
   renderFeed();
 }
 function renderFeed() {
   const f = document.getElementById('feed');
   if (!feed.length) {
-    f.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center;font-style:italic;">尚無工作紀錄<br><br>交付任務給 AI 員工後<br>他們的工作過程會出現在這裡</div>`;
+    f.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center;font-style:italic;">尚無工作紀錄</div>`;
     return;
   }
   f.innerHTML = feed.map(item => `
@@ -523,44 +645,63 @@ async function loadReports() {
     const res = await fetch('/api/reports');
     const list = await res.json();
     if (!list.length) {
-      container.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center;font-style:italic;">尚無排程報告<br><br>週一 09:00 Leon 會自動產出策略簡報<br>週五 17:00 Dex 會自動產出週報</div>`;
+      container.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center;font-style:italic;">尚無排程報告</div>`;
       return;
     }
     container.innerHTML = list.map(r => `
       <div class="feed-item">
         <div class="time">${new Date(r.createdAt).toLocaleString('zh-TW')}</div>
         <div class="who">${r.employeeName} · ${r.label}</div>
-        <div class="what" style="max-height:120px;overflow:hidden;margin-top:6px;font-size:11px;opacity:0.85;">${(r.output||'').replace(/<[^>]+>/g,'').substring(0,180)}...</div>
+        <div class="what" style="max-height:120px;overflow:hidden;margin-top:6px;font-size:11px;opacity:0.85;">${(r.output||'').replace(/<[^>]+>/g,'').substring(0,180)}…</div>
       </div>
     `).join('');
-  } catch (err) {
+  } catch {
     container.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px;">載入失敗</div>';
   }
 }
 
-// ============ REAL CLAUDE API ============
-async function send() {
-  if (!currentEmployee) return;
-  const input = document.getElementById('input');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  input.style.height = 'auto';
+// ============ SSE STREAMING (anti-flicker) ============
+async function readSSE(response, handlers) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split('\n\n');
+    buffer = chunks.pop();
+    for (const chunk of chunks) {
+      const lines = chunk.split('\n');
+      let event = 'message', data = '';
+      for (const line of lines) {
+        if (line.startsWith('event: ')) event = line.slice(7);
+        else if (line.startsWith('data: ')) data += line.slice(6);
+      }
+      if (!data) continue;
+      let parsed;
+      try { parsed = JSON.parse(data); } catch { continue; }
+      if (handlers[event]) handlers[event](parsed);
+    }
+  }
+}
 
+// ============ SEND (single employee) ============
+async function sendSingle(text) {
   const emp = EMPLOYEES[currentEmployee];
   conversations[emp.id].push({ role: 'user', content: text });
-  renderConversation();
+  appendMessageToDOM({ role: 'user', content: text });
 
-  document.getElementById('send-btn').disabled = true;
   employeeStatus[emp.id] = 'working';
-  renderEmployees();
-  addFeed(`${emp.name} · ${emp.role}`, `📥 收到新任務：「${text.substring(0,30)}${text.length>30?'...':''}」`, true);
+  updateEmployeeStatusOnly();
+  addFeed(`${emp.name} · ${emp.role}`, `📥 收到任務：「${text.substring(0,30)}${text.length>30?'…':''}」`, true);
 
-  // 加入一個空的 AI 訊息，讓 SSE 逐字填入
-  conversations[emp.id].push({ role: 'ai', content: '<div class="thinking"><span></span><span></span><span></span></div>' });
-  renderConversation();
-  const idx = conversations[emp.id].length - 1;
-
+  // Append empty AI bubble
+  const aiMsg = { role: 'ai', content: '<div class="thinking"><span></span><span></span><span></span></div>', streamId: 'cur' };
+  conversations[emp.id].push(aiMsg);
+  const msgEl = appendMessageToDOM(aiMsg);
+  const bubbleEl = msgEl.querySelector('.bubble');
+  let accumulated = '';
   let firstChunk = true;
 
   try {
@@ -574,61 +715,221 @@ async function send() {
           .map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: stripHtml(m.content) })),
       }),
     });
-
     if (!res.ok || !res.body) throw new Error('Network error ' + res.status);
 
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let accumulated = '';
-
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      // 解析 SSE 格式： event: xxx\ndata: {...}\n\n
-      const chunks = buffer.split('\n\n');
-      buffer = chunks.pop(); // 最後一塊可能還不完整
-      for (const chunk of chunks) {
-        const lines = chunk.split('\n');
-        let event = 'message', data = '';
-        for (const line of lines) {
-          if (line.startsWith('event: ')) event = line.slice(7);
-          else if (line.startsWith('data: ')) data += line.slice(6);
-        }
-        if (!data) continue;
-        let parsed;
-        try { parsed = JSON.parse(data); } catch { continue; }
-
-        if (event === 'status') {
-          addFeed(emp.name, parsed.text, true);
-        } else if (event === 'delta') {
-          if (firstChunk) {
-            accumulated = '';
-            firstChunk = false;
-          }
-          accumulated += parsed.text;
-          conversations[emp.id][idx].content = accumulated;
-          renderConversation();
-        } else if (event === 'done') {
-          addFeed(emp.name, `✅ 任務完成（${parsed.length || accumulated.length} 字）`);
-        } else if (event === 'error') {
-          conversations[emp.id][idx].content = `<p style="color:#E8B54B;">⚠️ 發生錯誤：${escapeHtml(parsed.message)}</p>`;
-          renderConversation();
-          addFeed(emp.name, `❌ 發生錯誤：${parsed.message}`);
-        }
-      }
-    }
+    await readSSE(res, {
+      status: (p) => addFeed(emp.name, p.text, true),
+      delta: (p) => {
+        if (firstChunk) { accumulated = ''; firstChunk = false; }
+        accumulated += p.text;
+        // ★ Anti-flicker: only update this one bubble's innerHTML
+        bubbleEl.innerHTML = accumulated;
+        // Auto-scroll
+        const conv = document.getElementById('conv');
+        conv.scrollTop = conv.scrollHeight;
+      },
+      done: (p) => {
+        aiMsg.content = accumulated;
+        addFeed(emp.name, `✅ 任務完成（${p.length || accumulated.length} 字）`);
+      },
+      error: (p) => {
+        bubbleEl.innerHTML = `<p style="color:#E8B54B;">⚠️ ${escapeHtml(p.message)}</p>`;
+        aiMsg.content = bubbleEl.innerHTML;
+        addFeed(emp.name, `❌ ${p.message}`);
+      },
+    });
   } catch (err) {
-    console.error(err);
-    conversations[emp.id][idx].content = `<p style="color:#E8B54B;">⚠️ 無法連接後端：${escapeHtml(err.message)}</p>`;
-    renderConversation();
-    addFeed(emp.name, `❌ 連線失敗：${err.message}`);
+    bubbleEl.innerHTML = `<p style="color:#E8B54B;">⚠️ 連線失敗：${escapeHtml(err.message)}</p>`;
+    aiMsg.content = bubbleEl.innerHTML;
+    addFeed(emp.name, `❌ ${err.message}`);
   }
 
   employeeStatus[emp.id] = 'idle';
-  renderEmployees();
+  updateEmployeeStatusOnly();
+}
+
+// ============ SEND (orchestrate) ============
+async function sendOrchestrate(text) {
+  const director = EMPLOYEES.victor;
+  conversations.victor.push({ role: 'user', content: text });
+  appendMessageToDOM({ role: 'user', content: text });
+
+  addFeed(`${director.name} · 行銷總監`, `📥 收到複雜任務：「${text.substring(0,30)}${text.length>30?'…':''}」`, true);
+
+  // Container message: will hold phase + workers + final summary
+  const containerMsg = { role: 'ai', content: '', label: `${director.name} · 行銷總監（協作模式）` };
+  conversations.victor.push(containerMsg);
+  const msgEl = appendMessageToDOM(containerMsg);
+  const bubbleEl = msgEl.querySelector('.bubble');
+
+  // Initial phase card
+  bubbleEl.innerHTML = `
+    <div class="phase-card">
+      <div class="phase-icon">👑</div>
+      <div class="phase-text">VICTOR 正在分析任務並規劃分工…</div>
+    </div>
+  `;
+  const conv = document.getElementById('conv');
+  conv.scrollTop = conv.scrollHeight;
+
+  let workerEls = {};      // empId → DOM element
+  let workerAccum = {};    // empId → accumulated html
+  let summaryAccum = '';
+  let summaryEl = null;
+
+  try {
+    const res = await fetch('/api/orchestrate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task: text }),
+    });
+    if (!res.ok || !res.body) throw new Error('Network error ' + res.status);
+
+    await readSSE(res, {
+      phase: (p) => {
+        const icons = { planning: '👑', executing: '🚀', consolidating: '👑' };
+        // Update existing phase card or add new one
+        let card = bubbleEl.querySelector('.phase-card');
+        if (card) {
+          card.querySelector('.phase-icon').textContent = icons[p.phase] || '⚙️';
+          card.querySelector('.phase-text').textContent = p.text;
+        }
+        addFeed(director.name, p.text, true);
+      },
+      plan: (p) => {
+        // Render strategy + worker grid
+        const strategyHtml = p.strategy
+          ? `<div class="strategy-box"><span class="label">💡 策略思考</span>${escapeHtml(p.strategy)}</div>`
+          : '';
+        const gridHtml = `
+          <h4>📋 分派給 ${p.assignments.length} 位專員（同時執行中）</h4>
+          ${strategyHtml}
+          <div class="workers-grid">
+            ${p.assignments.map(a => `
+              <div class="worker-card" data-emp="${a.employeeId}">
+                <div class="wc-status">等待中</div>
+                <div class="wc-head">
+                  <div class="wc-av">${a.emoji}</div>
+                  <div>
+                    <div class="wc-name">${escapeHtml(a.employeeName)}</div>
+                    <div class="wc-role">${escapeHtml(a.employeeRole)}</div>
+                  </div>
+                </div>
+                <div class="wc-task">分派：${escapeHtml(a.task)}</div>
+                <div class="wc-output" data-emp-output="${a.employeeId}"></div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        // Replace phase card content (keep phase card)
+        bubbleEl.innerHTML = `
+          <div class="phase-card">
+            <div class="phase-icon">🚀</div>
+            <div class="phase-text">${p.assignments.length} 位專員同時開工…</div>
+          </div>
+          ${gridHtml}
+        `;
+        p.assignments.forEach(a => {
+          workerEls[a.employeeId] = bubbleEl.querySelector(`[data-emp="${a.employeeId}"]`);
+          workerAccum[a.employeeId] = '';
+          employeeStatus[a.employeeId] = 'working';
+        });
+        updateEmployeeStatusOnly();
+        conv.scrollTop = conv.scrollHeight;
+      },
+      worker_start: (p) => {
+        const card = workerEls[p.employeeId];
+        if (card) {
+          card.classList.add('working');
+          card.querySelector('.wc-status').textContent = '工作中';
+        }
+        addFeed(p.employeeName, '🔧 開始執行', true);
+      },
+      worker_delta: (p) => {
+        workerAccum[p.employeeId] = (workerAccum[p.employeeId] || '') + p.text;
+        const out = bubbleEl.querySelector(`[data-emp-output="${p.employeeId}"]`);
+        if (out) {
+          // ★ Targeted update — no whole-conv re-render
+          out.innerHTML = workerAccum[p.employeeId];
+          out.scrollTop = out.scrollHeight;
+        }
+      },
+      worker_done: (p) => {
+        const card = workerEls[p.employeeId];
+        if (card) {
+          card.classList.remove('working');
+          card.classList.add('done');
+          card.querySelector('.wc-status').textContent = '完成 ✓';
+        }
+        const empName = EMPLOYEES[p.employeeId]?.name || p.employeeId;
+        employeeStatus[p.employeeId] = 'idle';
+        updateEmployeeStatusOnly();
+        addFeed(empName, `✅ 完成（${p.length} 字）`);
+      },
+      worker_error: (p) => {
+        const card = workerEls[p.employeeId];
+        if (card) {
+          card.classList.add('error');
+          card.querySelector('.wc-status').textContent = '錯誤';
+        }
+        employeeStatus[p.employeeId] = 'idle';
+        updateEmployeeStatusOnly();
+      },
+      summary_delta: (p) => {
+        if (!summaryEl) {
+          // Add a section for the final summary
+          const phaseCard = bubbleEl.querySelector('.phase-card');
+          if (phaseCard) {
+            phaseCard.querySelector('.phase-icon').textContent = '👑';
+            phaseCard.querySelector('.phase-text').textContent = 'VICTOR 正在統整全團隊成果…';
+          }
+          const sumWrap = document.createElement('div');
+          sumWrap.innerHTML = `<h4 style="margin-top:18px;">📊 行銷總監最終整合報告</h4><div class="summary-body" style="background:var(--burgundy-dark);padding:14px 18px;border-radius:10px;border-left:3px solid var(--gold-bright);"></div>`;
+          bubbleEl.appendChild(sumWrap);
+          summaryEl = sumWrap.querySelector('.summary-body');
+        }
+        summaryAccum += p.text;
+        summaryEl.innerHTML = summaryAccum;
+        conv.scrollTop = conv.scrollHeight;
+      },
+      done: (p) => {
+        // Hide the phase card on completion
+        const card = bubbleEl.querySelector('.phase-card');
+        if (card) card.style.display = 'none';
+        addFeed(director.name, `✅ 全部完成（${p.totalWorkers} 位專員）`);
+        containerMsg.content = bubbleEl.innerHTML;
+      },
+      error: (p) => {
+        bubbleEl.innerHTML += `<p style="color:#E8B54B;">⚠️ ${escapeHtml(p.message)}</p>`;
+        addFeed(director.name, `❌ ${p.message}`);
+      },
+    });
+  } catch (err) {
+    bubbleEl.innerHTML += `<p style="color:#E8B54B;">⚠️ 連線失敗：${escapeHtml(err.message)}</p>`;
+    addFeed(director.name, `❌ ${err.message}`);
+  }
+}
+
+// ============ MAIN SEND ============
+async function send() {
+  if (!currentEmployee || isStreaming) return;
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  isStreaming = true;
+  document.getElementById('send-btn').disabled = true;
+
+  const emp = EMPLOYEES[currentEmployee];
+  if (emp.isDirector) {
+    await sendOrchestrate(text);
+  } else {
+    await sendSingle(text);
+  }
+
+  isStreaming = false;
   document.getElementById('send-btn').disabled = false;
 }
 
@@ -643,14 +944,14 @@ async function showPrompt() {
   if (!currentEmployee) return;
   const emp = EMPLOYEES[currentEmployee];
   document.getElementById('modal-title').textContent = `${emp.name} 的 System Prompt`;
-  document.getElementById('modal-sub').textContent = `這份 System Prompt 就是後端實際送進 Claude API 的 system 欄位。`;
+  document.getElementById('modal-sub').textContent = `這份 System Prompt 是後端實際送進 Claude API 的 system 欄位。`;
   document.getElementById('modal-content').textContent = '載入中...';
   document.getElementById('modal').classList.add('show');
   try {
     const res = await fetch(`/api/employees/${emp.id}/prompt`);
     const data = await res.json();
     document.getElementById('modal-content').textContent = data.systemPrompt;
-  } catch (err) {
+  } catch {
     document.getElementById('modal-content').textContent = '載入失敗';
   }
 }
