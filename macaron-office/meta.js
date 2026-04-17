@@ -282,6 +282,102 @@ async function buildLiveDataBlock({ include = ["fb", "ig", "ads"] } = {}) {
   return chunks.join("\n\n");
 }
 
+// ─────────────────────── Enhanced coaching data snapshot ───────────────────────
+
+// Returns a richer coaching-focused data block for all 9 employees
+// Includes recent posts with engagement, account summaries, and ads performance
+async function buildCoachDataBlock() {
+  if (!tokenOk()) return null;
+  const parts = [];
+
+  // Basic page stats with coaching context
+  if (process.env.META_FB_PAGE_ID) {
+    try {
+      const page = await graphGet(
+        `${process.env.META_FB_PAGE_ID}?fields=id,name,fan_count,followers_count,new_fan_count,talking_about_count`
+      );
+      parts.push(`[FB 粉專概況]`);
+      parts.push(`名稱: ${page.name} | 粉絲: ${page.fan_count || 0} | 追蹤: ${page.followers_count || 0}`);
+      if (page.talking_about_count) parts.push(`本週互動人數: ${page.talking_about_count}`);
+
+      // Recent posts with engagement data
+      try {
+        const posts = await getFbPagePosts({ limit: 5 });
+        if (posts.length) {
+          parts.push(`\n[FB 最近 5 篇貼文表現]`);
+          posts.forEach((p, i) => {
+            const date = p.createdTime ? p.createdTime.slice(0, 10) : "?";
+            parts.push(`${i + 1}. (${date}) ❤️${p.reactions || 0} 💬${p.comments || 0} 🔁${p.shares || 0}`);
+            if (p.message) parts.push(`   ${p.message.slice(0, 80)}${p.message.length > 80 ? "…" : ""}`);
+          });
+        }
+      } catch (e) {
+        parts.push(`(FB 貼文讀取失敗: ${e.message})`);
+      }
+    } catch (e) {
+      parts.push(`[FB] 讀取失敗：${e.message}`);
+    }
+  }
+
+  if (process.env.META_IG_USER_ID) {
+    try {
+      const ig = await graphGet(
+        `${process.env.META_IG_USER_ID}?fields=id,username,followers_count,follows_count,media_count`
+      );
+      parts.push(`\n[IG 帳號概況]`);
+      parts.push(`@${ig.username} | 追蹤者: ${ig.followers_count || 0} | 貼文數: ${ig.media_count || 0}`);
+      if (ig.follows_count) parts.push(`正在追蹤: ${ig.follows_count}`);
+
+      try {
+        const media = await getIgMedia({ limit: 5 });
+        if (media.length) {
+          parts.push(`\n[IG 最近 5 篇貼文表現]`);
+          media.forEach((m, i) => {
+            const date = m.timestamp ? m.timestamp.slice(0, 10) : "?";
+            const type =
+              m.mediaType === "VIDEO" ? "🎬" : m.mediaType === "CAROUSEL_ALBUM" ? "📸多圖" : "📷";
+            parts.push(`${i + 1}. ${type} (${date}) ❤️${m.likes || 0} 💬${m.comments || 0}`);
+            if (m.caption) parts.push(`   ${m.caption.slice(0, 80)}${m.caption.length > 80 ? "…" : ""}`);
+          });
+        }
+      } catch (e) {
+        parts.push(`(IG 貼文讀取失敗: ${e.message})`);
+      }
+    } catch (e) {
+      parts.push(`[IG] 讀取失敗：${e.message}`);
+    }
+  }
+
+  // Ads insights if available
+  if (process.env.META_AD_ACCOUNT_ID) {
+    try {
+      const insights = await getAdsInsights({ datePreset: "last_7d" });
+      if (insights) {
+        parts.push(`\n[Meta 廣告 · 過去 7 天帳戶總覽]`);
+        parts.push(
+          `曝光 ${(insights.impressions || 0).toLocaleString()} | 觸及 ${(insights.reach || 0).toLocaleString()} | 點擊 ${(insights.clicks || 0).toLocaleString()}`
+        );
+        parts.push(
+          `CTR ${(insights.ctr || 0).toFixed(2)}% | CPC NT$${(insights.cpc || 0).toFixed(0)} | CPM NT$${(insights.cpm || 0).toFixed(0)}`
+        );
+        const spend = insights.spend || 0;
+        const revenue = insights.revenue || 0;
+        parts.push(
+          `花費 NT$${spend.toFixed(0)} | 購買 ${insights.purchases || 0} | 營收 NT$${revenue.toFixed(0)}` +
+            (insights.roas !== null ? ` | ROAS ${insights.roas.toFixed(2)}` : "")
+        );
+      }
+    } catch (e) {
+      parts.push(`\n[Meta 廣告] 讀取失敗: ${e.message}`);
+    }
+  } else {
+    parts.push(`\n[Meta 廣告] 尚未設定廣告帳號 (META_AD_ACCOUNT_ID)`);
+  }
+
+  parts.push(`\n(資料來源：Meta Graph API · 即時)`);
+  return parts.length > 2 ? parts.join("\n") : null;
+}
+
 module.exports = {
   tokenOk,
   getStatus,
@@ -290,4 +386,5 @@ module.exports = {
   getAdsInsights,
   getAdCampaigns,
   buildLiveDataBlock,
+  buildCoachDataBlock,
 };
