@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📱 NOVA 社群草稿 · MACARON DE LUXE</title>
+<style>
+  :root {
+    --burgundy: #6D2E46; --burgundy-dark: #4A1F30;
+    --gold: #B08D57; --gold-bright: #E8B54B;
+    --ivory: #FCF6F5; --dark: #0E0A0C; --dark-2: #1A1416; --dark-3: #251D20;
+    --muted: #8B7278; --amber: #E8B54B; --green: #6FBF7E; --red: #C76B6B;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--dark); color: var(--ivory); font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; min-height: 100vh; padding: 20px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .header { border-bottom: 1px solid var(--burgundy); padding-bottom: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .header h1 { font-family: Georgia, serif; font-size: 22px; color: var(--gold); letter-spacing: 2px; font-weight: normal; }
+  .header .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .header a { color: var(--gold); text-decoration: none; font-size: 12px; padding: 6px 12px; border: 1px solid var(--burgundy); border-radius: 6px; }
+  .header a:hover { background: var(--burgundy-dark); }
+
+  .gen-form {
+    background: var(--dark-2); padding: 16px; border-radius: 10px;
+    border: 1px dashed var(--burgundy); margin-bottom: 16px;
+    display: grid; gap: 12px;
+  }
+  .gen-form label { font-size: 11px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+  .gen-form textarea, .gen-form select, .gen-form input {
+    background: var(--dark-3); border: 1px solid var(--burgundy-dark);
+    color: var(--ivory); padding: 8px 10px; border-radius: 4px;
+    font-size: 13px; font-family: inherit;
+  }
+  .gen-form textarea { min-height: 70px; resize: vertical; }
+  .gen-form .row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+  .gen-form .row label { flex: 0 0 140px; }
+  .gen-form .row label.brief { flex: 1; min-width: 250px; }
+  .gen-btn {
+    padding: 10px 20px; cursor: pointer;
+    background: var(--burgundy); color: var(--gold);
+    border: 1px solid var(--gold); border-radius: 6px;
+    font-size: 14px; letter-spacing: 1px; font-family: Georgia, serif;
+    flex: 0 0 auto;
+  }
+  .gen-btn:hover { background: var(--burgundy-dark); }
+  .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .status { padding: 12px; background: var(--dark-2); border-radius: 8px; border-left: 3px solid var(--gold); margin-bottom: 16px; font-size: 13px; line-height: 1.6; min-height: 24px; }
+
+  .draft-pack {
+    background: var(--dark-2); border: 1px solid var(--burgundy-dark);
+    border-radius: 10px; padding: 16px; margin-bottom: 18px;
+  }
+  .draft-pack-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px dotted var(--burgundy-dark);
+  }
+  .draft-pack-header h3 { font-family: Georgia, serif; color: var(--gold); font-size: 14px; font-weight: normal; }
+  .draft-pack-header .meta { font-size: 11px; color: var(--muted); }
+  .draft-pack-header .platform { display: inline-block; padding: 2px 10px; background: var(--burgundy-dark); color: var(--gold); border-radius: 10px; font-size: 11px; margin-left: 8px; }
+  .draft-pack-header .status-badge {
+    padding: 3px 12px; border-radius: 12px; font-size: 11px;
+    background: var(--burgundy-dark); color: var(--gold);
+  }
+  .draft-pack-header .status-badge.published { background: rgba(111,191,126,0.15); color: var(--green); }
+
+  .draft-list { display: grid; gap: 12px; grid-template-columns: 1fr; }
+  .draft-card { background: var(--dark-3); border: 1px solid var(--burgundy-dark); border-radius: 8px; padding: 12px; }
+  .draft-card .style { font-size: 12px; color: var(--gold); margin-bottom: 6px; font-weight: 600; }
+  .draft-card textarea {
+    width: 100%; min-height: 110px;
+    background: var(--dark-2); border: 1px solid var(--burgundy-dark);
+    color: var(--ivory); padding: 8px; border-radius: 4px;
+    font-size: 13px; line-height: 1.7; font-family: inherit; resize: vertical;
+    margin-bottom: 8px;
+  }
+  .draft-card .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .draft-card .word-count { font-size: 11px; color: var(--muted); margin-right: auto; }
+  .pub-btn {
+    padding: 8px 14px; background: var(--gold); color: var(--burgundy);
+    border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;
+  }
+  .pub-btn:hover { background: var(--gold-bright); }
+  .pub-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .skip-btn {
+    padding: 8px 14px; background: transparent; color: var(--muted);
+    border: 1px solid var(--burgundy); border-radius: 4px; cursor: pointer; font-size: 12px;
+  }
+  .pub-link {
+    flex: 0 0 200px; padding: 6px 8px;
+    background: var(--dark-2); border: 1px solid var(--burgundy-dark);
+    color: var(--ivory); border-radius: 4px; font-size: 12px; font-family: inherit;
+  }
+  .empty { text-align: center; padding: 30px; color: var(--muted); font-size: 13px; background: var(--dark-2); border-radius: 10px; }
+
+  .toast { position: fixed; bottom: 20px; right: 20px; background: var(--burgundy); color: var(--ivory); padding: 12px 18px; border-radius: 6px; border: 1px solid var(--gold); font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; max-width: 80vw; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>📱 NOVA 社群草稿</h1>
+      <div class="sub">輸入 brief → NOVA 寫 3 個版本 → 你選一個 → 確認發布到 FB / IG</div>
+    </div>
+    <a href="/">← 回主辦公室</a>
+    <a href="/optimize.html">⚡ 廣告體檢</a>
+    <a href="/competitor.html">📡 競品追蹤</a>
+  </div>
+
+  <div class="gen-form">
+    <div class="row">
+      <label class="brief">
+        Brief（你想宣傳什麼）
+        <textarea id="brief" placeholder="例：宣傳母親節限定 6 入禮盒 NT$880，主打『送媽媽的法式儀式感』，附上預購連結..."></textarea>
+      </label>
+    </div>
+    <div class="row">
+      <label>
+        平台
+        <select id="platform">
+          <option value="FB">Facebook</option>
+          <option value="IG">Instagram</option>
+        </select>
+      </label>
+      <label>
+        草稿數量
+        <select id="count">
+          <option value="3">3 個</option>
+          <option value="2">2 個</option>
+          <option value="4">4 個</option>
+        </select>
+      </label>
+      <button id="gen-btn" class="gen-btn">✏️ NOVA 開始寫</button>
+    </div>
+  </div>
+
+  <div id="status" class="status">輸入 brief，NOVA 會產出多個風格版本，你挑一個編輯後發布。</div>
+
+  <div id="drafts-area"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])
+  );
+}
+function fmtDate(iso) {
+  if (!iso) return '-';
+  try { return new Date(iso).toLocaleString('zh-TW'); } catch(e) { return iso; }
+}
+function toast(msg, ms = 3000) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+async function generate() {
+  const brief = $('brief').value.trim();
+  const platform = $('platform').value;
+  const count = Number($('count').value);
+  if (!brief) { toast('請輸入 brief'); return; }
+  $('gen-btn').disabled = true;
+  $('status').innerHTML = '✏️ NOVA 思考中...（10-30 秒）';
+  try {
+    const res = await fetch('/api/social/generate-draft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brief, platform, count }),
+    });
+    const d = await res.json();
+    if (d.error) throw new Error(d.error + (d.raw ? ' · 原文：' + d.raw.slice(0, 100) : ''));
+    $('status').innerHTML = `✅ NOVA 產出 <strong>${d.drafts.length}</strong> 個 ${platform} 草稿，請選一個編輯/發布`;
+    await loadDrafts();
+    $('brief').value = '';
+  } catch (err) {
+    $('status').innerHTML = '❌ 失敗：' + escapeHtml(err.message);
+  } finally {
+    $('gen-btn').disabled = false;
+  }
+}
+
+async function loadDrafts() {
+  try {
+    const res = await fetch('/api/social/drafts');
+    const arr = await res.json();
+    const area = $('drafts-area');
+    if (!arr.length) {
+      area.innerHTML = '<div class="empty">還沒有草稿</div>';
+      return;
+    }
+    area.innerHTML = arr.map(p => `
+      <div class="draft-pack" data-pack="${escapeHtml(p.id)}">
+        <div class="draft-pack-header">
+          <div>
+            <h3>📋 Brief: ${escapeHtml(p.brief.slice(0, 80))}${p.brief.length > 80 ? '...' : ''}</h3>
+            <div class="meta">
+              ${fmtDate(p.createdAt)}
+              <span class="platform">${escapeHtml(p.platform)}</span>
+            </div>
+          </div>
+          <span class="status-badge ${p.status === 'published' ? 'published' : ''}">
+            ${p.status === 'published' ? '✅ 已發布' : '🟡 待發布'}
+          </span>
+        </div>
+        <div class="draft-list">
+          ${p.drafts.map(d => `
+            <div class="draft-card" data-pack="${escapeHtml(p.id)}" data-idx="${d.index}">
+              <div class="style">${escapeHtml(d.style)}</div>
+              <textarea class="cap-input">${escapeHtml(d.caption)}</textarea>
+              <div class="actions">
+                <span class="word-count">${d.caption.length} 字</span>
+                ${p.platform === 'IG' ? `<input class="pub-link" type="url" placeholder="圖片 URL（必填）">` : `<input class="pub-link" type="url" placeholder="附帶連結（選填）">`}
+                ${p.status === 'published' && p.publishedIndex === d.index ? '<span style="color:var(--green);font-size:12px;">✅ 此版已發布</span>' : `
+                  <button class="pub-btn" data-pack="${escapeHtml(p.id)}" data-idx="${d.index}" data-platform="${escapeHtml(p.platform)}">📤 發布</button>
+                `}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+    
+    // 字數即時更新
+    document.querySelectorAll('.cap-input').forEach(t => {
+      t.addEventListener('input', () => {
+        const card = t.closest('.draft-card');
+        const wc = card.querySelector('.word-count');
+        if (wc) wc.textContent = t.value.length + ' 字';
+      });
+    });
+    // 發布按鈕
+    document.querySelectorAll('.pub-btn').forEach(b => {
+      b.addEventListener('click', () => publish(b));
+    });
+  } catch (e) {
+    $('drafts-area').innerHTML = '<div class="empty">無法載入草稿：' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+async function publish(btn) {
+  const packId = btn.dataset.pack;
+  const idx = Number(btn.dataset.idx);
+  const platform = btn.dataset.platform;
+  const card = btn.closest('.draft-card');
+  const caption = card.querySelector('.cap-input').value.trim();
+  const link = card.querySelector('.pub-link').value.trim();
+
+  if (!caption) { toast('內容不能空'); return; }
+  if (platform === 'IG' && !link) { toast('IG 必須有圖片 URL'); return; }
+  
+  const platformLabel = platform === 'IG' ? 'Instagram' : 'Facebook';
+  if (!confirm(`確認發到 ${platformLabel}？\n\n${caption.slice(0, 200)}${caption.length > 200 ? '...' : ''}`)) return;
+  
+  btn.disabled = true;
+  btn.textContent = '⏳ 發布中...';
+  try {
+    const body = { draftId: packId, index: idx, caption, platform, confirmed: true };
+    if (platform === 'IG') body.imageUrl = link;
+    else if (link) body.link = link;
+    
+    const res = await fetch('/api/social/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const d = await res.json();
+    if (d.ok) {
+      toast(`✅ 已發布到 ${platformLabel}`);
+      await loadDrafts();
+    } else {
+      throw new Error(d.error || (d.graphError && d.graphError.message) || 'unknown');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '📤 發布';
+    toast('❌ ' + err.message, 5000);
+  }
+}
+
+$('gen-btn').onclick = generate;
+loadDrafts();
+</script>
+</body>
+</html>
