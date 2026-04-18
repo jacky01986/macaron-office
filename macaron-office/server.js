@@ -348,6 +348,138 @@ app.get("/api/intel/competitors", (req, res) => {
 
 
 // ============================================================
+// /api/social/* — T3: 社群自動發文（NOVA 寫 → 你確認 → 發）
+// ============================================================
+const DRAFTS_FILE = path.join(DATA_DIR, "drafts.json");
+if (!fs.existsSync(DRAFTS_FILE)) fs.writeFileSync(DRAFTS_FILE, "[]", "utf8");
+
+function loadDrafts() {
+  try { return JSON.parse(fs.readFileSync(DRAFTS_FILE, "utf8")); } catch(e) { return []; }
+}
+function saveDrafts(arr) {
+  fs.writeFileSync(DRAFTS_FILE, JSON.stringify(arr.slice(-100), null, 2), "utf8");
+}
+
+// POST /api/social/generate-draft  body: {brief, platform, count}
+// 用 NOVA 生 count 份草稿
+app.post("/api/social/generate-draft", async (req, res) => {
+  const { brief, platform = "FB", count = 3 } = req.body || {};
+  if (!brief || brief.trim().length < 5) return res.status(400).json({ error: "brief too short" });
+  if (!anthropic) return res.status(500).json({ error: "ANTHROPIC_API_KEY not set" });
+
+  const emp = EMPLOYEES["nova"];
+  const platformTag = platform === "IG" ? "Instagram（短、重畫面感、hashtags）" : "Facebook（較長、可帶連結、故事感）";
+
+  const userPrompt = `請針對下面的 brief，寫 ${count} 個不同風格的 ${platformTag} 貼文草稿。
+
+Brief：${brief}
+
+要求：
+- 回傳 JSON 陣列格式：[{"style":"風格名","caption":"內容"}, ...]
+- 每個草稿的 style 標題要不同（例如：情感型、功能型、好奇心型、情境型）
+- caption 要符合 MACARON DE LUXE 品牌語調（精品、內斂、不農場標題）
+- FB 貼文 150-300 字，IG 貼文 80-150 字 + 3-5 個 hashtag
+- 直接回 JSON 陣列，不要任何前後綴或 markdown`;
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 2500,
+      system: emp.systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+    const text = msg.content.map(b => b.text || "").join("").trim();
+    // 嘗試抽取 JSON 陣列
+    let drafts;
+    try {
+      const m = text.match(/\[[\s\S]*\]/);
+      drafts = JSON.parse(m ? m[0] : text);
+    } catch(e) {
+      return res.status(500).json({ error: "Failed to parse NOVA response as JSON", raw: text.slice(0, 500) });
+    }
+    // 儲存 draft pack
+    const record = {
+      id: Date.now() + "_" + Math.floor(Math.random() * 1000),
+      createdAt: new Date().toISOString(),
+      brief,
+      platform,
+      drafts: drafts.map((d, i) => ({
+        index: i,
+        style: d.style || `版本${i+1}`,
+        caption: d.caption || "",
+      })),
+      status: "pending",
+    };
+    const arr = loadDrafts();
+    arr.push(record);
+    saveDrafts(arr);
+    res.json(record);
+  } catch (err) {
+    console.error("[generate-draft]", err);
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+// GET /api/social/drafts — 列出草稿
+app.get("/api/social/drafts", (req, res) => {
+  res.json(loadDrafts().slice(-30).reverse());
+});
+
+// POST /api/social/publish  body: {draftId, index, caption, platform, confirmed:true}
+// draftId + index 是從草稿包選一個；caption 是你最終編輯過的版本
+app.post("/api/social/publish", async (req, res) => {
+  const { draftId, index, caption, platform, imageUrl, link, confirmed } = req.body || {};
+  if (confirmed !== true) return res.status(400).json({ error: "must include confirmed:true" });
+  if (!caption || caption.trim().length < 5) return res.status(400).json({ error: "caption too short" });
+
+  try {
+    let result;
+    if (platform === "IG") {
+      if (!imageUrl) return res.status(400).json({ error: "IG post requires imageUrl" });
+      result = await meta.publishIgImagePost({ imageUrl, caption });
+    } else {
+      result = await meta.publishFbPost({ message: caption, link });
+    }
+
+    // 更新 draft 狀態
+    if (draftId) {
+      const arr = loadDrafts();
+      const rec = arr.find(r => r.id === draftId);
+      if (rec) {
+        rec.status = "published";
+        rec.publishedAt = new Date().toISOString();
+        rec.publishedIndex = index ?? null;
+        rec.publishedPlatform = platform;
+        rec.publishedResult = result;
+        saveDrafts(arr);
+      }
+    }
+    // 寫 action log
+    appendAction({
+      type: "social-publish",
+      platform,
+      draftId: draftId || null,
+      captionPreview: caption.slice(0, 80),
+      success: true,
+      result,
+    });
+    res.json({ ok: true, platform, result });
+  } catch (err) {
+    console.error("[social-publish]", err);
+    appendAction({
+      type: "social-publish",
+      platform,
+      draftId: draftId || null,
+      captionPreview: caption.slice(0, 80),
+      success: false,
+      error: String(err.message || err),
+    });
+    res.status(500).json({ error: String(err.message || err), graphError: err.graphError || null });
+  }
+});
+
+
+// ============================================================
 // /api/chat — single employee streaming
 // ============================================================
 app.post("/api/chat", async (req, res) => {
