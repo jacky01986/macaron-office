@@ -535,6 +535,154 @@ function proposePausesFromAds(ads, rules = {}) {
   return proposals.slice(0, maxProposals);
 }
 
+
+// ─────────────────────── Budget updates (Phase 1 Feature 2) ───────────────────────
+// Meta Graph daily_budget 用 "cents" (minor unit)，TWD 其實是整數 NT$
+// 但 Meta 仍以 minor unit 儲存（× 100），所以 NT$500 = 50000
+// 讀的時候 meta.js 內部已 / 100 還原為 NTD；寫的時候要 × 100 放回去
+
+async function updateAdSetBudget(adsetId, newDailyBudgetNTD) {
+  if (!adsetId) throw new Error("adsetId required");
+  if (!Number.isFinite(newDailyBudgetNTD) || newDailyBudgetNTD < 100) {
+    throw new Error("newDailyBudgetNTD must be >= 100 NTD");
+  }
+  const minorUnit = Math.round(newDailyBudgetNTD * 100);
+  return await graphPost(`/${adsetId}`, { daily_budget: String(minorUnit) });
+}
+
+async function updateCampaignBudget(campaignId, newDailyBudgetNTD) {
+  if (!campaignId) throw new Error("campaignId required");
+  if (!Number.isFinite(newDailyBudgetNTD) || newDailyBudgetNTD < 100) {
+    throw new Error("newDailyBudgetNTD must be >= 100 NTD");
+  }
+  const minorUnit = Math.round(newDailyBudgetNTD * 100);
+  return await graphPost(`/${campaignId}`, { daily_budget: String(minorUnit) });
+}
+
+// AdSets with insights + current budget — 給 propose-budget-changes 用
+async function getAdSetsWithInsights({ datePreset = "last_7d", limit = 100 } = {}) {
+  const id = process.env.META_AD_ACCOUNT_ID;
+  if (!id) throw new Error("META_AD_ACCOUNT_ID not set");
+  const fields = [
+    "id",
+    "name",
+    "status",
+    "effective_status",
+    "campaign_id",
+    "daily_budget",
+    "lifetime_budget",
+    "created_time",
+    `insights.date_preset(${datePreset}){impressions,clicks,ctr,cpm,spend,actions,action_values}`,
+  ].join(",");
+  const data = await graphGet(`/act_${id}/adsets?fields=${fields}&limit=${limit}`);
+  return (data.data || []).map(as => {
+    const ins = (as.insights?.data || [])[0] || null;
+    const purchases = ins ? (ins.actions || []).find(a => a.action_type === "purchase") : null;
+    const revenue = ins ? (ins.action_values || []).find(a => a.action_type === "purchase") : null;
+    const spend = ins ? Number(ins.spend || 0) : 0;
+    const purchaseValue = revenue ? Number(revenue.value) : 0;
+    return {
+      id: as.id,
+      name: as.name,
+      status: as.status,
+      effectiveStatus: as.effective_status,
+      campaignId: as.campaign_id,
+      dailyBudget: as.daily_budget ? Number(as.daily_budget) / 100 : null,
+      lifetimeBudget: as.lifetime_budget ? Number(as.lifetime_budget) / 100 : null,
+      createdTime: as.created_time,
+      ageDays: as.created_time
+        ? Math.floor((Date.now() - new Date(as.created_time).getTime()) / 86400000)
+        : null,
+      insights: ins ? {
+        impressions: Number(ins.impressions || 0),
+        clicks: Number(ins.clicks || 0),
+        ctr: Number(ins.ctr || 0),
+        cpm: Number(ins.cpm || 0),
+        spend,
+        purchases: purchases ? Number(purchases.value) : 0,
+        revenue: purchaseValue,
+        roas: spend > 0 && purchaseValue > 0 ? purchaseValue / spend : null,
+      } : null,
+    };
+  });
+}
+
+// Guardrail: 分析 adsets 給預算調整建議
+function proposeBudgetChangesFromAdSets(adsets, rules = {}) {
+  const {
+    minAgeDays = 3,
+    minSpend = 1000,
+    roasHighThreshold = 2.5,     // ROAS >= 2.5 加碼
+    roasLowThreshold = 1.5,      // ROAS < 1.5 (但 >= 0.8) 減碼
+    increasePercent = 20,         // +20%
+    decreasePercent = 30,         // -30%
+    maxDailyBudget = 500,         // 單 adset 日預算上限 NT$
+    minDailyBudget = 100,         // 單 adset 日預算下限 NT$
+    maxProposals = 10,
+  } = rules;
+
+  const proposals = [];
+  for (const a of adsets || []) {
+    if (a.status !== "ACTIVE") continue;
+    if (!a.insights) continue;
+    if (a.dailyBudget === null) continue;    // 只處理有日預算的 adset
+    if (a.ageDays !== null && a.ageDays < minAgeDays) continue;
+    if (a.insights.spend < minSpend) continue;
+
+    const roas = a.insights.roas;
+    if (roas === null) continue;
+
+    let action = null;
+    let newBudget = null;
+    let reasons = [];
+
+    if (roas >= roasHighThreshold) {
+      // 加碼
+      const raw = a.dailyBudget * (1 + increasePercent / 100);
+      newBudget = Math.min(Math.round(raw / 10) * 10, maxDailyBudget);
+      if (newBudget <= a.dailyBudget) continue; // 已達上限
+      action = "INCREASE";
+      reasons.push(`ROAS ${roas.toFixed(2)} ≥ ${roasHighThreshold}，建議加碼 +${increasePercent}% (NT$${a.dailyBudget} → NT$${newBudget})`);
+    } else if (roas < roasLowThreshold && roas >= 0.8) {
+      // 減碼
+      const raw = a.dailyBudget * (1 - decreasePercent / 100);
+      newBudget = Math.max(Math.round(raw / 10) * 10, minDailyBudget);
+      if (newBudget >= a.dailyBudget) continue;
+      action = "DECREASE";
+      reasons.push(`ROAS ${roas.toFixed(2)} < ${roasLowThreshold}（未到暫停線）建議減碼 -${decreasePercent}% (NT$${a.dailyBudget} → NT$${newBudget})`);
+    } else {
+      continue; // ROAS 介於合理區間，不動
+    }
+
+    const dailyChange = newBudget - a.dailyBudget;
+    proposals.push({
+      adsetId: a.id,
+      adsetName: a.name,
+      campaignId: a.campaignId,
+      currentDailyBudget: a.dailyBudget,
+      newDailyBudget: newBudget,
+      dailyChange,
+      monthlyChange: dailyChange * 30,
+      ageDays: a.ageDays,
+      spend: a.insights.spend,
+      roas,
+      ctr: a.insights.ctr,
+      purchases: a.insights.purchases,
+      revenue: a.insights.revenue,
+      action,
+      reasons,
+    });
+  }
+
+  // 排序：先加碼（高 ROAS）再減碼（低 ROAS）；同類別下變動金額大的優先
+  proposals.sort((x, y) => {
+    if (x.action !== y.action) return x.action === "INCREASE" ? -1 : 1;
+    return Math.abs(y.dailyChange) - Math.abs(x.dailyChange);
+  });
+
+  return proposals.slice(0, maxProposals);
+}
+
 module.exports = {
   tokenOk,
   graphGet,
@@ -545,11 +693,15 @@ module.exports = {
   getAdsInsights,
   getAdCampaigns,
   getAdsWithInsights,
+  getAdSetsWithInsights,
   updateEntityStatus,
+  updateAdSetBudget,
+  updateCampaignBudget,
   pauseAd, resumeAd,
   pauseAdSet, resumeAdSet,
   pauseCampaign, resumeCampaign,
   proposePausesFromAds,
+  proposeBudgetChangesFromAdSets,
   buildLiveDataBlock,
   buildCoachDataBlock,
 };
