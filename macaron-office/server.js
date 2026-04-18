@@ -51,6 +51,26 @@ const REPORTS_FILE = path.join(DATA_DIR, "reports.json");
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(REPORTS_FILE)) fs.writeFileSync(REPORTS_FILE, "[]", "utf8");
 
+// LINE upload directory (T4.6)
+const LINE_UPLOAD_DIR = path.join(DATA_DIR, "uploads");
+if (!fs.existsSync(LINE_UPLOAD_DIR)) fs.mkdirSync(LINE_UPLOAD_DIR, { recursive: true });
+const lineUploadStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, LINE_UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    const ext = (path.extname(file.originalname) || "").toLowerCase().slice(0, 5);
+    const safeExt = /\.(jpg|jpeg|png|gif|webp)$/i.test(ext) ? ext : ".jpg";
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2,10)}${safeExt}`);
+  },
+});
+const lineUpload = multer({
+  storage: lineUploadStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!/^image\//.test(file.mimetype)) return cb(new Error("only images allowed"));
+    cb(null, true);
+  },
+});
+
 app.use(cors());
 
 // ============================================================
