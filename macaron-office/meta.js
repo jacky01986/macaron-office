@@ -378,13 +378,178 @@ async function buildCoachDataBlock() {
   return parts.length > 2 ? parts.join("\n") : null;
 }
 
+// ─────────────────────── WRITE APIs (Stage 3 · Phase 1) ───────────────────────
+// These are DANGEROUS endpoints. All server routes that call them must
+// require explicit user confirmation before execution.
+
+async function graphPost(pathWithQuery, body = {}) {
+  if (!tokenOk()) throw new Error("META_ACCESS_TOKEN not set");
+  const url = `${GRAPH}${pathWithQuery}`;
+  const params = new URLSearchParams({
+    ...body,
+    access_token: process.env.META_ACCESS_TOKEN,
+  });
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
+  });
+  const b = await res.json().catch(() => ({}));
+  if (!res.ok || b.error) {
+    const msg = b.error?.message || `HTTP ${res.status}`;
+    const code = b.error?.code;
+    const err = new Error(`Graph API error: ${msg}${code ? ` (code ${code})` : ""}`);
+    err.status = res.status;
+    err.graphError = b.error;
+    throw err;
+  }
+  return b;
+}
+
+// ─────────────────────── Ads list with insights ───────────────────────
+// Used by the optimize/propose-pauses endpoint to analyze each ad.
+async function getAdsWithInsights({ datePreset = "last_7d", limit = 100 } = {}) {
+  const id = process.env.META_AD_ACCOUNT_ID;
+  if (!id) throw new Error("META_AD_ACCOUNT_ID not set");
+  const fields = [
+    "id",
+    "name",
+    "status",
+    "effective_status",
+    "adset_id",
+    "campaign_id",
+    "created_time",
+    `insights.date_preset(${datePreset}){impressions,clicks,ctr,cpm,spend,actions,action_values}`,
+  ].join(",");
+  const data = await graphGet(`/act_${id}/ads?fields=${fields}&limit=${limit}`);
+  return (data.data || []).map(ad => {
+    const ins = (ad.insights?.data || [])[0] || null;
+    const purchases = ins ? (ins.actions || []).find(a => a.action_type === "purchase") : null;
+    const revenue = ins ? (ins.action_values || []).find(a => a.action_type === "purchase") : null;
+    const spend = ins ? Number(ins.spend || 0) : 0;
+    const purchaseValue = revenue ? Number(revenue.value) : 0;
+    return {
+      id: ad.id,
+      name: ad.name,
+      status: ad.status,
+      effectiveStatus: ad.effective_status,
+      adsetId: ad.adset_id,
+      campaignId: ad.campaign_id,
+      createdTime: ad.created_time,
+      ageDays: ad.created_time
+        ? Math.floor((Date.now() - new Date(ad.created_time).getTime()) / 86400000)
+        : null,
+      insights: ins ? {
+        impressions: Number(ins.impressions || 0),
+        clicks: Number(ins.clicks || 0),
+        ctr: Number(ins.ctr || 0),
+        cpm: Number(ins.cpm || 0),
+        spend,
+        purchases: purchases ? Number(purchases.value) : 0,
+        revenue: purchaseValue,
+        roas: spend > 0 && purchaseValue > 0 ? purchaseValue / spend : null,
+      } : null,
+    };
+  });
+}
+
+// ─────────────────────── Status updates (PAUSE / RESUME) ───────────────────────
+
+async function updateEntityStatus(entityId, status) {
+  if (!/^(PAUSED|ACTIVE)$/.test(status)) throw new Error("status must be PAUSED or ACTIVE");
+  if (!entityId) throw new Error("entityId required");
+  return await graphPost(`/${entityId}`, { status });
+}
+
+async function pauseAd(adId) { return await updateEntityStatus(adId, "PAUSED"); }
+async function resumeAd(adId) { return await updateEntityStatus(adId, "ACTIVE"); }
+async function pauseAdSet(adsetId) { return await updateEntityStatus(adsetId, "PAUSED"); }
+async function resumeAdSet(adsetId) { return await updateEntityStatus(adsetId, "ACTIVE"); }
+async function pauseCampaign(campaignId) { return await updateEntityStatus(campaignId, "PAUSED"); }
+async function resumeCampaign(campaignId) { return await updateEntityStatus(campaignId, "ACTIVE"); }
+
+// ─────────────────────── Guardrail logic ───────────────────────
+// Analyze ads array and return structured pause proposals with reasons.
+// Does NOT execute anything — pure function.
+function proposePausesFromAds(ads, rules = {}) {
+  const {
+    minAgeDays = 3,
+    minSpend = 1000,       // NTD
+    roasThreshold = 0.8,
+    ctrThreshold = 0.5,    // percent
+    cpmCeiling = 250,
+    maxProposals = 5,
+  } = rules;
+
+  const proposals = [];
+  for (const ad of ads || []) {
+    if (ad.status !== "ACTIVE") continue;
+    if (!ad.insights) continue;
+    if (ad.ageDays !== null && ad.ageDays < minAgeDays) continue;
+    if (ad.insights.spend < minSpend) continue;
+
+    const reasons = [];
+    const roas = ad.insights.roas;
+    const ctr = ad.insights.ctr;
+    const cpm = ad.insights.cpm;
+
+    if (roas !== null && roas < roasThreshold) {
+      reasons.push(`ROAS ${roas.toFixed(2)} < ${roasThreshold}（花 NT$${Math.round(ad.insights.spend)} 僅回收 NT$${Math.round(ad.insights.revenue)}）`);
+    }
+    if (ctr < ctrThreshold && cpm > cpmCeiling) {
+      reasons.push(`CTR ${ctr.toFixed(2)}% + CPM NT$${Math.round(cpm)}：素材無吸引力且 Meta 已懲罰`);
+    }
+    if (ad.insights.spend > minSpend * 2 && ad.insights.purchases === 0) {
+      reasons.push(`花 NT$${Math.round(ad.insights.spend)} 但 0 筆轉換（漏斗嚴重失衡）`);
+    }
+
+    if (reasons.length > 0) {
+      const dailySpend = ad.insights.spend / Math.max(ad.ageDays || 1, 1);
+      proposals.push({
+        adId: ad.id,
+        adName: ad.name,
+        campaignId: ad.campaignId,
+        adsetId: ad.adsetId,
+        ageDays: ad.ageDays,
+        spend: ad.insights.spend,
+        roas,
+        ctr,
+        cpm,
+        purchases: ad.insights.purchases,
+        revenue: ad.insights.revenue,
+        reasons,
+        action: "PAUSE",
+        estimatedMonthlySaving: Math.round(dailySpend * 30),
+      });
+    }
+  }
+
+  // Sort: worst ROAS first, then biggest spender. Take top N.
+  proposals.sort((a, b) => {
+    const aRoas = a.roas ?? 0;
+    const bRoas = b.roas ?? 0;
+    if (aRoas !== bRoas) return aRoas - bRoas;
+    return b.spend - a.spend;
+  });
+
+  return proposals.slice(0, maxProposals);
+}
+
 module.exports = {
   tokenOk,
+  graphGet,
+  graphPost,
   getStatus,
   getFbPagePosts,
   getIgMedia,
   getAdsInsights,
   getAdCampaigns,
+  getAdsWithInsights,
+  updateEntityStatus,
+  pauseAd, resumeAd,
+  pauseAdSet, resumeAdSet,
+  pauseCampaign, resumeCampaign,
+  proposePausesFromAds,
   buildLiveDataBlock,
   buildCoachDataBlock,
 };
