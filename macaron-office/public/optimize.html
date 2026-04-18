@@ -158,6 +158,23 @@
 
   <div id="results" class="results"></div>
 
+
+  <div style="margin-top:36px; padding-top:24px; border-top:1px solid var(--burgundy-dark);">
+    <h2 style="font-family:Georgia,serif;font-size:18px;color:var(--gold);letter-spacing:2px;font-weight:normal;margin-bottom:14px;">
+      💰 預算調整建議
+    </h2>
+    <div class="controls">
+      <label>ROAS 高於<input id="bg-high" type="number" step="0.1" value="2.5"></label>
+      <label>ROAS 低於<input id="bg-low" type="number" step="0.1" value="1.5"></label>
+      <label>+%<input id="bg-inc" type="number" step="5" value="20"></label>
+      <label>-%<input id="bg-dec" type="number" step="5" value="30"></label>
+      <label>單日上限<input id="bg-max" type="number" step="50" value="500"></label>
+      <button id="bg-scan-btn" class="scan-btn">📊 分析預算</button>
+    </div>
+    <div id="bg-status" class="status">分析每個 adset 的 ROAS，建議哪些該加碼、哪些該減碼。</div>
+    <div id="bg-results" class="results"></div>
+  </div>
+
   <div class="log-section">
     <h3>📜 最近執行紀錄</h3>
     <div id="log-list"></div>
@@ -306,6 +323,121 @@ async function loadLog() {
   } catch (e) {}
 }
 
+
+async function scanBudget() {
+  const btn = $('bg-scan-btn');
+  const status = $('bg-status');
+  const results = $('bg-results');
+  btn.disabled = true;
+  status.innerHTML = '📊 分析中... 抓 adsets + 套 guardrail';
+  results.innerHTML = '';
+
+  const params = new URLSearchParams({
+    high: $('bg-high').value || 2.5,
+    low: $('bg-low').value || 1.5,
+    inc: $('bg-inc').value || 20,
+    dec: $('bg-dec').value || 30,
+    maxBudget: $('bg-max').value || 500,
+    max: 10,
+  });
+
+  try {
+    const res = await fetch('/api/optimize/propose-budget-changes?' + params.toString());
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    if (!data.proposalCount) {
+      status.innerHTML = `✅ 掃描 <strong>${data.totalAdSetsScanned}</strong> 個 adset，沒有建議調整的（預算配置合理）。`;
+      results.innerHTML = '<div class="empty">沒有需要調整的 adset。</div>';
+      return;
+    }
+
+    status.innerHTML = `💡 掃描 <strong>${data.totalAdSetsScanned}</strong> 個 adset，找到 <strong>${data.proposalCount}</strong> 個調整建議。`;
+    results.innerHTML = data.proposals.map((p, i) => {
+      const isIncrease = p.action === 'INCREASE';
+      const color = isIncrease ? 'var(--green)' : 'var(--amber)';
+      const icon = isIncrease ? '📈' : '📉';
+      const actionText = isIncrease ? '加碼' : '減碼';
+      return `
+      <div class="ad-card" data-adset="${escapeHtml(p.adsetId)}">
+        <div class="ad-name">${icon} ${escapeHtml(p.adsetName || '(未命名)')}</div>
+        <div class="ad-meta">
+          <span>已運行 <strong>${p.ageDays ?? '-'}</strong> 天</span>
+          <span>已花 <strong>NT$${Math.round(p.spend)}</strong></span>
+          <span>ROAS <strong style="color:${color}">${p.roas.toFixed(2)}</strong></span>
+          <span>轉換 <strong>${p.purchases}</strong> 筆</span>
+        </div>
+        <ul class="reasons" style="border-left-color:${color};">
+          ${p.reasons.map(r => `<li style="color:${color}">${escapeHtml(r)}</li>`).join('')}
+        </ul>
+        <div class="saving" style="color:${color}">
+          ${icon} 每日 NT$${p.currentDailyBudget} → <strong>NT$${p.newDailyBudget}</strong>
+          （${isIncrease ? '+' : ''}NT$${p.dailyChange}/日，月影響 ${isIncrease ? '+' : ''}NT$${p.monthlyChange}）
+        </div>
+        <div class="actions">
+          <button class="btn-confirm" data-bg-idx="${i}" style="background:${color}">
+            ✅ 確認 ${actionText} 到 NT$${p.newDailyBudget}
+          </button>
+          <button class="btn-skip" data-bg-skip="${i}">略過</button>
+        </div>
+      </div>
+    `;}).join('');
+
+    window._budgetProposals = data.proposals;
+    document.querySelectorAll('[data-bg-idx]').forEach(b => b.onclick = e => doBudget(Number(e.target.dataset.bgIdx)));
+    document.querySelectorAll('[data-bg-skip]').forEach(b => b.onclick = e => {
+      const idx = Number(e.target.dataset.bgSkip);
+      const p = window._budgetProposals[idx];
+      const card = document.querySelector(`[data-adset="${p.adsetId}"]`);
+      if (card) card.remove();
+      toast(`已略過：${p.adsetName}`);
+    });
+  } catch (err) {
+    status.innerHTML = '❌ 分析失敗：' + escapeHtml(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function doBudget(idx) {
+  const p = window._budgetProposals[idx];
+  if (!p) return;
+  if (!confirm(`${p.action === 'INCREASE' ? '加碼' : '減碼'}：\n${p.adsetName}\n\nNT$${p.currentDailyBudget}/日 → NT$${p.newDailyBudget}/日\n\n確認執行？`)) return;
+  const card = document.querySelector(`[data-adset="${p.adsetId}"]`);
+  const btn = card.querySelector('.btn-confirm');
+  btn.disabled = true;
+  btn.textContent = '⏳ 調整中...';
+  try {
+    const res = await fetch('/api/optimize/execute-budget-change', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        adsetId: p.adsetId,
+        adsetName: p.adsetName,
+        newDailyBudget: p.newDailyBudget,
+        oldDailyBudget: p.currentDailyBudget,
+        action: p.action,
+        reason: p.reasons.join('；'),
+        confirmed: true,
+      }),
+    });
+    const d = await res.json();
+    if (d.ok) {
+      card.classList.add('done');
+      card.querySelector('.actions').innerHTML = `<div style="text-align:center;color:var(--gold);font-size:13px;padding:6px;">✅ 已調整為 NT$${p.newDailyBudget}</div>`;
+      toast(`✅ 已調整：${p.adsetName} → NT$${p.newDailyBudget}/日`);
+      loadLog();
+    } else {
+      throw new Error(d.error || 'unknown');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '✅ 確認執行';
+    toast('❌ 失敗：' + err.message, 5000);
+  }
+}
+
+$('bg-scan-btn').onclick = scanBudget;
 $('scan-btn').onclick = scan;
 loadLog();
 </script>
