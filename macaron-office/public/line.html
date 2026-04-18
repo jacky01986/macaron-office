@@ -141,6 +141,16 @@
     border-radius: 10px; padding: 14px;
   }
   .bc-card .style { font-size: 12px; color: var(--gold); font-weight: 600; margin-bottom: 8px; }
+  .attach-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; padding: 10px; background: rgba(176,141,87,0.05); border-radius: 8px; border: 1px solid rgba(176,141,87,0.15); }
+  .attach-col label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .attach-col .att-inp { width: 100%; padding: 7px 9px; background: #0d0a0b; border: 1px solid #3b2a33; color: var(--text); border-radius: 6px; font-size: 12px; }
+  .attach-inline { display: flex; gap: 6px; align-items: center; }
+  .btn-upload { padding: 7px 12px; background: var(--gold); color: #1a1416; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; white-space: nowrap; font-weight: 600; }
+  .btn-upload:hover:not(:disabled) { background: #c9a470; }
+  .btn-upload:disabled { opacity: 0.6; cursor: default; }
+  .img-preview { margin-top: 4px; }
+  .img-preview img { max-width: 100%; max-height: 120px; border-radius: 6px; border: 1px solid #3b2a33; }
+  @media (max-width: 640px) { .attach-row { grid-template-columns: 1fr; } }
   .bc-card textarea {
     width: 100%; min-height: 110px;
     background: var(--dark-3); border: 1px solid var(--burgundy-dark);
@@ -321,6 +331,23 @@ function selectMessage(id) {
       <div class="draft-section">
         <label>✏️ AI 建議回覆（你可以修改）</label>
         <textarea id="reply-input" placeholder="...">${escapeHtml(m.draft || '')}</textarea>
+        <div class="attach-row">
+          <div class="attach-col">
+            <label>🖼️ 圖片（貼 URL 或上傳，JPG/PNG ≤10MB）</label>
+            <div class="attach-inline">
+              <input type="text" id="reply-img-url" class="att-inp" placeholder="https://...">
+              <button type="button" id="reply-upload-btn" class="btn-upload">📎 上傳</button>
+              <input type="file" id="reply-img-file" accept="image/*" style="display:none">
+            </div>
+            <div id="reply-img-preview" class="img-preview"></div>
+          </div>
+          <div class="attach-col">
+            <label>🔗 連結 URL（可選）</label>
+            <input type="text" id="reply-link-url" class="att-inp" placeholder="https://...">
+            <label style="margin-top:6px">按鈕文字（最多 20 字）</label>
+            <input type="text" id="reply-link-label" class="att-inp" placeholder="查看詳情" maxlength="20">
+          </div>
+        </div>
         <div class="draft-actions">
           <span class="word-count" id="reply-count">${(m.draft || '').length} 字</span>
           <button class="btn-send" id="reply-btn">📤 送出</button>
@@ -333,12 +360,47 @@ function selectMessage(id) {
     const cnt = $('reply-count');
     inp.addEventListener('input', () => cnt.textContent = inp.value.length + ' 字');
     $('reply-btn').onclick = () => doReply(id);
+    $('reply-upload-btn').onclick = () => $('reply-img-file').click();
+    $('reply-img-file').addEventListener('change', async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      const btn = $('reply-upload-btn');
+      btn.disabled = true; btn.textContent = '⏳ 上傳中...';
+      try {
+        const url = await uploadImage(f);
+        $('reply-img-url').value = url;
+        $('reply-img-preview').innerHTML = `<img src="${url}" style="max-height:120px;border-radius:6px;margin-top:4px">`;
+        btn.textContent = '✅ 上傳完成';
+        setTimeout(() => { btn.textContent = '📎 上傳'; btn.disabled = false; }, 2000);
+      } catch (err) {
+        btn.disabled = false; btn.textContent = '📎 上傳';
+        toast('❌ 上傳失敗：' + err.message, 5000);
+      }
+    });
+    $('reply-img-url').addEventListener('input', (e) => {
+      const v = e.target.value.trim();
+      $('reply-img-preview').innerHTML = v ? `<img src="${v}" style="max-height:120px;border-radius:6px;margin-top:4px" onerror="this.style.display=\'none\'">` : '';
+    });
   }
+}
+
+// 上傳圖片 → 回傳公開 URL
+async function uploadImage(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  const r = await fetch('/api/line/upload', { method: 'POST', body: fd });
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.error || '上傳失敗');
+  return d.url;
 }
 
 async function doReply(id) {
   const text = $('reply-input').value.trim();
-  if (!text) { toast('請輸入回覆內容'); return; }
+  const imageUrl = ($('reply-img-url')?.value || '').trim();
+  const linkUrl = ($('reply-link-url')?.value || '').trim();
+  const linkLabel = ($('reply-link-label')?.value || '').trim();
+  if (!text && !imageUrl && !linkUrl) { toast('請輸入回覆內容、圖片或連結'); return; }
+  if (linkUrl && !/^https?:\/\//i.test(linkUrl)) { toast('連結必須以 http:// 或 https:// 開頭'); return; }
+  if (imageUrl && !/^https?:\/\//i.test(imageUrl)) { toast('圖片 URL 必須以 http:// 或 https:// 開頭'); return; }
   const btn = $('reply-btn');
   btn.disabled = true;
   btn.textContent = '⏳ 送出中...';
@@ -346,7 +408,7 @@ async function doReply(id) {
     const r = await fetch('/api/line/reply', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, text, confirmed: true }),
+      body: JSON.stringify({ id, text, imageUrl: imageUrl || undefined, linkUrl: linkUrl || undefined, linkLabel: linkLabel || undefined, confirmed: true }),
     });
     const d = await r.json();
     if (d.ok) {
@@ -382,6 +444,23 @@ async function genBroadcast() {
       <div class="bc-card">
         <div class="style">${escapeHtml(x.style || '版本' + (i+1))}</div>
         <textarea class="bc-txt">${escapeHtml(x.text)}</textarea>
+        <div class="attach-row">
+          <div class="attach-col">
+            <label>🖼️ 圖片</label>
+            <div class="attach-inline">
+              <input type="text" class="bc-img-url att-inp" placeholder="https://...">
+              <button type="button" class="btn-upload bc-upload-btn">📎 上傳</button>
+              <input type="file" accept="image/*" class="bc-img-file" style="display:none">
+            </div>
+            <div class="bc-img-preview img-preview"></div>
+          </div>
+          <div class="attach-col">
+            <label>🔗 連結 URL</label>
+            <input type="text" class="bc-link-url att-inp" placeholder="https://...">
+            <label style="margin-top:6px">按鈕文字</label>
+            <input type="text" class="bc-link-label att-inp" placeholder="查看詳情" maxlength="20">
+          </div>
+        </div>
         <div class="actions">
           <span class="count">${x.text.length} 字</span>
           <button class="btn-broadcast" data-idx="${i}">📣 廣播給全部好友</button>
@@ -394,6 +473,34 @@ async function genBroadcast() {
     document.querySelectorAll('.btn-broadcast').forEach(b => {
       b.onclick = () => doBroadcast(b);
     });
+    document.querySelectorAll('.bc-upload-btn').forEach(b => {
+      b.onclick = () => b.closest('.bc-card').querySelector('.bc-img-file').click();
+    });
+    document.querySelectorAll('.bc-img-file').forEach(fi => {
+      fi.addEventListener('change', async (e) => {
+        const f = e.target.files[0]; if (!f) return;
+        const card = e.target.closest('.bc-card');
+        const btn = card.querySelector('.bc-upload-btn');
+        btn.disabled = true; btn.textContent = '⏳';
+        try {
+          const url = await uploadImage(f);
+          card.querySelector('.bc-img-url').value = url;
+          card.querySelector('.bc-img-preview').innerHTML = `<img src="${url}" style="max-height:120px;border-radius:6px;margin-top:4px">`;
+          btn.textContent = '✅';
+          setTimeout(() => { btn.textContent = '📎 上傳'; btn.disabled = false; }, 2000);
+        } catch (err) {
+          btn.disabled = false; btn.textContent = '📎 上傳';
+          toast('❌ ' + err.message, 5000);
+        }
+      });
+    });
+    document.querySelectorAll('.bc-img-url').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const v = e.target.value.trim();
+        const prev = e.target.closest('.bc-card').querySelector('.bc-img-preview');
+        prev.innerHTML = v ? `<img src="${v}" style="max-height:120px;border-radius:6px;margin-top:4px" onerror="this.style.display=\'none\'">` : '';
+      });
+    });
   } catch (err) {
     $('bc-status').textContent = '❌ ' + err.message;
   } finally {
@@ -404,14 +511,20 @@ async function genBroadcast() {
 async function doBroadcast(btn) {
   const card = btn.closest('.bc-card');
   const text = card.querySelector('.bc-txt').value.trim();
-  if (!text) { toast('內容不能空'); return; }
-  if (!confirm(`確認廣播給全部 LINE 好友？\n\n${text.slice(0, 200)}${text.length > 200 ? '...' : ''}\n\n⚠️ 廣播會計入月額度，發出後無法撤回。`)) return;
+  const imageUrl = (card.querySelector('.bc-img-url')?.value || '').trim();
+  const linkUrl = (card.querySelector('.bc-link-url')?.value || '').trim();
+  const linkLabel = (card.querySelector('.bc-link-label')?.value || '').trim();
+  if (!text && !imageUrl && !linkUrl) { toast('內容、圖片、連結要至少一個'); return; }
+  if (linkUrl && !/^https?:\/\//i.test(linkUrl)) { toast('連結必須是 http/https'); return; }
+  if (imageUrl && !/^https?:\/\//i.test(imageUrl)) { toast('圖片 URL 必須是 http/https'); return; }
+  const summary = text + (imageUrl ? '\n[含圖片]' : '') + (linkUrl ? `\n[含連結按鈕：${linkLabel || '打開連結'}]` : '');
+  if (!confirm(`確認廣播給全部 LINE 好友？\n\n${summary.slice(0, 300)}${summary.length > 300 ? '...' : ''}\n\n⚠️ 廣播會計入月額度，發出後無法撤回。`)) return;
   btn.disabled = true;
   btn.textContent = '⏳ 廣播中...';
   try {
     const r = await fetch('/api/line/broadcast', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, confirmed: true }),
+      body: JSON.stringify({ text, imageUrl: imageUrl || undefined, linkUrl: linkUrl || undefined, linkLabel: linkLabel || undefined, confirmed: true }),
     });
     const d = await r.json();
     if (d.ok) {
