@@ -843,6 +843,18 @@ async function publishIgImagePost({ igUserId = process.env.META_IG_USER_ID, imag
   };
 }
 
+
+// POST /{page-id}/photos — FB 圖文貼文
+async function publishFbPhoto({ pageId = process.env.META_FB_PAGE_ID, imageUrl, message = "", published = true } = {}) {
+  if (!pageId) throw new Error("FB pageId not set");
+  if (!imageUrl) throw new Error("imageUrl required");
+  return await graphPost(`/${pageId}/photos`, {
+    url: imageUrl,
+    caption: message,
+    published: String(published),
+  });
+}
+
 module.exports = {
   tokenOk,
   graphGet,
@@ -866,6 +878,7 @@ module.exports = {
   scanCompetitors,
   DEFAULT_COMPETITORS,
   publishFbPost,
+  publishFbPhoto,
   publishIgImagePost,
   buildLiveDataBlock,
   buildCoachDataBlock,
