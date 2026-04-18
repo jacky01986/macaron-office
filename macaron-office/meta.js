@@ -683,6 +683,122 @@ function proposeBudgetChangesFromAdSets(adsets, rules = {}) {
   return proposals.slice(0, maxProposals);
 }
 
+
+// ─────────────────────── Meta Ad Library (T2 · Phase 1 Feature 5) ───────────────────────
+// 公開資料：任何品牌正在跑的 Meta 廣告（FB/IG）。
+// API 端點：https://graph.facebook.com/v21.0/ads_archive
+// 需要 `ads_archive` 權限。token 開了 ads_management 通常含 ads_archive 唯讀。
+
+async function searchAdsLibrary({ searchTerms, country = "TW", limit = 25, adType = "ALL" } = {}) {
+  if (!tokenOk()) throw new Error("META_ACCESS_TOKEN not set");
+  if (!searchTerms) throw new Error("searchTerms required");
+
+  const fields = [
+    "id",
+    "ad_creation_time",
+    "ad_delivery_start_time",
+    "ad_delivery_stop_time",
+    "ad_creative_bodies",
+    "ad_creative_link_titles",
+    "ad_creative_link_descriptions",
+    "ad_snapshot_url",
+    "page_id",
+    "page_name",
+    "publisher_platforms",
+    "languages",
+    "impressions",
+    "spend",
+    "currency",
+  ].join(",");
+
+  const params = new URLSearchParams({
+    search_terms: searchTerms,
+    ad_reached_countries: `["${country}"]`,
+    ad_type: adType,
+    fields,
+    limit: String(limit),
+    access_token: process.env.META_ACCESS_TOKEN,
+  });
+  const url = `${GRAPH}/ads_archive?${params.toString()}`;
+  const res = await fetch(url);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.error) {
+    const err = new Error(`Ad Library error: ${body.error?.message || `HTTP ${res.status}`}`);
+    err.status = res.status;
+    err.graphError = body.error;
+    throw err;
+  }
+
+  const ads = (body.data || []).map(a => ({
+    id: a.id,
+    pageId: a.page_id,
+    pageName: a.page_name,
+    creativeBody: (a.ad_creative_bodies || [])[0] || null,
+    linkTitle: (a.ad_creative_link_titles || [])[0] || null,
+    linkDesc: (a.ad_creative_link_descriptions || [])[0] || null,
+    snapshotUrl: a.ad_snapshot_url,
+    startTime: a.ad_delivery_start_time,
+    stopTime: a.ad_delivery_stop_time || null,
+    platforms: a.publisher_platforms || [],
+    languages: a.languages || [],
+    impressions: a.impressions || null,
+    spend: a.spend || null,
+    currency: a.currency || null,
+  }));
+
+  return {
+    searchTerms,
+    country,
+    adType,
+    count: ads.length,
+    ads,
+    publicLibraryUrl: `https://www.facebook.com/ads/library/?ad_type=all&country=${country}&q=${encodeURIComponent(searchTerms)}`,
+  };
+}
+
+// 內建競品名單（MACARON DE LUXE / 溫點適用）
+const DEFAULT_COMPETITORS = [
+  { name: "法朋", slug: "lefait", category: "高端" },
+  { name: "Ladurée", slug: "laduree", category: "國際精品" },
+  { name: "Pierre Hermé", slug: "pierre-herme", category: "國際精品" },
+  { name: "亞尼克", slug: "yannick", category: "中階" },
+  { name: "鐵塔牌", slug: "eiffel-tower", category: "中階" },
+];
+
+async function scanCompetitors({ competitors = null, country = "TW", limit = 10 } = {}) {
+  const list = competitors || DEFAULT_COMPETITORS;
+  const results = [];
+  for (const c of list) {
+    try {
+      const r = await searchAdsLibrary({ searchTerms: c.name, country, limit });
+      results.push({
+        competitor: c.name,
+        category: c.category,
+        adCount: r.count,
+        ads: r.ads,
+        publicLibraryUrl: r.publicLibraryUrl,
+        success: true,
+      });
+    } catch (err) {
+      results.push({
+        competitor: c.name,
+        category: c.category,
+        adCount: 0,
+        ads: [],
+        publicLibraryUrl: `https://www.facebook.com/ads/library/?ad_type=all&country=${country}&q=${encodeURIComponent(c.name)}`,
+        success: false,
+        error: String(err.message || err),
+      });
+    }
+  }
+  return {
+    country,
+    scannedAt: new Date().toISOString(),
+    competitors: results,
+    totalAds: results.reduce((sum, r) => sum + r.adCount, 0),
+  };
+}
+
 module.exports = {
   tokenOk,
   graphGet,
@@ -702,6 +818,9 @@ module.exports = {
   pauseCampaign, resumeCampaign,
   proposePausesFromAds,
   proposeBudgetChangesFromAdSets,
+  searchAdsLibrary,
+  scanCompetitors,
+  DEFAULT_COMPETITORS,
   buildLiveDataBlock,
   buildCoachDataBlock,
 };
