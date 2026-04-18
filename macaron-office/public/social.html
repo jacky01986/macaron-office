@@ -217,7 +217,12 @@ async function loadDrafts() {
               <textarea class="cap-input">${escapeHtml(d.caption)}</textarea>
               <div class="actions">
                 <span class="word-count">${d.caption.length} 字</span>
-                ${p.platform === 'IG' ? `<input class="pub-link" type="url" placeholder="圖片 URL（必填）">` : `<input class="pub-link" type="url" placeholder="附帶連結（選填）">`}
+                ${p.platform === 'IG'
+                  ? `<input class="pub-link" type="url" placeholder="圖片 URL（必填）">`
+                  : `<div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0;">
+                       <input class="pub-image" type="url" placeholder="圖片 URL（選填，有圖會變成圖文貼文）" style="flex:1;min-width:140px;padding:6px 8px;background:var(--dark-2);border:1px solid var(--burgundy-dark);color:var(--ivory);border-radius:4px;font-size:12px;font-family:inherit;">
+                       <input class="pub-link" type="url" placeholder="附帶連結（選填）" style="flex:1;min-width:140px;padding:6px 8px;background:var(--dark-2);border:1px solid var(--burgundy-dark);color:var(--ivory);border-radius:4px;font-size:12px;font-family:inherit;">
+                     </div>`}
                 ${p.status === 'published' && p.publishedIndex === d.index ? '<span style="color:var(--green);font-size:12px;">✅ 此版已發布</span>' : `
                   <button class="pub-btn" data-pack="${escapeHtml(p.id)}" data-idx="${d.index}" data-platform="${escapeHtml(p.platform)}">📤 發布</button>
                 `}
@@ -263,8 +268,15 @@ async function publish(btn) {
   btn.textContent = '⏳ 發布中...';
   try {
     const body = { draftId: packId, index: idx, caption, platform, confirmed: true };
-    if (platform === 'IG') body.imageUrl = link;
-    else if (link) body.link = link;
+    if (platform === 'IG') {
+      body.imageUrl = link;
+    } else {
+      // FB: 圖片 URL 和 連結 欄位分開
+      const imgInput = card.querySelector('.pub-image');
+      const imageUrl = imgInput ? imgInput.value.trim() : '';
+      if (imageUrl) body.imageUrl = imageUrl;
+      if (link) body.link = link;
+    }
     
     const res = await fetch('/api/social/publish', {
       method: 'POST',
