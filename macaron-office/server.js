@@ -235,6 +235,76 @@ app.get("/api/optimize/actions", (req, res) => {
 });
 
 
+// GET /api/optimize/propose-budget-changes?preset=last_7d&high=2.5&low=1.5&inc=20&dec=30&maxBudget=500
+app.get("/api/optimize/propose-budget-changes", async (req, res) => {
+  try {
+    const preset = req.query.preset || "last_7d";
+    const adsets = await meta.getAdSetsWithInsights({ datePreset: preset, limit: 100 });
+    const rules = {
+      minAgeDays: Number(req.query.minAgeDays) || 3,
+      minSpend: Number(req.query.minSpend) || 1000,
+      roasHighThreshold: Number(req.query.high) || 2.5,
+      roasLowThreshold: Number(req.query.low) || 1.5,
+      increasePercent: Number(req.query.inc) || 20,
+      decreasePercent: Number(req.query.dec) || 30,
+      maxDailyBudget: Number(req.query.maxBudget) || 500,
+      minDailyBudget: Number(req.query.minBudget) || 100,
+      maxProposals: Number(req.query.max) || 10,
+    };
+    const proposals = meta.proposeBudgetChangesFromAdSets(adsets, rules);
+    res.json({
+      preset,
+      rules,
+      totalAdSetsScanned: adsets.length,
+      proposalCount: proposals.length,
+      proposals,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("[propose-budget-changes]", err);
+    res.status(500).json({ error: String(err.message || err), graphError: err.graphError || null });
+  }
+});
+
+// POST /api/optimize/execute-budget-change
+// body: { adsetId, adsetName, newDailyBudget, oldDailyBudget, action, reason, confirmed:true }
+app.post("/api/optimize/execute-budget-change", async (req, res) => {
+  const { adsetId, adsetName, newDailyBudget, oldDailyBudget, action, reason, confirmed } = req.body || {};
+  if (!adsetId) return res.status(400).json({ error: "adsetId required" });
+  if (!Number.isFinite(newDailyBudget) || newDailyBudget < 100) return res.status(400).json({ error: "newDailyBudget must be >= 100" });
+  if (confirmed !== true) return res.status(400).json({ error: "must include confirmed:true" });
+
+  try {
+    const result = await meta.updateAdSetBudget(adsetId, newDailyBudget);
+    appendAction({
+      type: "update-adset-budget",
+      adsetId,
+      adsetName: adsetName || null,
+      oldDailyBudget: oldDailyBudget ?? null,
+      newDailyBudget,
+      action: action || null,
+      reason: reason || null,
+      success: true,
+      result,
+    });
+    res.json({ ok: true, adsetId, newDailyBudget, result });
+  } catch (err) {
+    appendAction({
+      type: "update-adset-budget",
+      adsetId,
+      adsetName: adsetName || null,
+      oldDailyBudget: oldDailyBudget ?? null,
+      newDailyBudget,
+      action: action || null,
+      reason: reason || null,
+      success: false,
+      error: String(err.message || err),
+    });
+    res.status(500).json({ error: String(err.message || err), graphError: err.graphError || null });
+  }
+});
+
+
 // ============================================================
 // /api/chat — single employee streaming
 // ============================================================
