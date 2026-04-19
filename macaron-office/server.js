@@ -18,6 +18,7 @@ const Anthropic = require("@anthropic-ai/sdk").default;
 const { EMPLOYEES } = require("./employees");
 const meta = require("./meta");
 const line = require("./line");
+const google = require("./google");
 const multer = require("multer");
 
 // Employees that benefit from Meta live data in their prompt
@@ -26,15 +27,20 @@ const META_AWARE_EMPLOYEES = new Set(["victor", "leon", "camille", "aria", "dex"
 async function maybeAugmentSystemPrompt(emp) {
   if (!META_AWARE_EMPLOYEES.has(emp.id) || !meta.tokenOk()) return emp.systemPrompt;
   try {
-    const block = await meta.buildCoachDataBlock();
-    if (!block) return emp.systemPrompt;
-    return (
-      emp.systemPrompt +
-      "\n\n---\n[📡 COACHING DATA · Meta 即時數據快照]\n" +
-      "以下是從 Meta Graph API 即時抓取的真實數據，請在教練建議與分析時優先引用這些數字，不要編造：\n\n" +
-      block +
-      "\n\n引用這些數據時，請在結論中標註「(資料來源：Meta Graph API)」。"
-    );
+    const metaBlock = await meta.buildCoachDataBlock();
+    const googleBlock = google.tokenOk() ? await google.buildCoachDataBlock() : null;
+    if (!metaBlock && !googleBlock) return emp.systemPrompt;
+    let extra = "";
+    if (metaBlock) {
+      extra += "\n\n---\n[📡 COACHING DATA · Meta 即時數據快照]\n" +
+        "以下是從 Meta Graph API 即時抓取的真實數據，請在教練建議與分析時優先引用這些數字：\n\n" +
+        metaBlock + "\n\n(資料來源：Meta Graph API)";
+    }
+    if (googleBlock) {
+      extra += "\n\n---\n[📊 COACHING DATA · Google Ads 即時數據快照]\n" +
+        googleBlock + "\n\n(資料來源：Google Ads API)";
+    }
+    return emp.systemPrompt + extra;
   } catch (e) {
     console.warn(`[meta coaching-data] ${emp.id}:`, e.message);
     return emp.systemPrompt;
@@ -109,6 +115,7 @@ app.get('/', (req, res, next) => {
       <a href="/optimize.html" style="color:#B08D57;text-decoration:none;padding:6px 12px;background:rgba(176,141,87,0.08);border-radius:6px;font-size:12px;letter-spacing:1px;border:1px solid rgba(176,141,87,0.3);">⚡ 廣告體檢</a>
       <a href="/competitor.html" style="color:#B08D57;text-decoration:none;padding:6px 12px;background:rgba(176,141,87,0.08);border-radius:6px;font-size:12px;letter-spacing:1px;border:1px solid rgba(176,141,87,0.3);">📡 競品追蹤</a>
       <a href="/social.html" style="color:#B08D57;text-decoration:none;padding:6px 12px;background:rgba(176,141,87,0.08);border-radius:6px;font-size:12px;letter-spacing:1px;border:1px solid rgba(176,141,87,0.3);">📱 FB/IG</a>
+      <a href="/google.html" style="color:#4285F4;text-decoration:none;padding:6px 12px;background:rgba(66,133,244,0.08);border-radius:6px;font-size:12px;letter-spacing:1px;border:1px solid rgba(66,133,244,0.3);">📊 Google Ads</a>
       <a href="/line.html" style="color:#06C755;text-decoration:none;padding:6px 12px;background:rgba(6,199,85,0.08);border-radius:6px;font-size:12px;letter-spacing:1px;border:1px solid rgba(6,199,85,0.3);">💬 LINE</a>
     </div>`;
     const injected = html.replace('</body>', navHtml + '</body>');
@@ -1034,6 +1041,108 @@ app.post("/api/line/broadcast", async (req, res) => {
     res.json({ ok: true, result });
   } catch (err) {
     appendAction({ type: "line-broadcast", messagePreview: (text || "").slice(0, 80), success: false, error: String(err.message || err) });
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+// ============================================================
+// /api/google/* — Google Ads 報表 (T5, read-only)
+// ============================================================
+
+app.get("/api/google/status", (req, res) => {
+  res.json(google.status());
+});
+
+app.get("/api/google/summary", async (req, res) => {
+  try {
+    const dateRange = (req.query.preset || "LAST_7_DAYS").toUpperCase();
+    const data = await google.getAccountSummary({ dateRange });
+    res.json({ ok: true, summary: data, dateRange });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+app.get("/api/google/campaigns", async (req, res) => {
+  try {
+    const dateRange = (req.query.preset || "LAST_7_DAYS").toUpperCase();
+    const campaigns = await google.getCampaigns({ dateRange });
+    res.json({ ok: true, campaigns, dateRange });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+app.get("/api/google/adgroups", async (req, res) => {
+  try {
+    const dateRange = (req.query.preset || "LAST_7_DAYS").toUpperCase();
+    const adGroups = await google.getAdGroups({ dateRange, campaignId: req.query.campaignId });
+    res.json({ ok: true, adGroups, dateRange });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+app.get("/api/google/keywords", async (req, res) => {
+  try {
+    const dateRange = (req.query.preset || "LAST_7_DAYS").toUpperCase();
+    const keywords = await google.getKeywords({ dateRange });
+    res.json({ ok: true, keywords, dateRange });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+app.get("/api/google/search-terms", async (req, res) => {
+  try {
+    const dateRange = (req.query.preset || "LAST_7_DAYS").toUpperCase();
+    const terms = await google.getSearchTerms({ dateRange });
+    res.json({ ok: true, terms, dateRange });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+app.get("/api/google/ads", async (req, res) => {
+  try {
+    const dateRange = (req.query.preset || "LAST_7_DAYS").toUpperCase();
+    const ads = await google.getAds({ dateRange });
+    res.json({ ok: true, ads, dateRange });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+app.post("/api/google/analyze", async (req, res) => {
+  if (!anthropic) return res.status(500).json({ error: "ANTHROPIC_API_KEY not set" });
+  if (!google.tokenOk()) return res.status(500).json({ error: "Google Ads 未設定" });
+  const { scope = "campaigns", dateRange = "LAST_7_DAYS", extraContext = "" } = req.body || {};
+  try {
+    let dataBlock = "";
+    if (scope === "campaigns") {
+      const campaigns = await google.getCampaigns({ dateRange });
+      dataBlock = campaigns.slice(0, 30).map(c => `${c.name} (${c.status}) · 花費 NT$${Math.round(c.cost)} · 點擊 ${c.clicks} · 轉換 ${c.conversions.toFixed(1)} · ROAS ${c.roas.toFixed(2)}`).join("\n");
+    } else if (scope === "keywords") {
+      const kws = await google.getKeywords({ dateRange });
+      dataBlock = kws.slice(0, 40).map(k => `[${k.matchType}] ${k.keyword} · ${k.campaignName}>${k.adGroupName} · 點擊${k.clicks} 花費NT$${Math.round(k.cost)} 轉換${k.conversions.toFixed(1)} ROAS${k.roas.toFixed(2)}`).join("\n");
+    } else if (scope === "search-terms") {
+      const terms = await google.getSearchTerms({ dateRange });
+      dataBlock = terms.slice(0, 40).map(t => `"${t.term}" · ${t.campaignName}>${t.adGroupName} · 點擊${t.clicks} 花費NT$${Math.round(t.cost)} 轉換${t.conversions.toFixed(1)} ROAS${t.roas.toFixed(2)}`).join("\n");
+    }
+    if (!dataBlock) return res.json({ ok: true, analysis: "目前沒有任何資料可以分析（帳戶可能還沒開始投放）。" });
+
+    const emp = EMPLOYEES["leon"] || EMPLOYEES["victor"];
+    const systemPrompt = (emp?.systemPrompt || "你是數位廣告操盤手。") + "\n\n本次任務：分析以下 Google Ads " + scope + " 資料，用繁中回覆，給 3-5 點具體優化建議。每點標註優先順序（高/中/低）。";
+    const userPrompt = `資料區間：${dateRange}\n\n資料：\n${dataBlock}\n\n${extraContext ? "額外情境：" + extraContext + "\n\n" : ""}請給優化建議。`;
+    const msg = await anthropic.messages.create({
+      model: DIRECTOR_MODEL,
+      max_tokens: 2048,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+    const analysis = (msg.content || []).map(c => c.text || "").join("\n");
+    res.json({ ok: true, analysis, scope, dateRange });
+  } catch (err) {
     res.status(500).json({ error: String(err.message || err) });
   }
 });
