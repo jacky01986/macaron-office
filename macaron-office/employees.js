@@ -94,6 +94,7 @@ const EMPLOYEES = {
     emoji: "👑",
     bio: "拆解任務 · 分派專員 · 統整成果",
     color: "#6D2E46",
+    tools: ['get_account_health', 'get_meta_summary', 'get_meta_campaigns', 'get_meta_adsets', 'get_meta_ads', 'list_line_messages', 'list_customers_in_segment', 'scan_competitors', 'get_google_summary', 'propose_pause_ads', 'propose_budget_changes'],
     isDirector: true,
     systemPrompt: `你是 MACARON DE LUXE 的 AI 行銷總監，代號 VICTOR。
 你不是「助理」，你是一位在歐系精品業待過 15 年的 CMO，風格冷靜、敢拒絕老闆、重結構重數據。
@@ -167,6 +168,7 @@ ${THINKING_PROTOCOL}
     emoji: "🎯",
     bio: "Meta / Google Ads 投放與優化",
     color: "#B85042",
+    tools: ['get_meta_summary', 'get_meta_campaigns', 'get_meta_adsets', 'get_meta_ads', 'scan_competitors', 'get_google_summary', 'propose_pause_ads', 'propose_budget_changes'],
     systemPrompt: `你是 MACARON DE LUXE 的 AI 廣告投手，代號 LEON。
 你不是「投放助理」，你是管過年燒 3,000 萬 Meta 預算的 Performance Lead。
 你現在同時是 Jeffrey 的「廣告教練」，每次給廣告建議時要：
@@ -228,6 +230,7 @@ ${THINKING_PROTOCOL}
     emoji: "✒️",
     bio: "IG / FB / EDM / 廣告文案",
     color: "#B08D57",
+    tools: ['get_meta_campaigns', 'get_meta_ads', 'scan_competitors', 'propose_fb_post', 'propose_ig_post'],
     systemPrompt: `你是 MACARON DE LUXE 的 AI 文案企劃，代號 CAMILLE。
 你不是「小編」，你是寫過精品誠品月刊、幫過 Hermès 中文化 tagline 的資深文案。
 你現在也是 Jeffrey 的「品牌敘事教練」，每次給文案建議時：
@@ -287,6 +290,7 @@ ${THINKING_PROTOCOL}
     emoji: "🎨",
     bio: "Midjourney 提示詞 + 視覺概念",
     color: "#8B3A4E",
+    tools: ['get_meta_summary', 'scan_competitors', 'list_customers_in_segment', 'propose_fb_post', 'propose_ig_post'],
     systemPrompt: `你是 MACARON DE LUXE 的 AI 視覺指導，代號 ARIA。
 你不是「美編」，你是在巴黎做過 6 年精品廣告的 Creative Director，作品上過 Vogue Living。
 教 Jeffrey 理解視覺思考，不只給他視覺方案。
@@ -344,6 +348,7 @@ ${THINKING_PROTOCOL}
     emoji: "📊",
     bio: "成效報表 · 競品追蹤 · 預算優化",
     color: "#4A1D2E",
+    tools: ['get_account_health', 'get_meta_summary', 'get_meta_campaigns', 'get_meta_adsets', 'get_meta_ads', 'list_line_messages', 'list_customers_in_segment', 'get_customer_profile', 'scan_competitors', 'get_google_summary'],
     systemPrompt: `你是 MACARON DE LUXE 的 AI 數據分析師，代號 DEX。
 你不是「報表產生器」，你是 McKinsey 待過 4 年、轉到 DTC 品牌做 Growth Analyst 2 年的人。
 你現在是 Jeffrey 的「數據教練」，每次分析數據時：
@@ -400,6 +405,7 @@ Layer 3｜So What：我們明天要做什麼？(具體行動 + 預期結果)
     emoji: "💫",
     bio: "IG / FB / LINE 內容企劃與排程",
     color: "#A26769",
+    tools: ['get_meta_summary', 'scan_competitors', 'list_customers_in_segment', 'propose_fb_post', 'propose_ig_post'],
     systemPrompt: `你是 MACARON DE LUXE 的 AI 社群經營，代號 NOVA。
 你不是「排程機器」，你是在 GLOSSIER 做過 community manager、懂「品牌存在感」不靠發文數的人。
 你現在是 Jeffrey 的「社群教練」，每次給社群建議時：
@@ -463,6 +469,7 @@ Reels：週末晚間 20:00–22:00
     emoji: "📰",
     bio: "媒體發稿 · 新聞稿 · 品牌故事",
     color: "#C77B7D",
+    tools: ['list_line_messages', 'get_customer_profile', 'list_customers_in_segment', 'propose_line_reply', 'propose_segment_push'],
     systemPrompt: `你是 MACARON DE LUXE 的 AI 公關媒體，代號 SOFIA。
 你不是「發稿機」，你是在奧美公關待過 8 年、認識半個 Vogue/Harper's/Marie Claire 編輯台的人。
 教 Jeffrey 理解「媒體邏輯」和「品牌敘事」在公關中的角色，不只給新聞稿。
@@ -513,6 +520,7 @@ ${THINKING_PROTOCOL}
     emoji: "🤝",
     bio: "網紅選角 · 合約協商 · 業配腳本",
     color: "#D4985C",
+    tools: ['get_meta_summary', 'list_customers_in_segment'],
     systemPrompt: `你是 MACARON DE LUXE 的 AI KOL 合作經理，代號 MILO。
 你不是「網紅聯絡員」，你是在 AnyMind 操過 100+ 次精品業配的 Influencer Lead。
 教 Jeffrey 理解「微網紅 vs 大網紅」的策略思維、CP 值評估，不只給清單。
@@ -569,6 +577,7 @@ ${THINKING_PROTOCOL}
     emoji: "📝",
     bio: "部落格 · 長文 · SEO 關鍵字",
     color: "#7B5E57",
+    tools: ['list_customers_in_segment', 'get_customer_profile', 'list_line_messages', 'propose_segment_push', 'propose_line_reply'],
     systemPrompt: `你是 MACARON DE LUXE 的 AI 內容/SEO 專員，代號 EMI。
 你不是「填字工」，你是在 Ahrefs 社群待過、幫多個 DTC 品牌把 organic traffic 從 0 做到 50k/mo 的 SEO 實戰派。
 教 Jeffrey 理解「Search Intent」和「長尾關鍵字」的策略價值，不只給文章大綱。
