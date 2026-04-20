@@ -20,6 +20,11 @@ const meta = require("./meta");
 const line = require("./line");
 const google = require("./google");
 const customers = require("./customers");
+const toolDefs = require("./tools");
+
+// In-memory proposal storage (保留在記憶體就好，重啟失效 OK)
+const PROPOSALS = new Map();
+setInterval(() => { const now = Date.now(); for (const [k, v] of PROPOSALS) if (now - v.createdAt > 30 * 60 * 1000) PROPOSALS.delete(k); }, 5 * 60 * 1000);
 const multer = require("multer");
 
 // Employees that benefit from Meta live data in their prompt
@@ -574,46 +579,252 @@ app.post("/api/social/publish", async (req, res) => {
 
 
 // ============================================================
-// /api/chat — single employee streaming
+// /api/meta/token/* — Token 管理 (T10)
 // ============================================================
-app.post("/api/chat", async (req, res) => {
+
+app.get("/api/meta/token/status", async (req, res) => {
+  try {
+    const status = await meta.getTokenStatus();
+    res.json({ ok: true, ...status });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+app.post("/api/meta/token/refresh", async (req, res) => {
+  try {
+    const result = await meta.refreshUserToken();
+    // 更新記憶體中的 env (下次 API 呼叫就會用新 token)
+    process.env.META_ACCESS_TOKEN = result.token;
+    appendAction({ type: "meta-token-refresh", expiresAt: result.expiresAt });
+    res.json({ ok: true, expiresAt: result.expiresAt, expiresIn: result.expiresIn, note: "新 token 已更新到記憶體。要永久保存請手動複製到 Render env vars 的 META_ACCESS_TOKEN。" });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+app.get("/api/meta/token/pages", async (req, res) => {
+  try {
+    const pages = await meta.getLongLivedPageToken();
+    // 不直接回傳 token 明碼（安全起見）
+    const masked = pages.map(p => ({ id: p.id, name: p.name, tokenPreview: p.pageToken.slice(0, 20) + "...", tokenFull: p.pageToken }));
+    res.json({ ok: true, pages: masked });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+// Lazy refresh：伺服器啟動後每 24 小時檢查一次，若 token 剩不到 10 天自動刷新
+(async () => {
+  const checkAndRefresh = async () => {
+    try {
+      if (!process.env.META_APP_ID || !process.env.META_APP_SECRET) return;
+      const status = await meta.getTokenStatus();
+      if (status.needRefresh && status.daysLeft > 0) {
+        const r = await meta.refreshUserToken();
+        process.env.META_ACCESS_TOKEN = r.token;
+        console.log(`[meta-token] auto-refreshed. expires ${r.expiresAt}`);
+        appendAction({ type: "meta-token-auto-refresh", expiresAt: r.expiresAt });
+      }
+    } catch (e) {
+      console.warn("[meta-token] auto-refresh error:", e.message);
+    }
+  };
+  // 啟動後 30 秒先檢查一次，之後每 24 小時
+  setTimeout(checkAndRefresh, 30 * 1000);
+  setInterval(checkAndRefresh, 24 * 3600 * 1000);
+})();
+
+// ============================================================
+// Tool executor — 跑 READ tool 動作
+// ============================================================
+async function executeReadTool(name, input) {
+  switch (name) {
+    case "get_meta_summary": {
+      const preset = input.datePreset || "last_7d";
+      return await meta.getAdsInsights({ datePreset: preset });
+    }
+    case "get_meta_campaigns": {
+      const limit = input.limit || 25;
+      return await meta.getAdCampaigns({ limit });
+    }
+    case "get_meta_ads": {
+      const preset = input.datePreset || "last_7d";
+      const limit = input.limit || 50;
+      return (await meta.getAdsWithInsights({ datePreset: preset, limit })).slice(0, limit);
+    }
+    case "get_meta_adsets": {
+      const preset = input.datePreset || "last_7d";
+      return (await meta.getAdSetsWithInsights({ datePreset: preset, limit: 50 })).slice(0, 50);
+    }
+    case "scan_competitors": {
+      const country = "TW";
+      if (input.brand) return await meta.searchAdsLibrary({ searchTerms: input.brand, country, limit: 20 });
+      return await meta.scanCompetitors({ country, limit: 10 });
+    }
+    case "list_line_messages": {
+      const all = (function loadLm() { try { return JSON.parse(fs.readFileSync(path.join(DATA_DIR, "line-messages.json"), "utf8")); } catch(e) { return []; }})();
+      const filtered = input.onlyPending ? all.filter(m => !m.replied) : all;
+      return filtered.slice(0, input.limit || 30).map(m => ({ id: m.id, userName: m.userName, text: m.text, intent: m.intent, replied: m.replied, timestamp: m.timestamp }));
+    }
+    case "get_customer_profile": {
+      const msgs = customers.loadMessages(DATA_DIR);
+      const profs = customers.loadCustomerProfiles(DATA_DIR);
+      const list = customers.aggregateCustomers(msgs, profs);
+      const c = list.find(x => x.userId === input.userId);
+      if (!c) return { error: "customer not found" };
+      return { ...c, messages: c.messages.slice(0, 10) };
+    }
+    case "list_customers_in_segment": {
+      const msgs = customers.loadMessages(DATA_DIR);
+      const profs = customers.loadCustomerProfiles(DATA_DIR);
+      const list = customers.aggregateCustomers(msgs, profs);
+      const groups = customers.groupBySegment(list);
+      return (groups[input.segment] || []).map(c => ({ userId: c.userId, userName: c.userName, frequency: c.frequency, recencyDays: c.recencyDays, monetary: c.monetary, tags: c.tags }));
+    }
+    case "get_google_summary": {
+      if (!google.tokenOk()) return { error: "Google Ads 未設定" };
+      return await google.getAccountSummary({ dateRange: input.dateRange || "LAST_7_DAYS" });
+    }
+    case "get_account_health": {
+      const out = { timestamp: new Date().toISOString() };
+      try { out.meta = await meta.getAdsInsights({ datePreset: "last_7d" }); } catch(e) { out.meta = { error: e.message }; }
+      try {
+        const msgs = customers.loadMessages(DATA_DIR);
+        const list = customers.aggregateCustomers(msgs, customers.loadCustomerProfiles(DATA_DIR));
+        const pending = (function() { try { return JSON.parse(fs.readFileSync(path.join(DATA_DIR, "line-messages.json"), "utf8")).filter(m => !m.replied).length; } catch(e){ return 0; }})();
+        const groups = customers.groupBySegment(list);
+        out.line = { totalCustomers: list.length, pending, vip: groups.vip.length, active: groups.active.length, new: groups.new.length, atrisk: groups.atrisk.length };
+      } catch(e) { out.line = { error: e.message }; }
+      try {
+        if (google.tokenOk()) out.google = await google.getAccountSummary({ dateRange: "LAST_7_DAYS" });
+        else out.google = { notConfigured: true };
+      } catch(e) { out.google = { error: e.message }; }
+      return out;
+    }
+    default:
+      return { error: "unknown tool: " + name };
+  }
+}
+
+// ============================================================
+// /api/chat-agent — 支援 tool use loop，員工可以用工具
+// ============================================================
+const chatAgentHandler = async (req, res) => {
   const { employeeId, messages } = req.body || {};
   const emp = EMPLOYEES[employeeId];
   if (!emp) return res.status(400).json({ error: "Unknown employee" });
-  if (!Array.isArray(messages) || messages.length === 0)
-    return res.status(400).json({ error: "messages required" });
+  if (!Array.isArray(messages) || messages.length === 0) return res.status(400).json({ error: "messages required" });
+  if (!anthropic) return res.status(500).json({ error: "ANTHROPIC_API_KEY not set" });
 
   const send = setupSSE(res);
+  try {
+    const system = await maybeAugmentSystemPrompt(emp);
+    const tools = toolDefs.asAnthropicTools(emp.tools || []);
+    let msgs = messages.map(m => ({ role: m.role === "ai" ? "assistant" : m.role, content: typeof m.content === "string" ? m.content : JSON.stringify(m.content) }));
 
+    send("status", { text: `📥 ${emp.name} 收到任務，可用工具 ${tools.length} 個` });
+
+    let safety = 0;
+    while (safety++ < 8) {
+      const resp = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 3072,
+        system,
+        tools,
+        messages: msgs,
+      });
+
+      const textBlocks = resp.content.filter(b => b.type === "text");
+      const toolUses = resp.content.filter(b => b.type === "tool_use");
+
+      // Stream text blocks
+      for (const tb of textBlocks) send("delta", { text: tb.text });
+
+      if (toolUses.length === 0 || resp.stop_reason !== "tool_use") {
+        send("done", { ok: true, turns: safety });
+        return res.end();
+      }
+
+      // Process tool uses
+      msgs.push({ role: "assistant", content: resp.content });
+      const toolResults = [];
+      for (const tu of toolUses) {
+        if (toolDefs.isWriteTool(tu.name)) {
+          // WRITE：存 proposal、通知前端、暫停對話
+          const proposalId = "p_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+          PROPOSALS.set(proposalId, {
+            id: proposalId,
+            employeeId,
+            toolName: tu.name,
+            toolInput: tu.input,
+            messages: msgs,
+            systemPrompt: system,
+            tools,
+            toolUseId: tu.id,
+            createdAt: Date.now(),
+          });
+          send("proposal", {
+            id: proposalId,
+            tool: tu.name,
+            description: toolDefs.TOOL_DEFINITIONS[tu.name].description,
+            input: tu.input,
+          });
+          send("delta", { text: `\n\n⚠️ **想執行：${toolDefs.TOOL_DEFINITIONS[tu.name].description}**\n\n\`\`\`json\n${JSON.stringify(tu.input, null, 2)}\n\`\`\`\n\nProposal ID: \`${proposalId}\`\n\n半自動模式：請檢查上方提案，然後 POST /api/proposals/${proposalId}/execute 確認執行。` });
+          send("done", { ok: true, pending_proposal: true });
+          return res.end();
+        }
+        // READ tool - execute
+        send("tool_call", { tool: tu.name, input: tu.input });
+          send("delta", { text: `\n🔍 [使用工具 ${tu.name}]` });
+        try {
+          const result = await executeReadTool(tu.name, tu.input || {});
+          send("tool_result", { tool: tu.name, ok: true });
+          toolResults.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(result).slice(0, 8000) });
+        } catch (e) {
+          send("tool_result", { tool: tu.name, ok: false, error: String(e.message || e) });
+          toolResults.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify({ error: String(e.message || e) }) });
+        }
+      }
+      msgs.push({ role: "user", content: toolResults });
+    }
+    send("error", { message: "tool loop exceeded 8 turns" });
+    res.end();
+  } catch (err) {
+    console.error("[/api/chat-agent]", err);
+    send("error", { message: String(err.message || err) });
+    res.end();
+  }
+};
+
+app.post("/api/chat-agent", chatAgentHandler);
+
+// /api/chat — 若員工有 tools，自動走 agent 流程
+const _originalChatHandler = async (req, res) => {
+  const { employeeId, messages } = req.body || {};
+  const emp = EMPLOYEES[employeeId];
+  if (emp?.tools?.length > 0) return chatAgentHandler(req, res);
+  if (!emp) return res.status(400).json({ error: "Unknown employee" });
+  if (!Array.isArray(messages) || messages.length === 0) return res.status(400).json({ error: "messages required" });
+  const send = setupSSE(res);
   if (!anthropic) {
     send("status", { text: "🟡 Demo 模式（未設定 API Key）" });
     send("delta", { text: `<div class="tldr">⚡ Demo 模式</div><p>請設定 ANTHROPIC_API_KEY 後重新部署</p>` });
     send("done", { ok: true });
     return res.end();
   }
-
   try {
     send("status", { text: `📥 ${emp.name} 收到任務` });
     const liveSystem = await maybeAugmentSystemPrompt(emp);
-    if (liveSystem !== emp.systemPrompt) send("status", { text: `📡 已接入 Meta 即時數據` });
     const stream = await anthropic.messages.stream({
       model: MODEL,
       max_tokens: 3072,
       system: liveSystem,
-      messages: messages.map(m => ({
-        role: m.role === "ai" ? "assistant" : m.role,
-        content: typeof m.content === "string" ? m.content : String(m.content),
-      })),
+      messages: messages.map(m => ({ role: m.role === "ai" ? "assistant" : m.role, content: typeof m.content === "string" ? m.content : String(m.content) })),
     });
     let full = "";
-    stream.on("text", (delta) => {
-      full += delta;
-      send("delta", { text: delta });
-    });
-    stream.on("error", (err) => {
-      send("error", { message: String(err.message || err) });
-      res.end();
-    });
+    stream.on("text", (delta) => { full += delta; send("delta", { text: delta }); });
+    stream.on("error", (err) => { send("error", { message: String(err.message || err) }); res.end(); });
     await stream.finalMessage();
     send("done", { ok: true, length: full.length });
     res.end();
@@ -622,8 +833,92 @@ app.post("/api/chat", async (req, res) => {
     send("error", { message: String(err.message || err) });
     res.end();
   }
+};
+
+// ============================================================
+// /api/proposals/:id/execute — 使用者確認後真正執行 write 動作
+// ============================================================
+app.post("/api/proposals/:id/execute", async (req, res) => {
+  const p = PROPOSALS.get(req.params.id);
+  if (!p) return res.status(404).json({ error: "proposal not found or expired" });
+  const { override } = req.body || {};
+  const input = override || p.toolInput;
+
+  try {
+    let result;
+    switch (p.toolName) {
+      case "propose_pause_ads":
+        result = [];
+        for (const adId of (input.adIds || [])) {
+          try { await meta.pauseAd(adId); result.push({ adId, ok: true }); }
+          catch (e) { result.push({ adId, ok: false, error: String(e.message || e) }); }
+        }
+        appendAction({ type: "ads-pause", reason: input.reason, count: result.length });
+        break;
+      case "propose_budget_changes":
+        result = [];
+        for (const c of (input.changes || [])) {
+          try { await meta.updateAdSetBudget(c.adSetId, c.newDaily); result.push({ adSetId: c.adSetId, ok: true }); }
+          catch (e) { result.push({ adSetId: c.adSetId, ok: false, error: String(e.message || e) }); }
+        }
+        appendAction({ type: "budget-change", count: result.length });
+        break;
+      case "propose_fb_post":
+        if (input.imageUrl) result = await meta.publishFbPhoto({ imageUrl: input.imageUrl, message: input.caption });
+        else result = await meta.publishFbPost({ message: input.caption, link: input.link });
+        appendAction({ type: "fb-post-agent", preview: (input.caption||"").slice(0, 60) });
+        break;
+      case "propose_ig_post":
+        result = await meta.publishIgImagePost({ imageUrl: input.imageUrl, caption: input.caption });
+        appendAction({ type: "ig-post-agent", preview: (input.caption||"").slice(0, 60) });
+        break;
+      case "propose_line_reply": {
+        const arr = loadLineMessages();
+        const rec = arr.find(r => r.id === input.messageId);
+        if (!rec) { result = { error: "message not found" }; break; }
+        const msgs = line.buildMessages({ text: input.text, imageUrl: input.imageUrl, linkUrl: input.linkUrl, linkLabel: input.linkLabel });
+        const ageMin = (Date.now() - new Date(rec.timestamp).getTime()) / 60000;
+        if (ageMin < 30 && rec.replyToken) result = await line.replyMessage(rec.replyToken, msgs);
+        else result = await line.pushMessage(rec.userId, msgs);
+        rec.replied = true; rec.replyText = input.text; rec.repliedAt = new Date().toISOString();
+        saveLineMessages(arr);
+        appendAction({ type: "line-reply-agent", preview: input.text.slice(0, 60) });
+        break;
+      }
+      case "propose_segment_push": {
+        const list = customers.aggregateCustomers(customers.loadMessages(DATA_DIR), customers.loadCustomerProfiles(DATA_DIR));
+        const groups = customers.groupBySegment(list);
+        const targets = groups[input.segment] || [];
+        const msgs = line.buildMessages({ text: input.text, imageUrl: input.imageUrl, linkUrl: input.linkUrl, linkLabel: input.linkLabel });
+        result = [];
+        for (const c of targets) {
+          try { await line.pushMessage(c.userId, msgs); result.push({ userId: c.userId, ok: true }); }
+          catch(e) { result.push({ userId: c.userId, ok: false, error: String(e.message||e) }); }
+        }
+        appendAction({ type: "segment-push-agent", segment: input.segment, count: targets.length });
+        break;
+      }
+      default:
+        return res.status(400).json({ error: "unknown proposal tool: " + p.toolName });
+    }
+    // 繼續對話 - 把 tool 結果塞回去讓員工總結
+    const updatedMsgs = [...p.messages, { role: "user", content: [{ type: "tool_result", tool_use_id: p.toolUseId, content: JSON.stringify(result).slice(0, 4000) }] }];
+    const followup = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 1024,
+      system: p.systemPrompt,
+      tools: p.tools,
+      messages: updatedMsgs,
+    });
+    const summary = (followup.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+    PROPOSALS.delete(req.params.id);
+    res.json({ ok: true, result, summary });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
 });
 
+app.post("/api/chat", _originalChatHandler);
 // ============================================================
 // /api/orchestrate — Marketing Director mode
 // ------------------------------------------------------------
