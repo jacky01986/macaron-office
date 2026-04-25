@@ -21,8 +21,26 @@ const meta = require("./meta");
 // Employees that benefit from Meta live data in their prompt
 const META_AWARE_EMPLOYEES = new Set(["leon", "nova", "zara", "dex"]);
 
+
+const FORMAT_ENFORCEMENT = `
+
+---
+【★ 輸出格式鐵則 (每一輪都必須遵守，包含第 2、3、4… 輪) ★】
+每次回覆都必須用 HTML 片段（不要純文字）：
+<h4>標題</h4>
+<p>段落</p>
+<ul><li>條列</li></ul>
+<div class="tldr">⚡ TL;DR｜重點結論</div>
+<table class="data"><thead><tr><th>項目</th><th>數字</th></tr></thead><tbody><tr><td>…</td><td>…</td></tr></tbody></table>
+<strong>粗體</strong>、<em>斜體</em>、<code>代碼</code>、<blockquote>引述</blockquote>
+
+禁止：純文字段落、Markdown (## / **), 只輸出 text 沒有 tags。
+每次都要用 <div class="tldr"> 開頭總結，這個習慣不可省略。
+
+如果對話進入第 2、3 輪以上，仍須保持上述 HTML 結構，不要因為是「繼續對話」就簡化。`;
+
 async function maybeAugmentSystemPrompt(emp) {
-  if (!META_AWARE_EMPLOYEES.has(emp.id) || !meta.tokenOk()) return emp.systemPrompt;
+  if (!META_AWARE_EMPLOYEES.has(emp.id) || !meta.tokenOk()) return emp.systemPrompt + FORMAT_ENFORCEMENT;
   try {
     const block = await meta.buildLiveDataBlock();
     if (!block) return emp.systemPrompt;
