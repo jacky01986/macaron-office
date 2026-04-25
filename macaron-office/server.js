@@ -30,12 +30,25 @@ const multer = require("multer");
 // Employees that benefit from Meta live data in their prompt
 const META_AWARE_EMPLOYEES = new Set(["victor", "leon", "camille", "aria", "dex", "nova", "sofia", "milo", "emi"]);
 
+
+const FORMAT_ENFORCEMENT = `
+
+---
+【★ 輸出格式鐵則 (每一輪都必須遵守，包含第 2、3、4… 輪) ★】
+每次回覆都必須用 HTML 片段（不要純文字）：
+<h4>標題</h4> <p>段落</p> <ul><li>條列</li></ul>
+<div class="tldr">⚡ TL;DR｜重點結論</div>
+<table class="data"><thead><tr><th>項目</th><th>數字</th></tr></thead><tbody><tr><td>…</td><td>…</td></tr></tbody></table>
+
+禁止：純文字段落、Markdown (## / **), 只輸出 text 沒有 tags。
+第 2、3 輪以上仍須保持 HTML 結構，不要因為「繼續對話」就簡化。`;
+
 async function maybeAugmentSystemPrompt(emp) {
-  if (!META_AWARE_EMPLOYEES.has(emp.id) || !meta.tokenOk()) return emp.systemPrompt;
+  if (!META_AWARE_EMPLOYEES.has(emp.id) || !meta.tokenOk()) return emp.systemPrompt + FORMAT_ENFORCEMENT;
   try {
     const metaBlock = await meta.buildCoachDataBlock();
     const googleBlock = google.tokenOk() ? await google.buildCoachDataBlock() : null;
-    if (!metaBlock && !googleBlock) return emp.systemPrompt;
+    if (!metaBlock && !googleBlock) return emp.systemPrompt + FORMAT_ENFORCEMENT;
     let extra = "";
     if (metaBlock) {
       extra += "\n\n---\n[📡 COACHING DATA · Meta 即時數據快照]\n" +
@@ -46,10 +59,10 @@ async function maybeAugmentSystemPrompt(emp) {
       extra += "\n\n---\n[📊 COACHING DATA · Google Ads 即時數據快照]\n" +
         googleBlock + "\n\n(資料來源：Google Ads API)";
     }
-    return emp.systemPrompt + extra;
+    return emp.systemPrompt + FORMAT_ENFORCEMENT + extra;
   } catch (e) {
     console.warn(`[meta coaching-data] ${emp.id}:`, e.message);
-    return emp.systemPrompt;
+    return emp.systemPrompt + FORMAT_ENFORCEMENT;
   }
 }
 
