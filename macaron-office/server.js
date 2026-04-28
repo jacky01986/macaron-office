@@ -29,6 +29,8 @@ const multer = require("multer");
 const alerts = require('./alerts');
 const decisions = require('./decisions');
 const salesmartly = require('./salesmartly');
+const metaOverride = require('./meta-override');
+metaOverride.applyOnStartup();
 
 // Employees that benefit from Meta live data in their prompt
 const META_AWARE_EMPLOYEES = new Set(["victor", "leon", "camille", "aria", "dex", "nova", "sofia", "milo", "emi"]);
@@ -216,6 +218,28 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 // ============================================================
 // /api/meta/* — Stage 2 read-only Meta integration
 // ============================================================
+app.get("/api/meta/assets", async (req, res) => {
+  try {
+    const r = await metaOverride.listAssets();
+    res.json(r);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post("/api/meta/switch", express.json(), async (req, res) => {
+  try {
+    if (req.query.clear === '1') {
+      metaOverride.clearOverride();
+      return res.json({ ok: true, cleared: true });
+    }
+    const merged = metaOverride.setOverride(req.body || {});
+    res.json({ ok: true, current: {
+      pageId: process.env.META_FB_PAGE_ID,
+      igId: process.env.META_IG_USER_ID,
+      adAccountId: process.env.META_AD_ACCOUNT_ID,
+    }, override: merged });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get("/api/meta/status", async (req, res) => {
   try {
     const status = await meta.getStatus();
