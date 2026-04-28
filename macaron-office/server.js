@@ -31,6 +31,7 @@ const decisions = require('./decisions');
 const salesmartly = require('./salesmartly');
 const metaOverride = require('./meta-override');
 metaOverride.applyOnStartup();
+const autoPublish = require('./auto-publish');
 
 // Employees that benefit from Meta live data in their prompt
 const META_AWARE_EMPLOYEES = new Set(["victor", "leon", "camille", "aria", "dex", "nova", "sofia", "milo", "emi"]);
@@ -1207,6 +1208,7 @@ async function runScheduledTask(empId, prompt, label) {
 }
 
 alerts.registerCronJobs(cron);
+autoPublish.registerCronJobs(cron);
 cron.schedule("0 9 * * 1", () => {
   runScheduledTask("victor",
     "請產出本週的《團隊週策略簡報》：本週主軸、各專員的重點任務、預算分配、風險預警、3 個需要 Jeffrey 決策的問題。",
