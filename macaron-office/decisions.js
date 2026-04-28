@@ -42,13 +42,14 @@ function genId() {
   return 'dec_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
 }
 
-async function addPending({ title, recommendation, source = 'system' }) {
+async function addPending({ title, recommendation, source = 'system', metadata = null }) {
   const state = load();
   const item = {
     id: genId(),
     title,
     recommendation: recommendation || null,
     source,
+    metadata: metadata || null,
     created_at: new Date().toISOString(),
   };
   state.pending.push(item);
