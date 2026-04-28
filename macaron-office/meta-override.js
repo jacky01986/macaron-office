@@ -1,6 +1,5 @@
 // meta-override.js — Meta 多帳戶切換器後端邏輯
-// 把切換覆寫存到 data/meta-override.json，並 mutate process.env
-// meta.js 每次都讀 process.env，不用改 meta.js
+// env: META_ACCESS_TOKEN（要 business_management + pages_show_list + ads_management 權限）
 
 const fs = require('fs');
 const path = require('path');
@@ -58,43 +57,155 @@ async function metaGraph(endpoint, params = {}) {
   url.searchParams.set('access_token', token);
   const res = await fetch(url.toString());
   const j = await res.json();
-  if (!res.ok || j.error) throw new Error('Graph API: ' + (j.error?.message || res.status));
+  if (!res.ok || j.error) throw new Error('Graph: ' + (j.error?.message || res.status));
   return j;
 }
 
-async function listAssets() {
-  const result = { pages: [], ad_accounts: [], current: null };
+// Try multiple strategies for listing pages
+async function listAllPages() {
+  const seen = new Map();
+  const errors = [];
 
+  // Strategy 1: /me/accounts (works if user is direct page admin)
   try {
-    const pagesRes = await metaGraph('/me/accounts', {
-      fields: 'id,name,instagram_business_account{id,username},access_token',
+    const r = await metaGraph('/me/accounts', {
+      fields: 'id,name,instagram_business_account{id,username}',
       limit: 100,
     });
-    result.pages = (pagesRes.data || []).map(p => ({
-      pageId: p.id,
-      name: p.name,
-      igId: p.instagram_business_account?.id || null,
-      igUsername: p.instagram_business_account?.username || null,
-    }));
+    (r.data || []).forEach(p => {
+      seen.set(p.id, {
+        pageId: p.id,
+        name: p.name,
+        igId: p.instagram_business_account?.id || null,
+        igUsername: p.instagram_business_account?.username || null,
+        source: 'me/accounts',
+      });
+    });
   } catch (e) {
-    result.pages_error = e.message;
+    errors.push('me/accounts: ' + e.message);
   }
 
+  // Strategy 2: /me/businesses → /{biz_id}/owned_pages + /{biz_id}/client_pages
   try {
-    const adRes = await metaGraph('/me/adaccounts', {
+    const bizRes = await metaGraph('/me/businesses', { fields: 'id,name', limit: 100 });
+    const businesses = bizRes.data || [];
+    for (const biz of businesses) {
+      // owned_pages
+      try {
+        const op = await metaGraph('/' + biz.id + '/owned_pages', {
+          fields: 'id,name,instagram_business_account{id,username}',
+          limit: 100,
+        });
+        (op.data || []).forEach(p => {
+          if (!seen.has(p.id)) {
+            seen.set(p.id, {
+              pageId: p.id,
+              name: p.name,
+              igId: p.instagram_business_account?.id || null,
+              igUsername: p.instagram_business_account?.username || null,
+              source: 'biz:' + biz.name,
+              business: biz.name,
+            });
+          }
+        });
+      } catch (e) {
+        errors.push('biz ' + biz.name + ' owned_pages: ' + e.message);
+      }
+      // client_pages (pages shared FROM partners)
+      try {
+        const cp = await metaGraph('/' + biz.id + '/client_pages', {
+          fields: 'id,name,instagram_business_account{id,username}',
+          limit: 100,
+        });
+        (cp.data || []).forEach(p => {
+          if (!seen.has(p.id)) {
+            seen.set(p.id, {
+              pageId: p.id,
+              name: p.name,
+              igId: p.instagram_business_account?.id || null,
+              igUsername: p.instagram_business_account?.username || null,
+              source: 'biz_client:' + biz.name,
+              business: biz.name,
+            });
+          }
+        });
+      } catch (e) {/* client_pages often empty */}
+    }
+  } catch (e) {
+    errors.push('me/businesses: ' + e.message);
+  }
+
+  return { pages: Array.from(seen.values()), errors };
+}
+
+async function listAllAdAccounts() {
+  const seen = new Map();
+  const errors = [];
+
+  // Strategy 1: /me/adaccounts
+  try {
+    const r = await metaGraph('/me/adaccounts', {
       fields: 'id,account_id,name,account_status,currency',
       limit: 100,
     });
-    result.ad_accounts = (adRes.data || []).map(a => ({
-      adAccountId: a.id,
-      account_id: a.account_id,
-      name: a.name,
-      status: a.account_status === 1 ? 'active' : 'disabled',
-      currency: a.currency,
-    }));
+    (r.data || []).forEach(a => {
+      seen.set(a.id, {
+        adAccountId: a.id,
+        account_id: a.account_id,
+        name: a.name,
+        status: a.account_status === 1 ? 'active' : 'disabled',
+        currency: a.currency,
+        source: 'me/adaccounts',
+      });
+    });
   } catch (e) {
-    result.ad_accounts_error = e.message;
+    errors.push('me/adaccounts: ' + e.message);
   }
+
+  // Strategy 2: /me/businesses → /{biz_id}/owned_ad_accounts + /{biz_id}/client_ad_accounts
+  try {
+    const bizRes = await metaGraph('/me/businesses', { fields: 'id,name', limit: 100 });
+    const businesses = bizRes.data || [];
+    for (const biz of businesses) {
+      for (const path of ['owned_ad_accounts', 'client_ad_accounts']) {
+        try {
+          const r = await metaGraph('/' + biz.id + '/' + path, {
+            fields: 'id,account_id,name,account_status,currency',
+            limit: 100,
+          });
+          (r.data || []).forEach(a => {
+            if (!seen.has(a.id)) {
+              seen.set(a.id, {
+                adAccountId: a.id,
+                account_id: a.account_id,
+                name: a.name,
+                status: a.account_status === 1 ? 'active' : 'disabled',
+                currency: a.currency,
+                source: path + ':' + biz.name,
+                business: biz.name,
+              });
+            }
+          });
+        } catch (e) {/* often one of two paths returns empty */}
+      }
+    }
+  } catch (e) {
+    errors.push('me/businesses (for ads): ' + e.message);
+  }
+
+  return { ad_accounts: Array.from(seen.values()), errors };
+}
+
+async function listAssets() {
+  const result = { pages: [], ad_accounts: [], current: null, debug: {} };
+
+  const pagesResult = await listAllPages();
+  result.pages = pagesResult.pages;
+  if (pagesResult.errors.length) result.debug.pages_errors = pagesResult.errors;
+
+  const adsResult = await listAllAdAccounts();
+  result.ad_accounts = adsResult.ad_accounts;
+  if (adsResult.errors.length) result.debug.ad_accounts_errors = adsResult.errors;
 
   result.current = {
     pageId: process.env.META_FB_PAGE_ID || null,
