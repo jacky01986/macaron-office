@@ -24,6 +24,7 @@ customers  = tryRequire('./customers');
 meta       = tryRequire('./meta');
 salesmartly = tryRequire('./salesmartly');
 decisions  = tryRequire('./decisions');
+const briefingAi = tryRequire('./briefing-ai');
 
 const ADMIN = process.env.ADMIN_LINE_USER_ID || '';
 const TZ = process.env.TZ || 'Asia/Taipei';
@@ -41,6 +42,12 @@ function todayLabel() {
 }
 
 async function strategySection() {
+  try {
+    if (briefingAi && typeof briefingAi.generateStrategy === 'function') {
+      const _ai = await briefingAi.generateStrategy();
+      if (_ai) return _ai;
+    }
+  } catch (e) { console.error('[alerts] strategy AI:', e.message); }
   return [
     '🎯 本週戰略重點',
     '（VICTOR 從廣告 / 客戶 / 內容三個角度，給三件最關鍵的事）',
@@ -49,6 +56,12 @@ async function strategySection() {
 }
 
 async function midweekSection() {
+  try {
+    if (briefingAi && typeof briefingAi.generateMidweek === 'function') {
+      const _ai = await briefingAi.generateMidweek();
+      if (_ai) return _ai;
+    }
+  } catch (e) { console.error('[alerts] midweek AI:', e.message); }
   return [
     '🔧 中週調整建議',
     '前三天表現 vs 預期差距，建議調整：',
@@ -57,6 +70,12 @@ async function midweekSection() {
 }
 
 async function reviewSection() {
+  try {
+    if (briefingAi && typeof briefingAi.generateReview === 'function') {
+      const _ai = await briefingAi.generateReview();
+      if (_ai) return _ai;
+    }
+  } catch (e) { console.error('[alerts] review AI:', e.message); }
   return [
     '📊 本週回顧 + 下週預告',
     '本週成績：營業額 / 廣告 ROAS / 內容互動',
