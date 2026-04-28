@@ -26,6 +26,9 @@ const toolDefs = require("./tools");
 const PROPOSALS = new Map();
 setInterval(() => { const now = Date.now(); for (const [k, v] of PROPOSALS) if (now - v.createdAt > 30 * 60 * 1000) PROPOSALS.delete(k); }, 5 * 60 * 1000);
 const multer = require("multer");
+const alerts = require('./alerts');
+const decisions = require('./decisions');
+const salesmartly = require('./salesmartly');
 
 // Employees that benefit from Meta live data in their prompt
 const META_AWARE_EMPLOYEES = new Set(["victor", "leon", "camille", "aria", "dex", "nova", "sofia", "milo", "emi"]);
@@ -116,6 +119,7 @@ app.post('/api/line/webhook',
     let payload;
     try { payload = JSON.parse(rawBody); } catch (e) { return; }
     for (const event of (payload.events || [])) {
+        try { const _dr = await decisions.handleLineMessage(event); if (_dr) continue; } catch(e) { console.error("decisions handler:", e.message); }
       handleLineEvent(event).catch(err => console.error('[LINE event]', err));
     }
   }
@@ -1178,6 +1182,7 @@ async function runScheduledTask(empId, prompt, label) {
   }
 }
 
+alerts.registerCronJobs(cron);
 cron.schedule("0 9 * * 1", () => {
   runScheduledTask("victor",
     "請產出本週的《團隊週策略簡報》：本週主軸、各專員的重點任務、預算分配、風險預警、3 個需要 Jeffrey 決策的問題。",
