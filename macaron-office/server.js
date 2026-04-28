@@ -71,8 +71,8 @@ async function maybeAugmentSystemPrompt(emp) {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5-20250929";
-const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || MODEL;
+const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-6";
+const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || "claude-opus-4-6";
 const DATA_DIR = path.join(__dirname, "data");
 const REPORTS_FILE = path.join(DATA_DIR, "reports.json");
 
