@@ -32,6 +32,8 @@ const salesmartly = require('./salesmartly');
 const metaOverride = require('./meta-override');
 metaOverride.applyOnStartup();
 const autoPublish = require('./auto-publish');
+const customerProfiler = require('./customer-profiler');
+const metaCapi = require('./meta-capi');
 
 // Employees that benefit from Meta live data in their prompt
 const META_AWARE_EMPLOYEES = new Set(["victor", "leon", "camille", "aria", "dex", "nova", "sofia", "milo", "emi"]);
@@ -1305,6 +1307,27 @@ async function handleLineEvent(event) {
   const arr = loadLineMessages();
   arr.push(record);
   saveLineMessages(arr);
+
+  // === 客戶側錄 + Meta CAPI 回灌 (背景執行，不擋回覆流程) ===
+  (async () => {
+    try {
+      await customerProfiler.updateProfile({
+        chat_user_id: userId,
+        channel: 'line',
+        msg: text,
+        user_name: (profile && profile.displayName) || null,
+        channel_id: process.env.META_FB_PAGE_ID || null
+      });
+    } catch (e) { console.error('[hook] customer-profiler:', e.message); }
+    try {
+      await metaCapi.sendLead({
+        contact_id: userId,
+        name: (profile && profile.displayName) || null,
+        source_channel: 'line',
+        message_preview: text
+      });
+    } catch (e) { console.error('[hook] meta-capi:', e.message); }
+  })();
 }
 
 // GET /api/line/status — 檢查 token 是否設定
@@ -1681,6 +1704,314 @@ Brief：${brief}
   } catch (err) {
     res.status(500).json({ error: String(err.message || err) });
   }
+});
+
+
+// ============================================================
+// 👩 老師戰報 + 客戶錄製 API (MACARON DE LUXE)
+// ------------------------------------------------------------
+// 必須在 server.js 最上面 require：
+//   const customerProfiler = require('./customer-profiler');
+//   const metaCapi = require('./meta-capi');
+//
+// 把下方所有路由貼到 server.js 的 app.listen(...) 之前
+// ============================================================
+
+// --- helper: 解析 TEACHERS_CONFIG ---
+function _getTeachersConfig() {
+  try {
+    if (process.env.TEACHERS_CONFIG) {
+      const parsed = JSON.parse(process.env.TEACHERS_CONFIG);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map(t => ({
+          key: t.key || 'unknown',
+          name: t.name || t.key || 'unknown',
+          page_id: String(t.page_id || ''),
+          match: t.match || ''
+        }));
+      }
+    }
+  } catch (e) { console.warn('[teachers] TEACHERS_CONFIG parse error:', e.message); }
+  return [{
+    key: 'main',
+    name: 'MACARON DE LUXE',
+    page_id: String(process.env.META_FB_PAGE_ID || ''),
+    match: ''
+  }];
+}
+
+function _daysToPreset(days) {
+  if (days <= 1) return 'today';
+  if (days <= 7) return 'last_7d';
+  if (days <= 14) return 'last_14d';
+  if (days <= 30) return 'last_30d';
+  if (days <= 90) return 'last_90d';
+  return 'last_90d';
+}
+
+// =============== /api/teachers/summary ===============
+app.get('/api/teachers/summary', async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 7;
+    const datePreset = _daysToPreset(days);
+    const teachersList = _getTeachersConfig();
+    const adAcctId = process.env.META_AD_ACCOUNT_ID || '';
+
+    // 1) campaign id → name 對照
+    const campaignNameMap = {};
+    try {
+      if (meta && meta.getAdCampaigns && meta.tokenOk && meta.tokenOk()) {
+        const camps = await meta.getAdCampaigns({ limit: 200 });
+        for (const c of (camps || [])) campaignNameMap[c.id] = c.name || '';
+      }
+    } catch (e) { console.warn('[teachers/summary] getAdCampaigns:', e.message); }
+
+    // 2) ads + insights → 依 campaign 聚合
+    const campaignAgg = {};
+    try {
+      if (meta && meta.getAdsWithInsights && meta.tokenOk && meta.tokenOk()) {
+        const ads = await meta.getAdsWithInsights({ datePreset, limit: 200 });
+        for (const a of (ads || [])) {
+          const cName = campaignNameMap[a.campaignId] || 'unknown';
+          if (!campaignAgg[cName]) campaignAgg[cName] = { name: cName, spend: 0, impressions: 0, clicks: 0 };
+          const ins = a.insights || {};
+          campaignAgg[cName].spend += parseFloat(ins.spend || 0);
+          campaignAgg[cName].impressions += parseInt(ins.impressions || 0);
+          campaignAgg[cName].clicks += parseInt(ins.clicks || 0);
+        }
+      }
+    } catch (e) { console.warn('[teachers/summary] getAdsWithInsights:', e.message); }
+    const campaigns = Object.values(campaignAgg);
+
+    // 3) SaleSmartly 對話 (詢問數)
+    let sessions = [];
+    try {
+      if (salesmartly && salesmartly.listRecentConversations) {
+        const s = await salesmartly.listRecentConversations({ days, page_size: 200 });
+        sessions = (s && (s.list || (s.data && s.data.list))) || [];
+      }
+    } catch (e) { console.warn('[teachers/summary] salesmartly:', e.message); }
+
+    // 4) 也把 customer-profiler 的 LINE 客戶算進來（按 channel_id 對到 page_id）
+    let profilerCustomers = [];
+    try {
+      const profiles = customerProfiler.loadProfiles();
+      profilerCustomers = Object.values(profiles).filter(p => {
+        if (!p.last_seen) return false;
+        const ageDays = (Date.now() - new Date(p.last_seen).getTime()) / 86400000;
+        return ageDays <= days;
+      });
+    } catch (e) { console.warn('[teachers/summary] profiler:', e.message); }
+
+    // 5) 對每位老師聚合
+    const teachers = {};
+    for (const t of teachersList) {
+      const matchRegex = t.match ? new RegExp(t.match, 'i') : null;
+      let matchedCampaigns;
+      if (matchRegex) {
+        matchedCampaigns = campaigns.filter(c => matchRegex.test(c.name || ''));
+      } else {
+        const otherRegexes = teachersList
+          .filter(o => o.key !== t.key && o.match)
+          .map(o => new RegExp(o.match, 'i'));
+        matchedCampaigns = campaigns.filter(c => {
+          const name = c.name || '';
+          return !otherRegexes.some(r => r.test(name));
+        });
+      }
+      const spend = matchedCampaigns.reduce((s,c) => s + parseFloat(c.spend || 0), 0);
+      const impressions = matchedCampaigns.reduce((s,c) => s + parseInt(c.impressions || 0), 0);
+      const clicks = matchedCampaigns.reduce((s,c) => s + parseInt(c.clicks || 0), 0);
+
+      // 詢問數 = SaleSmartly sessions + customer-profiler 客戶（去重靠 user_id）
+      const smByUid = {};
+      for (const s of sessions) {
+        if (!t.page_id || String(s.channel_id || s.page_id || '') === t.page_id) {
+          const uid = s.chat_user_id || s.user_id || s.id;
+          if (uid) smByUid[uid] = true;
+        }
+      }
+      const profByUid = {};
+      for (const p of profilerCustomers) {
+        if (!t.page_id || String(p.channel_id || '') === t.page_id || t.key === 'main') {
+          if (p.chat_user_id) profByUid[p.chat_user_id] = true;
+        }
+      }
+      const leadCount = Object.keys({ ...smByUid, ...profByUid }).length;
+      const cpl = leadCount > 0 ? Math.round(spend / leadCount) : null;
+      teachers[t.key] = {
+        name: t.name,
+        page_id: t.page_id,
+        ad_account_id: adAcctId,
+        match_pattern: t.match || '(預設 fallback)',
+        campaign_count: matchedCampaigns.length,
+        spend_ntd: Math.round(spend),
+        impressions, clicks,
+        ctr: impressions > 0 ? (clicks / impressions * 100).toFixed(2) + '%' : '—',
+        lead_count: leadCount,
+        cost_per_lead_ntd: cpl,
+        cpl_health: cpl === null ? 'no_data' : cpl < 300 ? 'good' : cpl < 500 ? 'ok' : 'high'
+      };
+    }
+    res.json({ ok: true, days_range: days, date_preset: datePreset, teachers });
+  } catch (e) {
+    console.error('[teachers/summary] fatal:', e);
+    res.status(500).json({ ok: false, error: String(e.message || e) });
+  }
+});
+
+// =============== /api/customers/inquiries ===============
+app.get('/api/customers/inquiries', async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 90;
+
+    // 1) customer-profiler 的客戶（核心資料來源）
+    const merged = {};
+    try {
+      const profiles = customerProfiler.loadProfiles();
+      for (const [uid, p] of Object.entries(profiles)) {
+        merged[uid] = {
+          user_id: uid,
+          user_name: p.user_name || null,
+          channel: p.channel || 'line',
+          channel_id: p.channel_id || null,
+          inquiry_count: p.msg_count || 1,
+          last_seen: p.last_seen || null,
+          source: 'profiler',
+          latest_intent: p.latest?.intent || null,
+          customer_type: p.latest?.customer_type || null,
+          stage: p.latest?.stage || null,
+          estimated_value: p.latest?.estimated_value_ntd || 0
+        };
+      }
+    } catch (e) { console.warn('[customers/inquiries] profiler load:', e.message); }
+
+    // 2) SaleSmartly 也合併進來
+    try {
+      if (salesmartly && salesmartly.listRecentConversations) {
+        const s = await salesmartly.listRecentConversations({ days, page_size: 200 });
+        const list = (s && (s.list || (s.data && s.data.list))) || [];
+        for (const sess of list) {
+          const uid = sess.chat_user_id || sess.user_id || sess.id || ('sm_' + Math.random().toString(36).slice(2));
+          if (!merged[uid]) {
+            merged[uid] = {
+              user_id: uid,
+              user_name: sess.user_name || sess.name || null,
+              channel: sess.channel || 'salesmartly',
+              channel_id: sess.channel_id || sess.page_id || null,
+              inquiry_count: 1,
+              last_seen: sess.last_at || new Date(sess.last_at_ms || Date.now()).toISOString(),
+              source: 'salesmartly'
+            };
+          }
+        }
+      }
+    } catch (e) { console.warn('[customers/inquiries] sm:', e.message); }
+
+    // 3) 本地 customers 模組
+    try {
+      if (typeof customers !== 'undefined' && customers.loadMessages && customers.aggregateCustomers) {
+        const msgs = customers.loadMessages(DATA_DIR);
+        const profiles2 = customers.loadCustomerProfiles ? customers.loadCustomerProfiles(DATA_DIR) : {};
+        const list = customers.aggregateCustomers(msgs, profiles2);
+        for (const c of (list || [])) {
+          const uid = c.userId || c.user_id;
+          if (!uid) continue;
+          if (!merged[uid]) {
+            merged[uid] = {
+              user_id: uid,
+              user_name: c.userName || null,
+              channel: c.channel || 'line',
+              channel_id: c.channelId || null,
+              inquiry_count: c.messageCount || 1,
+              last_seen: c.lastSeen || null,
+              source: 'local'
+            };
+          }
+        }
+      }
+    } catch (e) { console.warn('[customers/inquiries] local:', e.message); }
+
+    const list = Object.values(merged).sort((a,b) => new Date(b.last_seen || 0) - new Date(a.last_seen || 0));
+
+    // 4) 分群
+    const now = Date.now();
+    const seg = {
+      vip: { label: '🔥 VIP（高頻+近期）', desc: '5+ 詢問 + 14 天內', count: 0, list: [] },
+      active_responder: { label: '💬 主動回覆', desc: '3+ 詢問 + 30 天內', count: 0, list: [] },
+      active: { label: '💚 活躍', desc: '14 天內', count: 0, list: [] },
+      warm: { label: '🌤️ 溫客', desc: '14-30 天前', count: 0, list: [] },
+      cold: { label: '❄️ 冷客', desc: '30-60 天前', count: 0, list: [] },
+      lost: { label: '😢 流失', desc: '60+ 天沒詢問', count: 0, list: [] }
+    };
+    for (const c of list) {
+      const daysSince = c.last_seen ? Math.floor((now - new Date(c.last_seen).getTime()) / 86400000) : 999;
+      const inq = c.inquiry_count || 1;
+      let bucket;
+      if (inq >= 5 && daysSince <= 14) bucket = 'vip';
+      else if (inq >= 3 && daysSince <= 30) bucket = 'active_responder';
+      else if (daysSince <= 14) bucket = 'active';
+      else if (daysSince <= 30) bucket = 'warm';
+      else if (daysSince <= 60) bucket = 'cold';
+      else bucket = 'lost';
+      seg[bucket].count++;
+      seg[bucket].list.push(c);
+    }
+
+    res.json({ ok: true, total: list.length, days_range: days, segments: seg, customers: list.slice(0, 50) });
+  } catch (e) {
+    console.error('[customers/inquiries] fatal:', e);
+    res.status(500).json({ ok: false, error: String(e.message || e) });
+  }
+});
+
+// =============== /api/customers/profiles ===============
+app.get('/api/customers/profiles', (req, res) => {
+  try {
+    const profiles = customerProfiler.loadProfiles();
+    if (req.query.userId) {
+      return res.json({ ok: true, profile: profiles[req.query.userId] || null });
+    }
+    const list = Object.values(profiles).sort((a,b) => new Date(b.last_seen || 0) - new Date(a.last_seen || 0));
+    res.json({ ok: true, total: list.length, profiles: list.slice(0, parseInt(req.query.limit) || 100) });
+  } catch (e) { res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// =============== /api/customers/insights ===============
+app.get('/api/customers/insights', (req, res) => {
+  try {
+    const ins = customerProfiler.getAggregatedInsights({
+      topN: parseInt(req.query.top) || 10,
+      type: req.query.type || null
+    });
+    res.json(ins);
+  } catch (e) { res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// =============== /api/customers/profile/manual-analyze ===============
+// 手動測試用：直接餵一條訊息進去看 Haiku 怎麼分析
+app.post('/api/customers/profile/manual-analyze', express.json(), async (req, res) => {
+  try {
+    const { chat_user_id, msg, channel, user_name } = req.body || {};
+    if (!chat_user_id || !msg) return res.status(400).json({ ok: false, error: 'need chat_user_id + msg' });
+    const updated = await customerProfiler.updateProfile({ chat_user_id, msg, channel, user_name });
+    res.json({ ok: true, profile: updated });
+  } catch (e) { res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// =============== /api/capi/lead (測試用) ===============
+// 手動觸發送一個 Lead 到 Meta，驗證 CAPI 連通
+app.post('/api/capi/test-lead', express.json(), async (req, res) => {
+  try {
+    const { name, email, phone, contact_id, source_channel, message } = req.body || {};
+    const r = await metaCapi.sendLead({
+      contact_id: contact_id || ('test_' + Date.now()),
+      name, email, phone,
+      source_channel: source_channel || 'manual-test',
+      message_preview: message || '手動測試 Lead'
+    });
+    res.json(r);
+  } catch (e) { res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
 
