@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>⚡ 行動建議 — MACARON DE LUXE</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root { --brand:#6B4226; --bg:#FAF7F2; --ink:#3B2A1F; --line:#E5DACB; --accent:#10b981; --warn:#f59e0b; --danger:#ef4444; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--ink); margin: 0; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(135deg,#6B4226,#8B5A33); padding: 8px 16px; display: flex; gap: 8px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.15); overflow-x: auto; white-space: nowrap; align-items: center; }
+  .topnav strong { color:#FAF7F2; font-size:14px; margin-right:8px; flex-shrink:0; }
+  .topnav a { padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; flex-shrink:0; background:#FAF7F2; color:#6B4226; }
+  .topnav .active { background:#10b981; color:white; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 70px 20px 40px; }
+  h1 { font-size: 22px; margin: 0 0 4px; color: var(--brand); }
+  .subtitle { color: #666; margin-bottom: 16px; font-size: 14px; }
+  .stats { display: flex; gap: 12px; margin-bottom: 20px; }
+  .stat { background: white; border: 1px solid var(--line); padding: 10px 16px; border-radius: 10px; flex: 1; text-align: center; }
+  .stat-num { font-size: 20px; font-weight: 700; color: var(--brand); }
+  .stat-label { font-size: 11px; color: #888; }
+  .section { margin-bottom: 28px; }
+  .section h2 { font-size: 17px; color: var(--brand); margin: 0 0 12px; display: flex; align-items: center; gap: 6px; }
+  .action-card { background: white; border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; transition: opacity 0.3s; }
+  .action-card.done { opacity: 0.5; background: #f0fdf4; border-color: #86efac; }
+  .action-card.skipped { opacity: 0.5; background: #fef2f2; border-color: #fca5a5; }
+  .action-status { display: flex; gap: 6px; flex-shrink: 0; align-self: center; }
+  .action-status button { padding: 6px 10px; border: 1px solid var(--line); background: white; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .action-status button.active.done { background: #10b981; color: white; border-color: #10b981; }
+  .action-status button.active.doing { background: #f59e0b; color: white; border-color: #f59e0b; }
+  .action-status button.active.skip { background: #ef4444; color: white; border-color: #ef4444; }
+  .action-text { flex: 1; font-size: 14px; line-height: 1.6; }
+  .action-source { display: inline-block; font-size: 10px; background: var(--bg); padding: 2px 8px; border-radius: 4px; color: #888; margin-right: 6px; }
+  .empty { text-align: center; color: #aaa; padding: 40px; }
+  .reload-btn { padding: 6px 12px; background: var(--brand); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .focus-banner { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 1px solid #fcd34d; padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; color: #78350f; }
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <strong>OFZ</strong>
+  <a href="/">← 主辦公室</a>
+  <a href="/scout.html">🔍 SCOUT</a>
+  <a href="/ai-content.html">📚 AI 教研</a>
+  <a href="/work-status.html">📊 工作動態</a>
+  <a href="#" class="active">⚡ 行動建議</a>
+</div>
+
+<div class="container">
+  <h1>⚡ 你能做的改變</h1>
+  <div class="subtitle">從 SCOUT 全球競品調查 → DISTILL 精煉而來。每項可勾選「✓ 已做 / ⏳ 進行中 / ✗ 不做」 · <button class="reload-btn" onclick="loadActions()">🔄 重新載入</button></div>
+
+  <div class="stats" id="statsRow">
+    <div class="stat"><div class="stat-num" id="totalCount">0</div><div class="stat-label">總建議</div></div>
+    <div class="stat"><div class="stat-num" id="doneCount" style="color:#10b981">0</div><div class="stat-label">✓ 已做</div></div>
+    <div class="stat"><div class="stat-num" id="doingCount" style="color:#f59e0b">0</div><div class="stat-label">⏳ 進行中</div></div>
+    <div class="stat"><div class="stat-num" id="skipCount" style="color:#ef4444">0</div><div class="stat-label">✗ 不做</div></div>
+  </div>
+
+  <div class="focus-banner" id="focus">本週重點載入中...</div>
+
+  <div class="section">
+    <h2>🎯 建議行動（VICTOR 級）</h2>
+    <div id="actionList"><div class="empty">載入中...</div></div>
+  </div>
+
+  <div class="section">
+    <h2>💎 差異化機會</h2>
+    <div id="oppList"><div class="empty">載入中...</div></div>
+  </div>
+
+  <div class="section">
+    <h2>📝 內容角度（CAMILLE 給的素材）</h2>
+    <div id="angleList"><div class="empty">載入中...</div></div>
+  </div>
+
+  <div class="section">
+    <h2>🔥 全球熱門話題（不該錯過）</h2>
+    <div id="trendingList"><div class="empty">載入中...</div></div>
+  </div>
+</div>
+
+<script>
+function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function loadStatus() { try { return JSON.parse(localStorage.getItem('ofz_action_status') || '{}'); } catch { return {}; } }
+function saveStatus(s) { localStorage.setItem('ofz_action_status', JSON.stringify(s)); }
+
+let actionDB = [];
+
+function setStatus(id, st) {
+  const status = loadStatus();
+  status[id] = st;
+  saveStatus(status);
+  render();
+}
+
+function render() {
+  const status = loadStatus();
+  let done = 0, doing = 0, skip = 0;
+  actionDB.forEach(a => {
+    const s = status[a.id];
+    if (s === 'done') done++;
+    else if (s === 'doing') doing++;
+    else if (s === 'skip') skip++;
+  });
+  document.getElementById('totalCount').textContent = actionDB.length;
+  document.getElementById('doneCount').textContent = done;
+  document.getElementById('doingCount').textContent = doing;
+  document.getElementById('skipCount').textContent = skip;
+
+  const groups = { action_items: 'actionList', differentiation_opportunities: 'oppList', content_angles: 'angleList', trending_topics: 'trendingList' };
+  for (const [src, listId] of Object.entries(groups)) {
+    const items = actionDB.filter(a => a.source === src);
+    const el = document.getElementById(listId);
+    if (items.length === 0) { el.innerHTML = '<div class="empty">SCOUT 尚未產出此類資料</div>'; continue; }
+    el.innerHTML = items.map(a => {
+      const s = status[a.id] || '';
+      return '<div class="action-card ' + (s === 'done' ? 'done' : s === 'skip' ? 'skipped' : '') + '">' +
+        '<div class="action-text">' +
+          '<div>' + escapeHtml(a.text) + '</div>' +
+          (a.detail ? '<div style="color:#666;font-size:12px;margin-top:6px">' + escapeHtml(a.detail) + '</div>' : '') +
+        '</div>' +
+        '<div class="action-status">' +
+          '<button class="' + (s === 'done' ? 'active done' : '') + '" onclick="setStatus(\'' + a.id + '\', \'' + (s === 'done' ? '' : 'done') + '\')">✓</button>' +
+          '<button class="' + (s === 'doing' ? 'active doing' : '') + '" onclick="setStatus(\'' + a.id + '\', \'' + (s === 'doing' ? '' : 'doing') + '\')">⏳</button>' +
+          '<button class="' + (s === 'skip' ? 'active skip' : '') + '" onclick="setStatus(\'' + a.id + '\', \'' + (s === 'skip' ? '' : 'skip') + '\')">✗</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+}
+
+async function loadActions() {
+  try {
+    const r = await fetch('/api/scout/intelligence').then(r => r.json());
+    if (!r || !r.distilled_at) {
+      document.getElementById('focus').textContent = '尚無市場情報。先到 SCOUT 頁跑一次掃描 → DISTILL 自動接手。';
+      return;
+    }
+    document.getElementById('focus').innerHTML = '<strong>🎯 本週重點：</strong>' + escapeHtml(r.weekly_focus || '');
+    actionDB = [];
+    
+    const extract = (arr, sourceKey) => {
+      if (!Array.isArray(arr)) return;
+      arr.forEach((item, i) => {
+        let text, detail;
+        if (typeof item === 'string') { text = item; detail = ''; }
+        else {
+          text = item.title || item.topic || item.angle || item.action || JSON.stringify(item).slice(0, 100);
+          detail = item.description || item.detail || item.why_hot || item.from_services ? (Array.isArray(item.from_services) ? '來自：' + item.from_services.join('、') : '') : '';
+          if (item.description) detail = item.description;
+          else if (item.why_hot) detail = item.why_hot;
+        }
+        actionDB.push({
+          id: sourceKey + '_' + i,
+          source: sourceKey,
+          text, detail
+        });
+      });
+    };
+    extract(r.action_items, 'action_items');
+    extract(r.differentiation_opportunities, 'differentiation_opportunities');
+    extract(r.content_angles, 'content_angles');
+    extract(r.trending_topics, 'trending_topics');
+    
+    render();
+  } catch (e) {
+    document.getElementById('focus').textContent = '載入失敗：' + e.message;
+  }
+}
+
+loadActions();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GIA · GEO 主理人 — OFZ</title>
+<style>
+:root {
+  --burgundy: #8E3D4B; --burgundy-dark: #5D2630; --gold: #A37849; --gold-bright: #B8935F;
+  --ivory: #2E1E14; --dark: #F2E5D5; --dark-2: #FDF7EE; --dark-3: #EDDDC1; --amber: #B8935F;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Microsoft JhengHei', sans-serif; background: var(--dark); color: var(--ivory); padding: 24px; }
+.container { max-width: 1200px; margin: 0 auto; }
+header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 2px solid var(--burgundy); margin-bottom: 24px; }
+h1 { margin: 0; color: var(--burgundy); font-size: 28px; }
+.subtitle { color: var(--gold); font-size: 14px; }
+.btn { background: var(--burgundy); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+.btn:hover { background: var(--burgundy-dark); }
+.btn-gold { background: var(--gold); }
+.section { background: var(--dark-2); border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.section h2 { margin-top: 0; color: var(--burgundy); font-size: 20px; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+select, input { padding: 8px 12px; border: 1px solid var(--gold); border-radius: 6px; background: white; font-size: 14px; }
+.score-card { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 16px 0; }
+.metric { background: linear-gradient(135deg, var(--burgundy), var(--burgundy-dark)); color: white; padding: 20px; border-radius: 12px; text-align: center; }
+.metric-num { font-size: 36px; font-weight: 700; line-height: 1; }
+.metric-label { font-size: 12px; opacity: 0.9; margin-top: 6px; }
+.content-card { background: white; border-left: 4px solid var(--gold); padding: 16px 20px; margin-bottom: 12px; border-radius: 8px; }
+.content-card .meta { font-size: 12px; color: var(--gold); margin-bottom: 8px; }
+.content-card .text { white-space: pre-wrap; font-size: 13px; line-height: 1.6; max-height: 240px; overflow-y: auto; }
+.content-card .copy-btn { float: right; background: var(--gold); color: white; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; border: none; }
+.loader { color: var(--gold); font-style: italic; }
+.error { color: #c33; }
+nav-back { display: inline-block; color: var(--gold); text-decoration: none; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+<a href="/" style="color: var(--gold); text-decoration: none; font-size: 13px;">← 回主辦公室</a>
+<header>
+<div>
+<h1>🌐 GIA · GEO 主理人</h1>
+<div class="subtitle">Generative Intelligence Agent · 讓 AI 推薦 OFZ 課程</div>
+</div>
+<div class="row">
+<button class="btn btn-gold" onclick="runDailyBriefing()">📊 跑今日 GEO 簡報</button>
+</div>
+</header>
+
+<!-- Visibility Score -->
+<div class="section">
+<h2>📈 AI 能見度分數</h2>
+<div id="visibility-loader" class="loader">點上方「跑今日 GEO 簡報」開始</div>
+<div id="visibility-result"></div>
+</div>
+
+<!-- Today Content Suggestion -->
+<div class="section">
+<h2>✏️ 內容生成器</h2>
+<div id="today-suggestion"></div>
+<div class="row">
+<label>類型:</label>
+<select id="type-select" onchange="updateTopicOptions()">
+<option value="course">📚 課程招生（學員）</option>
+<option value="service">💆 施作項目（療程客）</option>
+</select>
+<label>平台:</label>
+<select id="platform-select">
+<option value="0">Medium（長文 1500-2500 字、AI 大宗）</option>
+<option value="1">Threads（短文 300-500 字、即時更新）</option>
+<option value="2">Reddit（對話式 500-1000 字）</option>
+<option value="3">Quora 中文（Q&A 800-1500 字）</option>
+<option value="4">痞客邦（台灣 SEO 1200-1800 字）</option>
+</select>
+<label>主題:</label>
+<select id="topic-select"></select>
+<button class="btn" onclick="generateContent()">🪄 立刻生成</button>
+</div>
+<div id="generated-content"></div>
+</div>
+
+<!-- Recent Content -->
+<div class="section">
+<h2>📚 最近生成的內容</h2>
+<div id="recent-content"><div class="loader">載入中…</div></div>
+</div>
+
+<!-- Long-form content (Wikipedia / GBP / PR / YouTube) -->
+<div class="section">
+<h2>📜 長文內容（Wikipedia / GBP / 新聞稿 / YouTube）</h2>
+<div style="font-size: 12px; opacity: 0.7; margin-bottom: 12px;">針對權威平台的高品質內容。Wikipedia 跟 GBP 是 AI 訓練資料黃金來源</div>
+<div class="row">
+<label>類型:</label>
+<select id="lf-type-select">
+<option value="wikipedia">📚 Wikipedia 條目（中性）</option>
+<option value="gbp">🏪 Google Business Profile (FAQ + 服務描述)</option>
+<option value="press">📰 新聞 PR 稿</option>
+<option value="youtube">🎬 YouTube Shorts 腳本</option>
+</select>
+<label>主題:</label>
+<input id="lf-topic-input" type="text" placeholder="自訂主題（留空 = 隨機）" style="width: 220px;">
+<button class="btn" onclick="generateLongFormContent()">🪄 生成（30-60 秒）</button>
+</div>
+<div id="longform-content" style="margin-top: 16px;"></div>
+</div>
+
+<!-- Medium auto-publish -->
+<div class="section">
+<h2>📤 Medium 自動發布</h2>
+<div style="font-size: 12px; opacity: 0.7; margin-bottom: 12px;">需要 MEDIUM_INTEGRATION_TOKEN 環境變數。從 https://medium.com/me/settings/security 拿 token。</div>
+<div class="row">
+<label>標題:</label>
+<input id="md-title" type="text" placeholder="文章標題" style="width: 360px;">
+<label>標籤:</label>
+<input id="md-tags" type="text" placeholder="OFZ,紋繡,韓式半永久" style="width: 200px;">
+<label>狀態:</label>
+<select id="md-status">
+<option value="draft">draft（草稿，建議先用）</option>
+<option value="public">public（直接公開）</option>
+<option value="unlisted">unlisted（不公開但可分享）</option>
+</select>
+</div>
+<div style="margin: 8px 0;">
+<textarea id="md-content" placeholder="文章內容（Markdown）— 可從上方「📜 長文內容」複製貼上" style="width: 100%; height: 180px; padding: 10px; border: 1px solid var(--gold); border-radius: 6px; font-family: 'Microsoft JhengHei', sans-serif;"></textarea>
+</div>
+<div class="row">
+<button class="btn" onclick="publishMedium()">📤 發布到 Medium</button>
+<button class="btn" style="background:var(--gold);" onclick="copyLongFormToMedium()">⬆️ 從上方長文複製過來</button>
+</div>
+<div id="medium-result" style="margin-top: 12px;"></div>
+</div>
+
+<!-- Auto-publish daily cron status + manual trigger -->
+<div class="section">
+<h2>🤖 自動發文機器人 (每天 09:00 自動跑)</h2>
+<p style="font-size:13px;color:#A37849;margin:0 0 10px 0">每天台灣時間 9 點自動輪流寫一篇 Medium 長文（9 課程 + 6 施作 = 15 天輪一輪），自動存成 draft 等你核可。需 MEDIUM_INTEGRATION_TOKEN env var。</p>
+<button class="btn" onclick="runAutoPublishNow()">🚀 立刻跑一次（測試用，60-90 秒）</button>
+<div id="auto-publish-status" style="margin-top:12px;font-size:13px;color:#5D2630"></div>
+<h3 style="margin-top:18px;font-size:16px;color:#8E3D4B">最近自動發文紀錄</h3>
+<div id="auto-publish-log" style="font-size:13px"></div>
+</div>
+
+<!-- Schema.org -->
+<div class="section">
+<h2>🔧 網站 JSON-LD（給開發者貼進你網頁 &lt;head&gt;）</h2>
+<button class="btn" onclick="loadSchemaOrg()">產生 Schema.org JSON-LD</button>
+<pre id="schema-org" style="background: #2E1E14; color: #F2E5D5; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 11px; max-height: 400px;"></pre>
+</div>
+
+</div>
+
+<!-- WordPress posts management -->
+<div class="section">
+<h2>🗂️ WordPress 文章管理</h2>
+<p style="font-size:13px;color:#A37849;margin:0 0 10px 0">列出 macarondeluxe.com 上的文章。Trash 是「移到垃圾桶」可還原，不是永久刪除。</p>
+<div style="margin-bottom:10px">
+<select id="wp-status-filter">
+<option value="any">全部</option>
+<option value="draft">只看 Draft（草稿）</option>
+<option value="publish">只看 Published（已公開）</option>
+<option value="trash">只看 Trash（垃圾桶）</option>
+</select>
+<button class="btn" onclick="loadWpPosts()" style="margin-left:8px">🔄 載入</button>
+</div>
+<div id="wp-posts-list" style="font-size:13px"></div>
+</div>
+<script>
+const COURSE_TOPICS = [
+  '線上課程','線下課程','半永久紋繡課程','飄眉課程','飄霧眉課程','霧眉課程','髮際線課程','SMP 課程','除色課程'
+];
+const SERVICE_TOPICS = [
+  '飄眉','飄霧眉','霧眉','髮際線','SMP','除色'
+];
+
+function updateTopicOptions() {
+  const type = document.getElementById('type-select').value;
+  const topics = type === 'service' ? SERVICE_TOPICS : COURSE_TOPICS;
+  const sel = document.getElementById('topic-select');
+  sel.innerHTML = topics.map((t, i) => `<option value="${i}">${t}</option>`).join('');
+}
+
+async function runDailyBriefing() {
+  document.getElementById('visibility-loader').textContent = '⏳ 用 web_search 跑 5 個查詢，需 1-2 分鐘…';
+  try {
+    const r = await fetch('/api/geo/daily-briefing').then(r => r.json());
+    document.getElementById('visibility-loader').style.display = 'none';
+    const v = r.visibility || {};
+    document.getElementById('visibility-result').innerHTML = `
+      <div class="score-card">
+        <div class="metric"><div class="metric-num">${v.score || '0/0'}</div><div class="metric-label">OFZ 出現次數</div></div>
+        <div class="metric"><div class="metric-num">${v.percent || 0}%</div><div class="metric-label">能見度</div></div>
+        <div class="metric"><div class="metric-num">${(v.competitor_top || []).length}</div><div class="metric-label">競品出現</div></div>
+      </div>
+      <div style="margin-top: 12px; font-size: 13px;">
+        競品 TOP: ${(v.competitor_top || []).map(c => `<b>${c[0]}</b> (${c[1]})`).join('、') || '（無）'}
+      </div>
+    `;
+    const t = r.today_content_suggestion || {};
+    document.getElementById('today-suggestion').innerHTML = `
+      <div class="content-card">
+        <div class="meta">今日 GIA 建議</div>
+        <div>📚 課程: <b>${t.course_today}</b> · 💆 施作: <b>${t.service_today}</b> · 平台: <b>${t.platform}</b></div>
+        <div style="font-size: 12px; opacity: 0.7; margin-top: 8px;">${t.tip}</div>
+      </div>
+    `;
+    loadRecent();
+  } catch (e) {
+    document.getElementById('visibility-loader').innerHTML = '<span class="error">⚠️ ' + e.message + '</span>';
+  }
+}
+
+async function generateContent() {
+  const type = document.getElementById('type-select').value;
+  const platformIdx = parseInt(document.getElementById('platform-select').value);
+  const topicIdx = parseInt(document.getElementById('topic-select').value);
+  document.getElementById('generated-content').innerHTML = '<div class="loader">⏳ AI 撰寫中…</div>';
+  try {
+    const r = await fetch('/api/geo/generate-content', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({platformIdx, topicIdx, type}) }).then(r=>r.json());
+    if (!r.ok) throw new Error(r.error);
+    document.getElementById('generated-content').innerHTML = `
+      <div class="content-card">
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(this.parentNode.querySelector('.text').textContent); this.textContent='✅ 已複製'">📋 複製</button>
+        <div class="meta">${r.platform} · ${r.type === 'service' ? '💆 施作' : '📚 課程'} · ${r.subject} · ${r.angle} · ${r.word_count} 字</div>
+        <div class="text">${escapeHtml(r.content)}</div>
+      </div>
+    `;
+    loadRecent();
+  } catch (e) {
+    document.getElementById('generated-content').innerHTML = '<div class="error">⚠️ ' + e.message + '</div>';
+  }
+}
+
+async function loadRecent() {
+  try {
+    const r = await fetch('/api/geo/recent-content?n=10').then(r=>r.json());
+    const items = r.content || [];
+    if (!items.length) { document.getElementById('recent-content').innerHTML = '<div class="loader">尚未生成任何內容</div>'; return; }
+    document.getElementById('recent-content').innerHTML = items.reverse().map(c => `
+      <div class="content-card">
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(this.parentNode.querySelector('.text').textContent); this.textContent='✅ 已複製'">📋 複製</button>
+        <div class="meta">${new Date(c.ts).toLocaleString('zh-TW')} · ${c.platform} · ${c.type === 'service' ? '💆 施作' : '📚 課程'} · ${c.subject || c.course} · ${c.angle}</div>
+        <div class="text">${escapeHtml(c.content || '')}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    document.getElementById('recent-content').innerHTML = '<div class="error">⚠️ ' + e.message + '</div>';
+  }
+}
+
+async function loadSchemaOrg() {
+  try {
+    const r = await fetch('/api/geo/schema-org').then(r=>r.json());
+    document.getElementById('schema-org').textContent = JSON.stringify({ organization: r.organization, courses: r.courses, services: r.services }, null, 2);
+  } catch (e) {
+    document.getElementById('schema-org').textContent = '⚠️ ' + e.message;
+  }
+}
+
+function escapeHtml(s) { return String(s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+let __lastLongForm = null;
+
+async function generateLongFormContent() {
+  const contentType = document.getElementById('lf-type-select').value;
+  const topic = document.getElementById('lf-topic-input').value;
+  document.getElementById('longform-content').innerHTML = '<div class="loader">⏳ AI 撰寫中（30-60 秒）…</div>';
+  try {
+    const r = await fetch('/api/geo/generate-longform', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contentType, topic, type: 'course'}) }).then(r=>r.json());
+    if (!r.ok) throw new Error(r.error);
+    __lastLongForm = r;
+    document.getElementById('longform-content').innerHTML = `
+      <div class="content-card">
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(this.parentNode.querySelector('.text').textContent); this.textContent='✅ 已複製'">📋 複製</button>
+        <div class="meta">${r.content_type_label} · ${r.subject} · ${r.word_count} 字</div>
+        <div class="text">${escapeHtml(r.content)}</div>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('longform-content').innerHTML = '<div class="error">⚠️ ' + e.message + '</div>';
+  }
+}
+
+function copyLongFormToMedium() {
+  if (!__lastLongForm) { alert('請先在上方生成長文內容'); return; }
+  const lines = (__lastLongForm.content || '').split('\n');
+  // First non-empty line as title (strip markdown #)
+  const titleLine = lines.find(l => l.trim()) || '無標題';
+  const title = titleLine.replace(/^#+\s*/, '').trim();
+  document.getElementById('md-title').value = title;
+  document.getElementById('md-content').value = __lastLongForm.content;
+  document.getElementById('md-tags').value = 'OFZ,' + (__lastLongForm.subject || '紋繡');
+}
+
+async function publishMedium() {
+  const title = document.getElementById('md-title').value;
+  const contentMarkdown = document.getElementById('md-content').value;
+  const tags = document.getElementById('md-tags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const publishStatus = document.getElementById('md-status').value;
+  if (!title || !contentMarkdown) { alert('需要標題 + 內容'); return; }
+  document.getElementById('medium-result').innerHTML = '<div class="loader">⏳ 發布中…</div>';
+  try {
+    const r = await fetch('/api/geo/publish-medium', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title, contentMarkdown, tags, publishStatus}) }).then(r=>r.json());
+    if (!r.ok) {
+      if ((r.error || '').includes('MEDIUM_INTEGRATION_TOKEN')) {
+        document.getElementById('medium-result').innerHTML = '<div class="error">⚠️ 還沒設定 MEDIUM_INTEGRATION_TOKEN env。<br>1. 去 https://medium.com/me/settings/security 拿 Integration Token<br>2. 貼到 Render env 變數 MEDIUM_INTEGRATION_TOKEN<br>3. Save 後重試</div>';
+      } else {
+        document.getElementById('medium-result').innerHTML = '<div class="error">⚠️ ' + r.error + '</div>';
+      }
+      return;
+    }
+    document.getElementById('medium-result').innerHTML = `
+      <div class="content-card" style="border-left-color: #00ab6c;">
+        <div class="meta">✅ 已發布！狀態: ${r.status}</div>
+        <div><a href="${r.url}" target="_blank" style="color: var(--burgundy); font-weight: 600;">${r.url}</a></div>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('medium-result').innerHTML = '<div class="error">⚠️ ' + e.message + '</div>';
+  }
+}
+
+// Init: populate topic dropdown + load recent
+updateTopicOptions();
+loadRecent();
+
+async function runAutoPublishNow() {
+  const status = document.getElementById("auto-publish-status");
+  status.textContent = "⏳ 跑中... 生成 + 發 draft，等 60-90 秒";
+  status.style.color = "#A37849";
+  try {
+    const r = await fetch("/api/geo/auto-publish-now", {method:"POST"});
+    const j = await r.json();
+    if (j.ok && j.publish && j.publish.ok) {
+      status.innerHTML = "✅ 成功！主題: <b>" + (j.subject||"") + "</b> · 標題: " + (j.title||"") + " · <a href=\"" + (j.publish.url||"") + "\" target=\"_blank\">看 Medium 草稿</a>";
+      status.style.color = "#2d6a4f";
+    } else {
+      status.textContent = "❌ 失敗: " + (j.error || (j.publish && j.publish.error) || JSON.stringify(j).slice(0,200));
+      status.style.color = "#8E3D4B";
+    }
+    loadAutoPublishLog();
+  } catch (e) {
+    status.textContent = "❌ 錯誤: " + e.message;
+    status.style.color = "#8E3D4B";
+  }
+}
+
+async function loadAutoPublishLog() {
+  try {
+    const r = await fetch("/api/geo/auto-publish-log");
+    const j = await r.json();
+    const items = (j && j.items) || [];
+    const div = document.getElementById("auto-publish-log");
+    if (!items.length) { div.innerHTML = "<i style=\"color:#A37849\">尚無紀錄</i>"; return; }
+    div.innerHTML = items.slice().reverse().map(it => {
+      const ok = it.publish && it.publish.ok;
+      const url = it.publish && it.publish.url;
+      const dt = new Date(it.ts).toLocaleString("zh-TW");
+      return "<div style=\"padding:6px 0;border-bottom:1px solid #EDDDC1\">" +
+        (ok?"✅":"❌") + " " + dt + " · " + (it.type==="course"?"📚 課程":"💄 施作") + " · <b>" + (it.subject||"") + "</b> · " + (it.title||"") +
+        (url ? " · <a href=\""+url+"\" target=\"_blank\">Medium</a>" : (it.publish && it.publish.error ? " · <span style=\"color:#8E3D4B\">" + it.publish.error.slice(0,80) + "</span>" : "")) +
+        "</div>";
+    }).join("");
+  } catch {}
+}
+loadAutoPublishLog();
+
+async function loadWpPosts() {
+  const div = document.getElementById("wp-posts-list");
+  div.innerHTML = "<i style=\"color:#A37849\">載入中...</i>";
+  const status = document.getElementById("wp-status-filter").value;
+  try {
+    const r = await fetch("/api/wordpress/posts?status=" + status + "&perPage=30");
+    const j = await r.json();
+    if (!j.ok) { div.innerHTML = "<span style=\"color:#8E3D4B\">錯誤: " + (j.error||"unknown") + "</span>"; return; }
+    if (!j.items.length) { div.innerHTML = "<i style=\"color:#A37849\">沒有文章</i>"; return; }
+    div.innerHTML = j.items.map(p => {
+      const statusColor = p.status === "publish" ? "#2d6a4f" : (p.status === "draft" ? "#A37849" : "#8E3D4B");
+      const dt = new Date(p.date).toLocaleString("zh-TW");
+      return "<div style=\"padding:10px 0;border-bottom:1px solid #EDDDC1;display:flex;align-items:center;gap:10px\">" +
+        "<span style=\"background:" + statusColor + ";color:white;padding:2px 8px;border-radius:10px;font-size:11px;min-width:70px;text-align:center\">" + p.status + "</span>" +
+        "<div style=\"flex:1\"><div style=\"font-weight:bold\">" + (p.title || "(無標題)") + "</div><div style=\"font-size:11px;color:#A37849\">ID " + p.id + " · " + dt + " · <a href=\"" + p.link + "\" target=\"_blank\">看文章</a></div></div>" +
+        (p.status !== "trash" ? "<button onclick=\"trashWpPost(" + p.id + ", \'" + (p.title||"").replace(/['"]/g,"") + "\')\" style=\"background:#8E3D4B;color:white;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px\">🗑️ Trash</button>" : "<span style=\"color:#A37849;font-size:12px\">已在垃圾桶</span>") +
+        "</div>";
+    }).join("");
+  } catch (e) { div.innerHTML = "<span style=\"color:#8E3D4B\">錯誤: " + e.message + "</span>"; }
+}
+
+async function trashWpPost(id, title) {
+  if (!confirm("確定要把「" + title + "」(ID " + id + ") 移到 Trash？\n\n（可從 wp-admin 還原）")) return;
+  try {
+    const r = await fetch("/api/wordpress/posts/" + id, { method: "DELETE" });
+    const j = await r.json();
+    if (j.ok) { alert("✅ 已移到 Trash"); loadWpPosts(); }
+    else alert("❌ 失敗: " + (j.error || "unknown"));
+  } catch (e) { alert("❌ 錯誤: " + e.message); }
+}
+loadWpPosts();
+</script>
+</body>
+</html>
