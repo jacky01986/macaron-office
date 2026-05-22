@@ -415,6 +415,77 @@
     font-style: italic; letter-spacing: 1px;
   }
 
+
+  /* ──── 訊息時間戳 ──── */
+  .msg .time-stamp {
+    font-size: 9px; color: var(--muted); font-family: Georgia, serif;
+    margin-top: 6px; opacity: 0.7;
+  }
+  .msg.user .time-stamp { text-align: right; }
+
+  /* ──── VICTOR 派發任務 卡片(專員視角) ──── */
+  .msg.victor-delegation { max-width: 92%; }
+  .msg.victor-delegation .bubble {
+    background: linear-gradient(135deg, rgba(176, 141, 87, 0.10) 0%, rgba(109, 46, 70, 0.20) 100%);
+    border: 1px solid var(--gold);
+    border-radius: 12px;
+    padding: 14px 18px;
+    position: relative;
+  }
+  .msg.victor-delegation .bubble::before {
+    content: '👑'; position: absolute; top: -10px; left: 14px;
+    background: var(--dark); padding: 0 6px; font-size: 16px;
+  }
+  .msg.victor-delegation .delegation-header {
+    font-family: Georgia, serif; color: var(--gold);
+    font-size: 11px; letter-spacing: 2px; font-weight: 600;
+    margin-bottom: 8px; padding-bottom: 6px;
+    border-bottom: 1px dotted var(--burgundy);
+  }
+  .msg.victor-delegation .delegation-task {
+    color: var(--ivory); font-size: 14px; line-height: 1.7;
+    background: rgba(0,0,0,0.18); padding: 10px 14px; border-radius: 6px;
+    border-left: 3px solid var(--gold);
+  }
+  .msg.worker-output .bubble { border-left: 3px solid var(--green) !important; }
+  .msg.worker-output .work-tag {
+    display: inline-block; background: var(--green); color: var(--dark);
+    font-size: 9px; padding: 2px 6px; border-radius: 3px;
+    margin-left: 6px; font-weight: 600; letter-spacing: 1px;
+  }
+  .task-timeline {
+    background: var(--dark-3); border: 1px solid var(--burgundy-dark);
+    border-radius: 10px; margin-bottom: 18px; overflow: hidden;
+  }
+  .task-timeline .tt-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: var(--burgundy-dark); cursor: pointer;
+    font-family: Georgia, serif; color: var(--gold); font-size: 12px;
+    letter-spacing: 2px;
+  }
+  .task-timeline .tt-head:hover { background: var(--burgundy); }
+  .task-timeline .tt-toggle { font-size: 14px; transition: transform 0.2s; }
+  .task-timeline.collapsed .tt-toggle { transform: rotate(-90deg); }
+  .task-timeline.collapsed .tt-body { display: none; }
+  .task-timeline .tt-body { padding: 12px 14px; }
+  .task-timeline .tt-item {
+    display: flex; gap: 10px; padding: 8px 0;
+    border-bottom: 1px dotted var(--burgundy-dark); font-size: 12px;
+  }
+  .task-timeline .tt-item:last-child { border-bottom: none; }
+  .task-timeline .tt-item .tt-from {
+    font-family: Georgia, serif; color: var(--gold);
+    font-size: 11px; min-width: 92px; font-style: italic;
+  }
+  .task-timeline .tt-item .tt-content { color: var(--ivory); flex: 1; line-height: 1.6; }
+  .task-timeline .tt-item .tt-time { color: var(--muted); font-size: 10px; min-width: 60px; text-align: right; }
+  .task-timeline .tt-stats {
+    display: flex; gap: 16px; padding-top: 8px;
+    border-top: 1px solid var(--burgundy-dark); margin-top: 8px;
+    font-size: 11px; color: var(--muted);
+  }
+  .task-timeline .tt-stat strong { color: var(--gold-bright); }
+
   @media (max-width: 1100px) {
     .app { grid-template-columns: 280px 1fr; grid-template-areas: "header header" "sidebar main"; }
     .activity { display: none; }
@@ -684,21 +755,90 @@ function rebuildConversation() {
     return;
   }
   conv.innerHTML = '';
+  const emp = EMPLOYEES[currentEmployee];
+  if (emp && !emp.isDirector) {
+    const timeline = buildTaskTimeline(msgs, emp);
+    if (timeline) conv.appendChild(timeline);
+  }
   msgs.forEach((m) => {
     appendMessageToDOM(m, false);
   });
   conv.scrollTop = conv.scrollHeight;
 }
 
+function buildTaskTimeline(msgs, emp) {
+  const items = [];
+  let directCnt = 0, victorCnt = 0, doneCnt = 0;
+  msgs.forEach((m) => {
+    if (m.role === 'user') {
+      directCnt++;
+      items.push({ from: '👤 JEFFREY 直派', text: m.content || '', ts: m.ts || '' });
+    } else if (m.type === 'victor-delegation' || (m.label && m.label.indexOf('VICTOR 派發') >= 0)) {
+      victorCnt++;
+      const tmp = document.createElement('div');
+      tmp.innerHTML = m.content || '';
+      const text = (tmp.textContent || '').replace(/^📋 任務指派\s*/, '').trim();
+      items.push({ from: '👑 VICTOR 派', text, ts: m.ts || '' });
+    } else if (m.type === 'worker-output' && m.content && !/執行中…|⚠️/.test(m.content)) {
+      doneCnt++;
+    }
+  });
+  if (items.length === 0) return null;
+  const wrapper = document.createElement('div');
+  wrapper.className = 'task-timeline';
+  wrapper.innerHTML = `
+    <div class="tt-head" onclick="this.parentElement.classList.toggle('collapsed')">
+      <span>📋 ${emp.name} 的任務歷程(${items.length} 筆)</span>
+      <span class="tt-toggle">▼</span>
+    </div>
+    <div class="tt-body">
+      ${items.map(it => `
+        <div class="tt-item">
+          <div class="tt-from">${escapeHtml(it.from)}</div>
+          <div class="tt-content">${escapeHtml((it.text || '').slice(0, 200))}${(it.text || '').length > 200 ? '…' : ''}</div>
+          <div class="tt-time">${it.ts || ''}</div>
+        </div>
+      `).join('')}
+      <div class="tt-stats">
+        <span class="tt-stat">直派 <strong>${directCnt}</strong></span>
+        <span class="tt-stat">VICTOR 派發 <strong>${victorCnt}</strong></span>
+        <span class="tt-stat">已完成輸出 <strong>${doneCnt}</strong></span>
+      </div>
+    </div>
+  `;
+  return wrapper;
+}
+
 function appendMessageToDOM(msg, animate = true) {
   const conv = document.getElementById('conv');
   const div = document.createElement('div');
-  div.className = `msg ${msg.role === 'user' ? 'user' : 'ai'}${animate ? ' fade-in' : ''}`;
+  if (!msg.ts) {
+    msg.ts = new Date().toLocaleTimeString('zh-TW', {hour12:false, hour:'2-digit', minute:'2-digit'});
+  }
+  let cls = msg.role === 'user' ? 'user' : 'ai';
+  if (msg.type === 'victor-delegation' || (msg.role === 'ai' && msg.label && msg.label.indexOf('VICTOR 派發') >= 0)) {
+    cls = 'victor-delegation';
+  } else if (msg.type === 'worker-output') {
+    cls = 'ai worker-output';
+  }
+  div.className = `msg ${cls}${animate ? ' fade-in' : ''}`;
   if (msg.role === 'user') {
-    div.innerHTML = `<div class="label">您 · JEFFREY</div><div class="bubble">${escapeHtml(msg.content)}</div>`;
+    div.innerHTML = `<div class="label">您 · JEFFREY</div><div class="bubble">${escapeHtml(msg.content)}</div><div class="time-stamp">${msg.ts}</div>`;
+  } else if (cls === 'victor-delegation') {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = msg.content || '';
+    const taskText = (tmp.textContent || '').replace(/^📋 任務指派\s*/, '').trim();
+    div.innerHTML = `
+      <div class="bubble">
+        <div class="delegation-header">👑 VICTOR 拆解後派發給 ${EMPLOYEES[currentEmployee]?.name || ''}</div>
+        <div class="delegation-task">${escapeHtml(taskText)}</div>
+      </div>
+      <div class="time-stamp">${msg.ts}</div>
+    `;
   } else {
     const label = msg.label || `${EMPLOYEES[currentEmployee].name} · ${EMPLOYEES[currentEmployee].role}`;
-    div.innerHTML = `<div class="label">${escapeHtml(label)}</div><div class="bubble" data-stream-id="${msg.streamId || ''}">${msg.content || ''}</div>`;
+    const tag = (cls.indexOf('worker-output') >= 0) ? '<span class="work-tag">EXECUTED</span>' : '';
+    div.innerHTML = `<div class="label">${escapeHtml(label)}${tag}</div><div class="bubble" data-stream-id="${msg.streamId || ''}">${msg.content || ''}</div><div class="time-stamp">${msg.ts}</div>`;
   }
   conv.appendChild(div);
   conv.scrollTop = conv.scrollHeight;
@@ -791,8 +931,10 @@ async function readSSE(response, handlers) {
 // ============ SEND (single employee) ============
 async function sendSingle(text) {
   const emp = EMPLOYEES[currentEmployee];
-  conversations[emp.id].push({ role: 'user', content: text });
-  appendMessageToDOM({ role: 'user', content: text });
+  const _ts = new Date().toLocaleTimeString('zh-TW', {hour12:false, hour:'2-digit', minute:'2-digit'});
+  const _userMsg = { role: 'user', content: text, ts: _ts };
+  conversations[emp.id].push(_userMsg);
+  appendMessageToDOM(_userMsg);
 
   employeeStatus[emp.id] = 'working';
   updateEmployeeStatusOnly();
@@ -939,15 +1081,20 @@ async function sendOrchestrate(text) {
 
           // ★ Mirror task & output into the worker's OWN conversation history
           if (!conversations[a.employeeId]) conversations[a.employeeId] = [];
+          const nowTs = new Date().toLocaleTimeString('zh-TW', {hour12:false, hour:'2-digit', minute:'2-digit'});
           const taskMsg = {
             role: 'ai',
+            type: 'victor-delegation',
             label: `👑 VICTOR 派發任務`,
-            content: `<div class="strategy-box"><span class="label">📋 任務指派</span>${escapeHtml(a.task)}</div>`
+            content: `<div class="strategy-box"><span class="label">📋 任務指派</span>${escapeHtml(a.task)}</div>`,
+            ts: nowTs
           };
           const outputMsg = {
             role: 'ai',
+            type: 'worker-output',
             label: `${a.employeeName} · ${a.employeeRole}`,
-            content: `<em style="color:var(--muted);">執行中…</em>`
+            content: `<em style="color:var(--muted);">執行中…</em>`,
+            ts: nowTs
           };
           conversations[a.employeeId].push(taskMsg);
           conversations[a.employeeId].push(outputMsg);
