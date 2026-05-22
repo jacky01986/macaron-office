@@ -35,10 +35,45 @@
 
   .app {
     display: grid;
-    grid-template-rows: 64px 1fr;
+    grid-template-rows: 64px 50px 1fr;
     grid-template-columns: 320px 1fr 360px;
-    grid-template-areas: "header header header" "sidebar main activity";
+    grid-template-areas: "header header header" "subnav subnav subnav" "sidebar main activity";
     height: 100vh; width: 100vw;
+  }
+  .subnav {
+    grid-area: subnav;
+    background: var(--dark-2);
+    border-bottom: 1px solid var(--burgundy);
+    display: flex; align-items: center; gap: 4px;
+    padding: 0 20px; overflow-x: auto; white-space: nowrap;
+  }
+  .subnav::-webkit-scrollbar { height: 4px; }
+  .subnav a {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    color: var(--ivory); text-decoration: none;
+    font-size: 12px; font-family: inherit;
+    border: 1px solid transparent; border-radius: 18px;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+  .subnav a:hover {
+    background: var(--burgundy-dark);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .subnav a.featured {
+    background: linear-gradient(135deg, var(--gold) 0%, var(--burgundy-light) 100%);
+    color: var(--dark);
+    font-weight: 600;
+  }
+  .subnav a.featured:hover {
+    background: linear-gradient(135deg, var(--gold-bright) 0%, var(--burgundy) 100%);
+    color: var(--dark);
+  }
+  .subnav .nav-divider {
+    width: 1px; height: 18px; background: var(--burgundy-dark);
+    margin: 0 4px; flex-shrink: 0;
   }
   header {
     grid-area: header;
@@ -512,6 +547,27 @@
       </div>
     </div>
   </header>
+
+  <nav class="subnav" aria-label="功能導覽">
+    <a href="/" class="featured">🥐 主控台</a>
+    <a href="/social.html" class="featured">📱 社群草稿</a>
+    <a href="/ai-content.html" class="featured">📚 AI 內容團隊</a>
+    <span class="nav-divider"></span>
+    <a href="/roas.html">📈 ROAS</a>
+    <a href="/customers.html">👥 客戶</a>
+    <a href="/line.html">💬 LINE</a>
+    <a href="/google.html">📊 Google Ads</a>
+    <a href="/scout.html">📡 競品</a>
+    <span class="nav-divider"></span>
+    <a href="/teachers.html">🏪 門店戰報</a>
+    <a href="/geo.html">🌐 GEO/SEO</a>
+    <a href="/optimize.html">⚡ 廣告體檢</a>
+    <a href="/competitor.html">🎯 競品追蹤</a>
+    <a href="/conversion.html">💎 對話成交</a>
+    <a href="/actions.html">📋 行動建議</a>
+    <a href="/work-status.html">🧠 AI 大腦</a>
+    <a href="/switcher.html">🔄 帳戶切換</a>
+  </nav>
 
   <aside class="sidebar" id="sidebar">
     <h2>AI 員工編制</h2>
