@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>Meta 多帳戶切換器 — Macaron de Luxe</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body { font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; background: #FAF7F2; color: #3B2A1F; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 8px; color: #6B4226; }
+  .subtitle { color: #888; margin-bottom: 24px; font-size: 14px; }
+  .card { background: white; border: 1px solid #E5DACB; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 16px; margin: 0 0 12px; color: #6B4226; }
+  .row { display: flex; align-items: center; padding: 10px 12px; border: 1px solid #EEE2D2; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: 0.15s; }
+  .row:hover { background: #FFF8EE; border-color: #D4B595; }
+  .row.active { background: #E8F5E9; border-color: #4CAF50; }
+  .row.disabled { opacity: 0.45; cursor: not-allowed; }
+  .row .name { flex: 1; font-weight: 500; }
+  .row .id { color: #999; font-size: 12px; margin-left: 8px; font-family: monospace; }
+  .row .ig { color: #C13584; font-size: 12px; margin-left: 12px; }
+  .badge-active { background: #4CAF50; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px; }
+  .badge-disabled { background: #999; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px; }
+  .err { color: #c33; padding: 8px 12px; background: #fdd; border-radius: 6px; font-size: 13px; }
+  .loading { color: #999; padding: 12px; }
+  .toolbar { margin-top: 16px; }
+  .btn { background: #6B4226; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+  .btn:hover { background: #5A3520; }
+  .btn-secondary { background: #aaa; }
+  .status-bar { background: #FFF4E0; border: 1px solid #F5C078; padding: 10px 14px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>🔄 Meta 多帳戶切換器</h1>
+<p class="subtitle">點選要切換到的 FB 粉絲頁（自動連動 IG）或廣告帳戶。VICTOR 從下一秒開始用新數據。</p>
+
+<div id="status" class="status-bar">載入中...</div>
+
+<div class="card">
+  <h2>📘 FB 粉絲頁（選了會自動連動 IG）</h2>
+  <div id="pages"><div class="loading">載入中...</div></div>
+</div>
+
+<div class="card">
+  <h2>📊 廣告帳戶</h2>
+  <div id="ads"><div class="loading">載入中...</div></div>
+</div>
+
+<div class="toolbar">
+  <button class="btn btn-secondary" onclick="clearOverride()">清除覆寫（還原 Render env）</button>
+  <a href="/" style="margin-left: 12px; color: #6B4226;">← 回主辦公室</a>
+</div>
+
+<script>
+let assets = null;
+
+async function loadAssets() {
+  try {
+    const res = await fetch('/api/meta/assets');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    assets = await res.json();
+    render();
+  } catch (e) {
+    document.getElementById('status').innerHTML = '<span class="err">無法載入：' + e.message + '</span>';
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
+}
+
+function render() {
+  const cur = assets.current || {};
+  const ov = assets.override || {};
+  let s = '目前使用中：';
+  s += ' FB Page = ' + (cur.pageId || '未設') + ' ／';
+  s += ' IG = ' + (cur.igId || '未設') + ' ／';
+  s += ' Ad Account = ' + (cur.adAccountId || '未設');
+  if (Object.keys(ov).length > 0) s += ' （已套用覆寫）';
+  document.getElementById('status').textContent = s;
+
+  const pagesEl = document.getElementById('pages');
+  if (assets.pages_error) {
+    pagesEl.innerHTML = '<div class="err">載入失敗：' + assets.pages_error + '</div>';
+  } else if (!assets.pages || assets.pages.length === 0) {
+    pagesEl.innerHTML = '<div class="loading">沒有粉絲頁可切換（Meta token 可能少 pages_show_list 權限）</div>';
+  } else {
+    pagesEl.innerHTML = '';
+    assets.pages.forEach(p => {
+      const isActive = p.pageId === cur.pageId;
+      const div = document.createElement('div');
+      div.className = 'row' + (isActive ? ' active' : '');
+      div.innerHTML = '<span class="name">' + escapeHtml(p.name) + '</span>' +
+        '<span class="id">FB:' + escapeHtml(p.pageId) + '</span>' +
+        (p.igId ? '<span class="ig">IG @' + escapeHtml(p.igUsername || '') + '</span>' : '<span class="ig" style="color:#999">無 IG</span>') +
+        (isActive ? '<span class="badge-active">使用中</span>' : '');
+      div.onclick = () => switchPage(p);
+      pagesEl.appendChild(div);
+    });
+  }
+
+  const adsEl = document.getElementById('ads');
+  if (assets.ad_accounts_error) {
+    adsEl.innerHTML = '<div class="err">載入失敗：' + assets.ad_accounts_error + '</div>';
+  } else if (!assets.ad_accounts || assets.ad_accounts.length === 0) {
+    adsEl.innerHTML = '<div class="loading">沒有廣告帳戶</div>';
+  } else {
+    adsEl.innerHTML = '';
+    assets.ad_accounts.forEach(a => {
+      const isActive = a.adAccountId === cur.adAccountId;
+      const isDisabled = a.status === 'disabled';
+      const div = document.createElement('div');
+      div.className = 'row' + (isActive ? ' active' : '') + (isDisabled ? ' disabled' : '');
+      div.innerHTML = '<span class="name">' + escapeHtml(a.name) + '</span>' +
+        '<span class="id">' + escapeHtml(a.adAccountId) + '</span>' +
+        '<span class="ig" style="color:#666">' + escapeHtml(a.currency || '') + '</span>' +
+        (isActive ? '<span class="badge-active">使用中</span>' : '') +
+        (isDisabled ? '<span class="badge-disabled">停用</span>' : '');
+      if (!isDisabled) div.onclick = () => switchAd(a);
+      adsEl.appendChild(div);
+    });
+  }
+}
+
+async function switchPage(p) {
+  let msg = '切換到「' + p.name + '」(FB ' + p.pageId + ')';
+  if (p.igId) msg += '\n會同時切到 IG @' + (p.igUsername || p.igId);
+  msg += '\n\n確認嗎？';
+  if (!confirm(msg)) return;
+  await postSwitch({ pageId: p.pageId, igId: p.igId });
+}
+
+async function switchAd(a) {
+  if (!confirm('切換廣告帳戶到「' + a.name + '」(' + a.adAccountId + ')？')) return;
+  await postSwitch({ adAccountId: a.adAccountId });
+}
+
+async function postSwitch(payload) {
+  try {
+    const res = await fetch('/api/meta/switch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    alert('✓ 已切換');
+    loadAssets();
+  } catch (e) {
+    alert('切換失敗：' + e.message);
+  }
+}
+
+async function clearOverride() {
+  if (!confirm('清除覆寫，還原成 Render 環境變數設定？')) return;
+  try {
+    await fetch('/api/meta/switch?clear=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    alert('✓ 已清除');
+    loadAssets();
+  } catch (e) {
+    alert('清除失敗：' + e.message);
+  }
+}
+
+loadAssets();
+</script>
+</body>
+</html>

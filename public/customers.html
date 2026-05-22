@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>👥 客人畫像 · MACARON DE LUXE</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root {
+    --bg: #0d0a0b;
+    --card: #1a1416;
+    --card-2: #241b1f;
+    --border: #3b2a33;
+    --gold: #B08D57;
+    --text: #e9dfd2;
+    --muted: #998;
+    --green: #3ddc84;
+    --red: #ff6b6b;
+    --blue: #4285F4;
+    --orange: #ff9f68;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif;
+    max-width: 1600px; margin: 0 auto;
+  }
+  h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: 2px; color: var(--gold); }
+  .subtitle { color: var(--muted); font-size: 12px; margin-bottom: 20px; }
+
+  .summary-bar {
+    background: var(--card); border: 1px solid var(--border);
+    padding: 12px 16px; border-radius: 10px; margin-bottom: 16px;
+    display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
+  }
+  .summary-item { font-size: 13px; color: var(--muted); }
+  .summary-item b { color: var(--text); font-size: 16px; margin: 0 6px; }
+
+  .kanban {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  }
+  .column {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    display: flex; flex-direction: column;
+    min-height: 400px;
+  }
+  .col-header {
+    padding: 14px; border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .col-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .col-desc { font-size: 11px; color: var(--muted); margin: 0 0 8px; }
+  .col-count { font-size: 24px; font-weight: 700; }
+  .col-actions { display: flex; gap: 6px; margin-top: 8px; }
+  .col-actions button {
+    flex: 1; padding: 6px 10px; background: var(--card-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    font-size: 11px; cursor: pointer;
+  }
+  .col-actions button:hover { background: rgba(176,141,87,0.15); border-color: var(--gold); }
+
+  .col-cards {
+    flex: 1; overflow-y: auto; max-height: 65vh;
+    padding: 8px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .card {
+    padding: 10px; background: var(--card-2); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; transition: all 0.2s;
+  }
+  .card:hover { border-color: var(--gold); transform: translateY(-1px); }
+  .card-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .card-meta { font-size: 10px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+  .card-tags { margin-top: 4px; display: flex; gap: 3px; flex-wrap: wrap; }
+  .card-tag { font-size: 9px; padding: 1px 6px; background: rgba(176,141,87,0.15); color: var(--gold); border-radius: 8px; }
+
+  .empty-col {
+    padding: 20px; text-align: center; color: var(--muted);
+    font-size: 11px; font-style: italic;
+  }
+
+  .drawer {
+    position: fixed; top: 0; right: 0; width: 480px; max-width: 100%;
+    height: 100vh; background: var(--card); border-left: 1px solid var(--border);
+    overflow-y: auto; transform: translateX(100%); transition: transform 0.25s;
+    z-index: 9999; box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-header {
+    padding: 16px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .drawer-close {
+    background: transparent; border: none; color: var(--muted); font-size: 20px; cursor: pointer;
+  }
+  .drawer-body { padding: 16px; }
+  .drawer h2 { margin: 0 0 4px; color: var(--gold); font-size: 18px; }
+  .drawer .sub { color: var(--muted); font-size: 11px; margin-bottom: 12px; }
+  .drawer-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    padding: 12px; background: var(--card-2); border-radius: 8px; margin-bottom: 14px;
+  }
+  .drawer-stat { text-align: center; }
+  .drawer-stat .lbl { font-size: 10px; color: var(--muted); }
+  .drawer-stat .val { font-size: 18px; font-weight: 700; color: var(--gold); }
+
+  .ai-section { padding: 12px; background: var(--card-2); border-radius: 8px; border-left: 3px solid var(--gold); margin-bottom: 14px; }
+  .ai-section h3 { margin: 0 0 6px; color: var(--gold); font-size: 13px; }
+  .ai-section p { margin: 4px 0; font-size: 12px; line-height: 1.6; }
+  .ai-loading { color: var(--muted); font-style: italic; font-size: 12px; }
+  .btn-primary {
+    width: 100%; padding: 8px 16px; background: var(--gold); color: #1a1416;
+    border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; margin-bottom: 6px;
+  }
+  .btn-primary:hover:not(:disabled) { background: #c9a470; }
+  .btn-primary:disabled { opacity: 0.5; cursor: default; }
+  .btn-secondary {
+    background: var(--card-2); color: var(--text); border: 1px solid var(--border);
+  }
+
+  .history { border-top: 1px solid var(--border); padding-top: 12px; }
+  .history h3 { font-size: 13px; color: var(--gold); margin: 0 0 8px; }
+  .msg {
+    padding: 8px; background: var(--card-2); border-radius: 6px;
+    margin-bottom: 6px; font-size: 11px;
+  }
+  .msg .time { color: var(--muted); font-size: 9px; margin-bottom: 3px; }
+  .msg .intent { display: inline-block; padding: 1px 6px; background: rgba(66,133,244,0.15); color: var(--blue); border-radius: 6px; font-size: 9px; margin-right: 4px; }
+  .msg .reply { margin-top: 4px; padding: 6px; background: rgba(61,220,132,0.08); border-left: 2px solid var(--green); border-radius: 0 4px 4px 0; color: #b8d; }
+
+  .modal-bg {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center;
+    z-index: 10000;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--gold); border-radius: 12px;
+    padding: 20px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto;
+  }
+  .modal h2 { margin: 0 0 10px; color: var(--gold); }
+  .modal textarea {
+    width: 100%; min-height: 100px; padding: 8px; background: #0d0a0b;
+    border: 1px solid var(--border); color: var(--text); border-radius: 6px;
+    font-size: 13px; margin: 6px 0;
+  }
+  .draft-card {
+    padding: 10px; background: var(--card-2); border: 1px solid var(--border);
+    border-radius: 8px; margin-bottom: 8px;
+  }
+  .draft-card .style { font-size: 11px; color: var(--gold); margin-bottom: 4px; }
+  .draft-card textarea { min-height: 70px; }
+
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--card); border: 1px solid var(--gold);
+    padding: 10px 20px; border-radius: 8px; z-index: 99999;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 1000px) {
+    .kanban { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .kanban { grid-template-columns: 1fr; }
+    .drawer { width: 100%; }
+  }
+</style>
+</head>
+<body>
+  <h1>👥 客人畫像</h1>
+  <div class="subtitle">MACARON DE LUXE · LINE 客人 RFM 分群 + AI 畫像</div>
+
+  <div class="summary-bar" id="summary-bar">讀取中...</div>
+
+  <div class="kanban" id="kanban"></div>
+
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <h2 id="drawer-name">客人</h2>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </div>
+
+  <div class="modal-bg" id="broadcast-modal">
+    <div class="modal">
+      <h2 id="bc-title">分組廣播</h2>
+      <div class="sub" id="bc-sub" style="color:var(--muted);font-size:11px"></div>
+      <textarea id="bc-brief" placeholder="本次主題（可選）例：母親節限定 6 入禮盒 880 + 玫瑰香氛小卡"></textarea>
+      <button class="btn-primary" id="bc-gen-btn">✏️ 讓 NOVA 寫 3 個版本</button>
+      <div id="bc-drafts" style="margin-top:10px"></div>
+      <button class="btn-primary btn-secondary" onclick="closeModal()">關閉</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let SEGMENTS = {};
+let ALL_GROUPS = {};
+
+function toast(msg, ms = 3000) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(window._t); window._t = setTimeout(() => t.classList.remove("show"), ms);
+}
+function esc(s) { return String(s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(ts) { if(!ts) return "?"; const d = new Date(ts); return `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; }
+function agoText(days) { if(days===0) return "今天"; if(days===1) return "昨天"; if(days<7) return days+" 天前"; if(days<30) return Math.floor(days/7)+" 週前"; return Math.floor(days/30)+" 個月前"; }
+
+async function load() {
+  try {
+    const r = await fetch("/api/customers");
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    SEGMENTS = d.segments;
+    ALL_GROUPS = d.groups;
+    renderSummary(d.summary);
+    renderKanban(d.groups);
+  } catch (e) {
+    $("summary-bar").innerHTML = `<span style="color:var(--red)">讀取失敗：${esc(e.message)}</span>`;
+  }
+}
+
+function renderSummary(s) {
+  $("summary-bar").innerHTML = `
+    <span class="summary-item">總計 <b>${s.total}</b> 位客人</span>
+    <span class="summary-item" style="color:#B08D57">🔥 VIP <b>${s.vip}</b></span>
+    <span class="summary-item" style="color:#3ddc84">💚 活躍 <b>${s.active}</b></span>
+    <span class="summary-item" style="color:#4285F4">🆕 新客 <b>${s.new}</b></span>
+    <span class="summary-item" style="color:#ff6b6b">😴 流失 <b>${s.atrisk}</b></span>
+    <div style="flex:1"></div>
+    <button onclick="load()" style="padding:5px 12px;background:var(--card-2);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer">🔄 重新整理</button>
+  `;
+}
+
+function renderKanban(groups) {
+  const order = ["vip", "active", "new", "atrisk"];
+  $("kanban").innerHTML = order.map(seg => {
+    const meta = SEGMENTS[seg];
+    const list = groups[seg] || [];
+    return `<div class="column">
+      <div class="col-header" style="border-top:3px solid ${meta.color}">
+        <div class="col-title">${meta.label}</div>
+        <div class="col-desc">${meta.desc}</div>
+        <div class="col-count" style="color:${meta.color}">${list.length}</div>
+        <div class="col-actions">
+          <button onclick="openBroadcast('${seg}')">📣 群發</button>
+        </div>
+      </div>
+      <div class="col-cards">
+        ${list.length === 0 ? '<div class="empty-col">目前沒人</div>' : list.map(c => `
+          <div class="card" onclick="openCustomer('${c.userId}')">
+            <div class="card-name">${esc(c.userName)}</div>
+            <div class="card-meta">
+              <span>💬 ${c.frequency}</span>
+              <span>⏱ ${agoText(c.recencyDays)}</span>
+              <span>⭐ ${c.monetary}</span>
+            </div>
+            ${c.tags && c.tags.length ? `<div class="card-tags">${c.tags.slice(0,3).map(t=>`<span class="card-tag">${esc(t)}</span>`).join("")}</div>` : ""}
+          </div>`).join("")}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function openCustomer(userId) {
+  const r = await fetch("/api/customers/" + encodeURIComponent(userId));
+  const d = await r.json();
+  if (d.error) { toast("❌ " + d.error); return; }
+  const c = d.customer;
+  $("drawer-name").textContent = c.userName;
+  $("drawer-body").innerHTML = `
+    <div class="sub">${c.userId.slice(0,20)} · 分組：${SEGMENTS[c.segment]?.label || c.segment}</div>
+    <div class="drawer-stats">
+      <div class="drawer-stat"><div class="lbl">對話</div><div class="val">${c.frequency}</div></div>
+      <div class="drawer-stat"><div class="lbl">最近</div><div class="val" style="font-size:14px">${agoText(c.recencyDays)}</div></div>
+      <div class="drawer-stat"><div class="lbl">意圖分數</div><div class="val">${c.monetary}</div></div>
+    </div>
+
+    <div id="ai-profile-section" class="ai-section">
+      <h3>🧠 AI 客人畫像</h3>
+      ${c.aiProfile ? `
+        <p><b>畫像：</b>${esc(c.aiProfile)}</p>
+        ${c.tags && c.tags.length ? `<p><b>標籤：</b>${c.tags.map(t=>`<span class="card-tag">${esc(t)}</span>`).join(" ")}</p>` : ""}
+      ` : '<p class="ai-loading">還沒分析過這位客人。按下面按鈕讓 Claude 讀對話歷史產生畫像。</p>'}
+    </div>
+    <button class="btn-primary" id="analyze-btn" onclick="analyze('${c.userId}')">🧠 ${c.aiProfile ? '重新分析' : '生成'} AI 畫像</button>
+    
+    <div class="history">
+      <h3>💬 對話歷史（${c.messages.length} 則）</h3>
+      ${c.messages.slice(0, 30).map(m => `
+        <div class="msg">
+          <div class="time">${fmtDate(m.timestamp)} <span class="intent">${esc(m.intent || '?')}</span></div>
+          <div>${esc(m.text)}</div>
+          ${m.replyText ? `<div class="reply">↩️ ${esc(m.replyText)}</div>` : ''}
+        </div>`).join("")}
+      ${c.messages.length > 30 ? `<div style="text-align:center;color:var(--muted);font-size:11px;padding:10px">...僅顯示最近 30 則</div>` : ''}
+    </div>
+  `;
+  $("drawer").classList.add("open");
+}
+
+function closeDrawer() { $("drawer").classList.remove("open"); }
+
+async function analyze(userId) {
+  const btn = $("analyze-btn");
+  btn.disabled = true; btn.textContent = "🤔 Claude 分析中...";
+  try {
+    const r = await fetch("/api/customers/" + encodeURIComponent(userId) + "/analyze", { method: "POST" });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    const p = d.profile;
+    $("ai-profile-section").innerHTML = `
+      <h3>🧠 AI 客人畫像</h3>
+      <p><b>畫像：</b>${esc(p.aiProfile)}</p>
+      <p><b>偏好：</b>${(p.preferences||[]).join("、")}</p>
+      <p><b>標籤：</b>${(p.tags||[]).map(t=>`<span class="card-tag">${esc(t)}</span>`).join(" ")}</p>
+      <p><b>建議聯絡：</b>${esc(p.nextContact || "")}</p>
+      <p><b>建議訊息：</b>${esc(p.suggestedMessage || "")}</p>
+    `;
+    btn.textContent = "✅ 已更新";
+    setTimeout(() => load(), 1000);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = "🧠 生成 AI 畫像";
+    toast("❌ " + e.message, 5000);
+  }
+}
+
+let CURRENT_SEG = null;
+function openBroadcast(segment) {
+  CURRENT_SEG = segment;
+  const m = SEGMENTS[segment];
+  const count = (ALL_GROUPS[segment] || []).length;
+  $("bc-title").textContent = `📣 對 ${m.label} 群發`;
+  $("bc-sub").textContent = `目標人數：${count} 位`;
+  $("bc-brief").value = "";
+  $("bc-drafts").innerHTML = "";
+  $("broadcast-modal").classList.add("show");
+}
+function closeModal() { $("broadcast-modal").classList.remove("show"); }
+
+$("bc-gen-btn").onclick = async () => {
+  const brief = $("bc-brief").value.trim();
+  $("bc-gen-btn").disabled = true;
+  $("bc-gen-btn").textContent = "🤔 NOVA 思考中...";
+  try {
+    const r = await fetch("/api/customers/segment-broadcast", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ segment: CURRENT_SEG, brief }),
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    $("bc-drafts").innerHTML = d.drafts.map((x, i) => `
+      <div class="draft-card">
+        <div class="style">${esc(x.style || '版本' + (i+1))}</div>
+        <textarea id="bc-txt-${i}">${esc(x.text)}</textarea>
+        <button class="btn-primary" onclick="sendSegment(${i})">📤 送給 ${d.groupSize} 位 ${SEGMENTS[CURRENT_SEG].label}</button>
+      </div>`).join("");
+  } catch (e) {
+    toast("❌ " + e.message, 5000);
+  } finally {
+    $("bc-gen-btn").disabled = false;
+    $("bc-gen-btn").textContent = "✏️ 讓 NOVA 寫 3 個版本";
+  }
+};
+
+async function sendSegment(idx) {
+  const text = $("bc-txt-" + idx).value.trim();
+  if (!text) return toast("內容空白");
+  if (!confirm(`確認對 ${SEGMENTS[CURRENT_SEG].label} 所有客人 push 送出？\n\n${text.slice(0,120)}${text.length>120?'...':''}\n\n⚠️ push 會計入 LINE 每月額度`)) return;
+  try {
+    const r = await fetch("/api/customers/segment-push", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ segment: CURRENT_SEG, text, confirmed: true }),
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    toast(`✅ ${d.success}/${d.total} 位成功`);
+    closeModal();
+  } catch (e) { toast("❌ " + e.message, 5000); }
+}
+
+load();
+</script>
+</body>
+</html>

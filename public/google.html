@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>📊 Google Ads 報表 · MACARON DE LUXE</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root {
+    --bg: #0d0a0b;
+    --card: #1a1416;
+    --card-2: #241b1f;
+    --border: #3b2a33;
+    --gold: #B08D57;
+    --gold-dim: rgba(176,141,87,0.3);
+    --text: #e9dfd2;
+    --muted: #998;
+    --green: #3ddc84;
+    --red: #ff6b6b;
+    --blue: #4285F4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: 2px; color: var(--gold); }
+  .subtitle { color: var(--muted); font-size: 12px; margin-bottom: 20px; }
+
+  .status-bar {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--border);
+    padding: 12px 16px; border-radius: 10px; margin-bottom: 16px;
+  }
+  .badge {
+    font-size: 11px; padding: 3px 10px; border-radius: 12px; font-weight: 600;
+  }
+  .badge-on { background: rgba(61,220,132,0.15); color: var(--green); border: 1px solid rgba(61,220,132,0.4); }
+  .badge-off { background: rgba(255,107,107,0.15); color: var(--red); border: 1px solid rgba(255,107,107,0.4); }
+
+  .date-range {
+    display: flex; gap: 6px;
+  }
+  .date-btn {
+    padding: 5px 12px; background: #241b1f; color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    font-size: 12px; cursor: pointer;
+  }
+  .date-btn.active {
+    background: var(--gold); color: #1a1416; border-color: var(--gold);
+    font-weight: 600;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-box {
+    background: var(--card); border: 1px solid var(--border);
+    padding: 14px; border-radius: 10px;
+  }
+  .stat-label { color: var(--muted); font-size: 11px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-size: 22px; font-weight: 700; color: var(--text); }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .tab {
+    padding: 8px 16px; background: transparent; color: var(--muted);
+    border: none; border-bottom: 2px solid transparent;
+    cursor: pointer; font-size: 13px;
+  }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .tab:hover { color: var(--text); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .actions {
+    display: flex; gap: 8px; margin-bottom: 12px; align-items: center;
+  }
+  .btn {
+    padding: 7px 14px; background: var(--blue); color: white;
+    border: none; border-radius: 6px; cursor: pointer; font-size: 12px;
+  }
+  .btn:hover:not(:disabled) { background: #3574e2; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn-secondary { background: #3a3438; color: var(--text); }
+
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; }
+  th, td { padding: 10px 12px; text-align: left; font-size: 12px; border-bottom: 1px solid var(--border); }
+  th { background: var(--card-2); color: var(--gold); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+  tr:hover { background: rgba(176,141,87,0.05); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .status-cell { font-size: 10px; padding: 2px 8px; border-radius: 8px; display: inline-block; }
+  .status-ENABLED { background: rgba(61,220,132,0.15); color: var(--green); }
+  .status-PAUSED { background: rgba(255,107,107,0.15); color: var(--red); }
+  .status-REMOVED { background: rgba(102,102,102,0.2); color: var(--muted); }
+
+  .roas-good { color: var(--green); font-weight: 600; }
+  .roas-mid { color: var(--gold); }
+  .roas-bad { color: var(--red); }
+
+  .empty {
+    text-align: center; padding: 40px 20px; color: var(--muted);
+    background: var(--card); border: 1px dashed var(--border); border-radius: 10px;
+  }
+  .empty h3 { margin: 0 0 6px; color: var(--gold); }
+  .empty a { color: var(--blue); }
+
+  .ai-panel {
+    margin-top: 16px; padding: 14px; background: var(--card-2);
+    border-left: 3px solid var(--gold); border-radius: 8px;
+    white-space: pre-wrap; font-size: 13px; line-height: 1.7;
+  }
+  .ai-panel.loading { color: var(--muted); font-style: italic; }
+
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--card); border: 1px solid var(--gold);
+    padding: 10px 20px; border-radius: 8px; z-index: 9999;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 800px) {
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    table { font-size: 11px; }
+    th, td { padding: 6px 8px; }
+  }
+</style>
+</head>
+<body>
+  <h1>📊 Google Ads 報表</h1>
+  <div class="subtitle">MACARON DE LUXE · Google Ads performance dashboard</div>
+
+  <div class="status-bar">
+    <span id="conn-badge" class="badge badge-off">● 未連線</span>
+    <span id="customer-id" style="color:var(--muted);font-size:12px"></span>
+    <div style="flex:1"></div>
+    <span style="color:var(--muted);font-size:11px">區間：</span>
+    <div class="date-range">
+      <button class="date-btn active" data-range="LAST_7_DAYS">7天</button>
+      <button class="date-btn" data-range="LAST_14_DAYS">14天</button>
+      <button class="date-btn" data-range="LAST_30_DAYS">30天</button>
+    </div>
+  </div>
+
+  <div id="summary-area">
+    <div class="summary-grid" id="summary-grid"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="campaigns">🎯 Campaigns</button>
+    <button class="tab" data-tab="keywords">🔑 Keywords</button>
+    <button class="tab" data-tab="search-terms">🔍 Search Terms</button>
+    <button class="tab" data-tab="ads">📢 Ads</button>
+  </div>
+
+  <div id="panel-campaigns" class="panel active">
+    <div class="actions">
+      <button class="btn" data-analyze="campaigns">🤖 讓 Leon 分析 Campaigns</button>
+      <span id="camp-count" style="color:var(--muted);font-size:12px"></span>
+    </div>
+    <div id="camp-table"></div>
+    <div id="camp-ai" class="ai-panel" style="display:none"></div>
+  </div>
+
+  <div id="panel-keywords" class="panel">
+    <div class="actions">
+      <button class="btn" data-analyze="keywords">🤖 讓 Leon 分析 Keywords</button>
+      <span id="kw-count" style="color:var(--muted);font-size:12px"></span>
+    </div>
+    <div id="kw-table"></div>
+    <div id="kw-ai" class="ai-panel" style="display:none"></div>
+  </div>
+
+  <div id="panel-search-terms" class="panel">
+    <div class="actions">
+      <button class="btn" data-analyze="search-terms">🤖 讓 Leon 找 Negative Keywords</button>
+      <span id="st-count" style="color:var(--muted);font-size:12px"></span>
+    </div>
+    <div id="st-table"></div>
+    <div id="st-ai" class="ai-panel" style="display:none"></div>
+  </div>
+
+  <div id="panel-ads" class="panel">
+    <div class="actions">
+      <span id="ads-count" style="color:var(--muted);font-size:12px"></span>
+    </div>
+    <div id="ads-table"></div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let CURRENT_RANGE = "LAST_7_DAYS";
+
+function toast(msg, ms = 3000) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => t.classList.remove("show"), ms);
+}
+
+function fmtMoney(n) {
+  return "NT$" + Math.round(n).toLocaleString();
+}
+function fmtNum(n) {
+  return Number(n).toLocaleString();
+}
+function fmtPct(n) {
+  return (n * 100).toFixed(2) + "%";
+}
+function roasClass(r) {
+  if (r >= 3) return "roas-good";
+  if (r >= 1) return "roas-mid";
+  return "roas-bad";
+}
+function escapeHtml(s) {
+  return String(s || "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadStatus() {
+  try {
+    const r = await fetch("/api/google/status");
+    const s = await r.json();
+    if (s.allReady) {
+      $("conn-badge").textContent = "● 已連線";
+      $("conn-badge").className = "badge badge-on";
+    } else {
+      $("conn-badge").textContent = "● 未設定 · 請完成 6 步驟";
+      $("conn-badge").className = "badge badge-off";
+      const missing = Object.keys(s).filter(k => k !== "allReady" && k !== "loginCustomerId" && !s[k]);
+      $("customer-id").textContent = missing.length ? "缺：" + missing.join(", ") : "";
+    }
+  } catch (e) {
+    $("conn-badge").textContent = "● API 錯誤";
+  }
+}
+
+async function loadSummary() {
+  try {
+    const r = await fetch("/api/google/summary?preset=" + CURRENT_RANGE);
+    const d = await r.json();
+    const s = d.summary;
+    if (!s) {
+      $("summary-grid").innerHTML = `<div class="stat-box" style="grid-column:1/-1;text-align:center;color:var(--muted)">尚無資料（可能還沒開始投放）</div>`;
+      return;
+    }
+    $("summary-grid").innerHTML = `
+      <div class="stat-box"><div class="stat-label">曝光</div><div class="stat-value">${fmtNum(s.impressions)}</div></div>
+      <div class="stat-box"><div class="stat-label">點擊</div><div class="stat-value">${fmtNum(s.clicks)}</div><div class="stat-sub">CTR ${fmtPct(s.ctr)}</div></div>
+      <div class="stat-box"><div class="stat-label">花費</div><div class="stat-value">${fmtMoney(s.cost)}</div><div class="stat-sub">平均 CPC ${fmtMoney(s.cpc)}</div></div>
+      <div class="stat-box"><div class="stat-label">轉換 · ROAS</div><div class="stat-value">${s.conversions.toFixed(1)} · <span class="${roasClass(s.roas)}">${s.roas.toFixed(2)}</span></div><div class="stat-sub">轉換值 ${fmtMoney(s.conversionsValue)}</div></div>
+    `;
+  } catch (e) {
+    $("summary-grid").innerHTML = `<div class="stat-box" style="grid-column:1/-1;color:var(--red)">讀取失敗：${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderStatusCell(s) {
+  const cls = "status-" + (s || "UNKNOWN");
+  return `<span class="status-cell ${cls}">${escapeHtml(s || "?")}</span>`;
+}
+
+async function loadCampaigns() {
+  try {
+    const r = await fetch("/api/google/campaigns?preset=" + CURRENT_RANGE);
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    $("camp-count").textContent = `${d.campaigns.length} 個 campaign`;
+    if (!d.campaigns.length) {
+      $("camp-table").innerHTML = `<div class="empty"><h3>目前沒有 campaign</h3><p>開始投放後，資料會自動進來。完整設定說明見 <a href="#">GOOGLE_ADS_SETUP.md</a></p></div>`;
+      return;
+    }
+    $("camp-table").innerHTML = `<table>
+      <thead><tr><th>名稱</th><th>狀態</th><th>通路</th><th class="num">日預算</th><th class="num">曝光</th><th class="num">點擊</th><th class="num">花費</th><th class="num">轉換</th><th class="num">ROAS</th></tr></thead>
+      <tbody>${d.campaigns.map(c => `
+        <tr>
+          <td>${escapeHtml(c.name)}</td>
+          <td>${renderStatusCell(c.status)}</td>
+          <td style="color:var(--muted);font-size:11px">${escapeHtml(c.channel || '')}</td>
+          <td class="num">${fmtMoney(c.dailyBudget)}</td>
+          <td class="num">${fmtNum(c.impressions)}</td>
+          <td class="num">${fmtNum(c.clicks)}</td>
+          <td class="num">${fmtMoney(c.cost)}</td>
+          <td class="num">${c.conversions.toFixed(1)}</td>
+          <td class="num ${roasClass(c.roas)}">${c.roas.toFixed(2)}</td>
+        </tr>`).join("")}
+      </tbody></table>`;
+  } catch (e) {
+    $("camp-table").innerHTML = `<div class="empty" style="color:var(--red)">讀取失敗：${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadKeywords() {
+  try {
+    const r = await fetch("/api/google/keywords?preset=" + CURRENT_RANGE);
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    $("kw-count").textContent = `${d.keywords.length} 個關鍵字`;
+    if (!d.keywords.length) {
+      $("kw-table").innerHTML = `<div class="empty"><h3>沒有 keyword 資料</h3></div>`;
+      return;
+    }
+    $("kw-table").innerHTML = `<table>
+      <thead><tr><th>關鍵字</th><th>比對</th><th>Campaign</th><th>Ad Group</th><th class="num">曝光</th><th class="num">點擊</th><th class="num">CTR</th><th class="num">花費</th><th class="num">轉換</th><th class="num">ROAS</th></tr></thead>
+      <tbody>${d.keywords.slice(0, 200).map(k => `
+        <tr>
+          <td>${escapeHtml(k.keyword)}</td>
+          <td style="color:var(--muted);font-size:11px">${escapeHtml(k.matchType || '')}</td>
+          <td style="color:var(--muted);font-size:11px">${escapeHtml(k.campaignName || '')}</td>
+          <td style="color:var(--muted);font-size:11px">${escapeHtml(k.adGroupName || '')}</td>
+          <td class="num">${fmtNum(k.impressions)}</td>
+          <td class="num">${fmtNum(k.clicks)}</td>
+          <td class="num">${fmtPct(k.ctr)}</td>
+          <td class="num">${fmtMoney(k.cost)}</td>
+          <td class="num">${k.conversions.toFixed(1)}</td>
+          <td class="num ${roasClass(k.roas)}">${k.roas.toFixed(2)}</td>
+        </tr>`).join("")}
+      </tbody></table>`;
+  } catch (e) {
+    $("kw-table").innerHTML = `<div class="empty" style="color:var(--red)">讀取失敗：${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadSearchTerms() {
+  try {
+    const r = await fetch("/api/google/search-terms?preset=" + CURRENT_RANGE);
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    $("st-count").textContent = `${d.terms.length} 筆搜尋字詞`;
+    if (!d.terms.length) {
+      $("st-table").innerHTML = `<div class="empty"><h3>沒有 search term 資料</h3></div>`;
+      return;
+    }
+    $("st-table").innerHTML = `<table>
+      <thead><tr><th>客人搜尋字</th><th>Campaign</th><th class="num">曝光</th><th class="num">點擊</th><th class="num">花費</th><th class="num">轉換</th><th class="num">ROAS</th></tr></thead>
+      <tbody>${d.terms.slice(0, 200).map(t => `
+        <tr>
+          <td>"${escapeHtml(t.term)}"</td>
+          <td style="color:var(--muted);font-size:11px">${escapeHtml(t.campaignName || '')}</td>
+          <td class="num">${fmtNum(t.impressions)}</td>
+          <td class="num">${fmtNum(t.clicks)}</td>
+          <td class="num">${fmtMoney(t.cost)}</td>
+          <td class="num">${t.conversions.toFixed(1)}</td>
+          <td class="num ${roasClass(t.roas)}">${t.roas.toFixed(2)}</td>
+        </tr>`).join("")}
+      </tbody></table>`;
+  } catch (e) {
+    $("st-table").innerHTML = `<div class="empty" style="color:var(--red)">讀取失敗：${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadAds() {
+  try {
+    const r = await fetch("/api/google/ads?preset=" + CURRENT_RANGE);
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    $("ads-count").textContent = `${d.ads.length} 個廣告`;
+    if (!d.ads.length) {
+      $("ads-table").innerHTML = `<div class="empty"><h3>沒有 ad 資料</h3></div>`;
+      return;
+    }
+    $("ads-table").innerHTML = `<table>
+      <thead><tr><th>廣告名稱</th><th>類型</th><th>狀態</th><th>Campaign</th><th class="num">曝光</th><th class="num">點擊</th><th class="num">花費</th><th class="num">轉換</th><th class="num">ROAS</th></tr></thead>
+      <tbody>${d.ads.map(a => `
+        <tr>
+          <td>${escapeHtml(a.adName || a.adId)}</td>
+          <td style="color:var(--muted);font-size:11px">${escapeHtml(a.type || '')}</td>
+          <td>${renderStatusCell(a.status)}</td>
+          <td style="color:var(--muted);font-size:11px">${escapeHtml(a.campaignName || '')}</td>
+          <td class="num">${fmtNum(a.impressions)}</td>
+          <td class="num">${fmtNum(a.clicks)}</td>
+          <td class="num">${fmtMoney(a.cost)}</td>
+          <td class="num">${a.conversions.toFixed(1)}</td>
+          <td class="num ${roasClass(a.roas)}">${a.roas.toFixed(2)}</td>
+        </tr>`).join("")}
+      </tbody></table>`;
+  } catch (e) {
+    $("ads-table").innerHTML = `<div class="empty" style="color:var(--red)">讀取失敗：${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function analyze(scope) {
+  const aiDiv = $(scope === "campaigns" ? "camp-ai" : scope === "keywords" ? "kw-ai" : "st-ai");
+  aiDiv.style.display = "block";
+  aiDiv.className = "ai-panel loading";
+  aiDiv.textContent = "🤔 Leon 分析中...";
+  try {
+    const r = await fetch("/api/google/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scope, dateRange: CURRENT_RANGE }),
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    aiDiv.className = "ai-panel";
+    aiDiv.textContent = d.analysis;
+  } catch (e) {
+    aiDiv.className = "ai-panel";
+    aiDiv.style.color = "var(--red)";
+    aiDiv.textContent = "❌ " + e.message;
+  }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+  document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === "panel-" + tab));
+  if (tab === "campaigns") loadCampaigns();
+  else if (tab === "keywords") loadKeywords();
+  else if (tab === "search-terms") loadSearchTerms();
+  else if (tab === "ads") loadAds();
+}
+
+function switchRange(r) {
+  CURRENT_RANGE = r;
+  document.querySelectorAll(".date-btn").forEach(b => b.classList.toggle("active", b.dataset.range === r));
+  loadSummary();
+  const active = document.querySelector(".tab.active").dataset.tab;
+  switchTab(active);
+}
+
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => switchTab(t.dataset.tab));
+document.querySelectorAll(".date-btn").forEach(b => b.onclick = () => switchRange(b.dataset.range));
+document.querySelectorAll("[data-analyze]").forEach(b => b.onclick = () => analyze(b.dataset.analyze));
+
+loadStatus();
+loadSummary();
+loadCampaigns();
+</script>
+</body>
+</html>

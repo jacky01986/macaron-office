@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>工作動態 — MACARON DE LUXE</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root { --brand:#6B4226; --bg:#FAF7F2; --ink:#3B2A1F; --line:#E5DACB; --accent:#F5A623; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--ink); margin: 0; padding: 0; }
+  .topnav { position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(135deg,#6B4226,#8B5A33); padding: 8px 16px; display: flex; align-items: center; gap: 8px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.15); overflow-x: auto; white-space: nowrap; }
+  .topnav strong { color:#FAF7F2; font-size:14px; margin-right:8px; flex-shrink:0; }
+  .topnav a { padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; flex-shrink:0; }
+  .topnav .home { background:#FAF7F2; color:#6B4226; }
+  .topnav .active { background:#8b5cf6; color:white; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 70px 20px 40px; }
+  h1 { font-size: 22px; margin: 0 0 4px; color: var(--brand); }
+  .subtitle { color: #888; margin-bottom: 20px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: white; border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .card h2 { font-size: 15px; margin: 0 0 12px; color: var(--brand); display:flex; align-items:center; gap:6px; }
+  .card .badge { background: var(--accent); color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .item { padding: 10px; background: var(--bg); border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+  .item .meta { color: #888; font-size: 11px; margin-top: 4px; }
+  .empty { color: #aaa; font-size: 13px; text-align: center; padding: 16px; }
+  .schedule-row { display: flex; justify-content: space-between; padding: 8px 10px; border-bottom: 1px dashed var(--line); font-size: 13px; }
+  .schedule-row:last-child { border-bottom: none; }
+  .schedule-row .when { color: #888; font-size: 12px; }
+  .reload-btn { padding: 6px 12px; background: var(--brand); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <strong>OFZ</strong>
+  <a href="/" class="home">← 主辦公室</a>
+  <a href="/conversion.html" class="home">💰 成交</a>
+  <a href="/ai-content.html" class="home">📚 AI 教研</a>
+  <a href="#" class="active">📊 工作動態</a>
+</div>
+
+<div class="container">
+  <h1>📊 工作動態</h1>
+  <div class="subtitle">AI 員工自動處理項目 · 每天 09:00 / 10:00 / 每週一自動跑 · <button class="reload-btn" onclick="loadAll()">🔄 重新載入</button></div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>🗓️ 自動排程</h2>
+        <div class="schedule-row"><span>🌅 VICTOR 早安簡報（含戰略段）</span><span class="when">每天 09:00</span></div>
+        <div class="schedule-row"><span>📝 CAMILLE 寫 IG/FB 草稿</span><span class="when">每天 10:00</span></div>
+        <div class="schedule-row"><span>📚 NORA 規劃下月主題</span><span class="when">每月 1 號 09:00</span></div>
+        <div class="schedule-row"><span>📜 YUKI 寫課程逐字稿</span><span class="when">每月 5 號 09:00</span></div>
+        <div class="schedule-row"><span>🎬 RIO 寫拍攝腳本</span><span class="when">每月 7 號 09:00</span></div>
+        <div class="schedule-row"><span>💬 MIKA 寫週社群話題</span><span class="when">每週一 09:30</span></div>
+        <div class="schedule-row"><span>📰 自動發已批准 FB 貼文</span><span class="when">每 5 分鐘</span></div>
+        <div class="schedule-row"><span>🚨 廣告 ROAS 警示</span><span class="when">每 30 分鐘</span></div>
+      </div>
+
+      <div class="card">
+        <h2>💰 最近成交記錄 <span class="badge" id="convCount">0</span></h2>
+        <div id="convList"><div class="empty">載入中...</div></div>
+      </div>
+
+      <div class="card">
+        <h2>📰 待審 IG/FB 草稿 <span class="badge" id="draftCount">0</span></h2>
+        <div id="draftList"><div class="empty">載入中...</div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>📚 AI 教研產出（本月） <span class="badge" id="monthBadge">--</span></h2>
+        <div id="monthData"><div class="empty">載入中...</div></div>
+      </div>
+
+      <div class="card">
+        <h2>💬 MIKA 學員問答 <span class="badge" id="qaCount">0</span></h2>
+        <div id="qaList"><div class="empty">載入中...</div></div>
+      </div>
+
+      <div class="card">
+        <h2>🎯 MIKA 週話題 <span class="badge" id="topicCount">0</span></h2>
+        <div id="topicList"><div class="empty">載入中...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function timeAgo(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 60) return sec + ' 秒前';
+  if (sec < 3600) return Math.floor(sec/60) + ' 分前';
+  if (sec < 86400) return Math.floor(sec/3600) + ' 小時前';
+  return Math.floor(sec/86400) + ' 天前';
+}
+
+async function loadConv() {
+  try {
+    const [r1, r2] = await Promise.all([
+      fetch('/api/conversion/recent').then(r => r.json()),
+      fetch('/api/conversion/stats/today').then(r => r.json()),
+    ]);
+    const orders = r1.orders || [];
+    document.getElementById('convCount').textContent = orders.length;
+    document.getElementById('convList').innerHTML = orders.length === 0
+      ? '<div class="empty">尚無成交記錄</div>'
+      : orders.slice(0, 5).map(o => '<div class="item"><strong>' + escapeHtml(o.category||'?') + '</strong> NT$' + (o.amount||0).toLocaleString() + ' <span style="color:#888">— ' + escapeHtml(o.customer||'') + '</span><div class="meta">' + timeAgo(o.at) + '</div></div>').join('');
+  } catch (e) { document.getElementById('convList').innerHTML = '<div class="empty">載入失敗：' + e.message + '</div>'; }
+}
+
+async function loadDrafts() {
+  try {
+    const r = await fetch('/api/social/drafts').then(r => r.json());
+    const drafts = r.drafts || r || [];
+    document.getElementById('draftCount').textContent = drafts.length;
+    document.getElementById('draftList').innerHTML = drafts.length === 0
+      ? '<div class="empty">今日尚無草稿</div>'
+      : drafts.slice(0, 5).map(d => '<div class="item"><strong>[' + escapeHtml(d.platform||'?') + ']</strong> ' + escapeHtml((d.text||d.content||'').slice(0, 80)) + '...<div class="meta">' + timeAgo(d.at||d.created_at) + ' · ' + escapeHtml(d.status||'pending') + '</div></div>').join('');
+  } catch (e) { document.getElementById('draftList').innerHTML = '<div class="empty">載入失敗：' + e.message + '</div>'; }
+}
+
+async function loadMonth() {
+  try {
+    const r = await fetch('/api/ai-team/months').then(r => r.json());
+    const months = r.months || {};
+    const keys = Object.keys(months).sort().reverse();
+    document.getElementById('monthBadge').textContent = keys[0] || '--';
+    if (keys.length === 0) {
+      document.getElementById('monthData').innerHTML = '<div class="empty">尚無 AI 教研產出</div>';
+      return;
+    }
+    const m = months[keys[0]];
+    let html = '';
+    if (m.plan && m.plan.theme) {
+      html += '<div class="item"><strong>📚 NORA 主題：</strong>' + escapeHtml(m.plan.theme) + '<div class="meta">' + escapeHtml(m.plan.tagline||'') + '</div></div>';
+    }
+    if (m.plan && Array.isArray(m.plan.subtopics)) {
+      html += '<div class="item">📂 子主題（' + m.plan.subtopics.length + '）<ul style="margin:6px 0 0 16px; font-size:12px; color:#666">' + m.plan.subtopics.map(s => '<li>' + escapeHtml(s) + '</li>').join('') + '</ul></div>';
+    }
+    if (m.shooting_script) {
+      html += '<div class="item">🎬 RIO 拍攝腳本：' + (m.shooting_script.content||'').length + ' 字<div class="meta">by ' + escapeHtml(m.shooting_script.by||'RIO') + ' · ' + escapeHtml(m.shooting_script.model||'') + '</div></div>';
+    }
+    if (m.lessons) html += '<div class="item">📜 YUKI 課程逐字稿已寫入</div>';
+    document.getElementById('monthData').innerHTML = html || '<div class="empty">月份僅有規劃，尚無內容產出</div>';
+  } catch (e) { document.getElementById('monthData').innerHTML = '<div class="empty">載入失敗：' + e.message + '</div>'; }
+}
+
+async function loadQA() {
+  try {
+    const r = await fetch('/api/ai-team/qa/recent').then(r => r.json());
+    const qa = r.qa || [];
+    document.getElementById('qaCount').textContent = qa.length;
+    document.getElementById('qaList').innerHTML = qa.length === 0
+      ? '<div class="empty">尚無學員問答</div>'
+      : qa.slice(0, 5).map(q => '<div class="item"><strong>' + escapeHtml(q.student||'匿名') + ' 問：</strong>' + escapeHtml((q.question||'').slice(0, 50)) + '<div class="meta">MIKA 回答 ' + (q.answer||'').length + ' 字 · ' + timeAgo(q.at) + '</div></div>').join('');
+  } catch (e) { document.getElementById('qaList').innerHTML = '<div class="empty">載入失敗：' + e.message + '</div>'; }
+}
+
+async function loadTopics() {
+  try {
+    const r = await fetch('/api/ai-team/topics').then(r => r.json());
+    const topics = r.topics || [];
+    document.getElementById('topicCount').textContent = topics.length;
+    document.getElementById('topicList').innerHTML = topics.length === 0
+      ? '<div class="empty">尚無週話題</div>'
+      : topics.slice(0, 3).map(t => '<div class="item">' + escapeHtml((t.content||'').slice(0, 120)) + '...<div class="meta">' + timeAgo(t.at) + '</div></div>').join('');
+  } catch (e) { document.getElementById('topicList').innerHTML = '<div class="empty">載入失敗：' + e.message + '</div>'; }
+}
+
+function loadAll() {
+  loadConv();
+  loadDrafts();
+  loadMonth();
+  loadQA();
+  loadTopics();
+}
+
+loadAll();
+setInterval(loadAll, 60000);
+</script>
+
+</body>
+</html>

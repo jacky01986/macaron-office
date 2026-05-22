@@ -742,7 +742,7 @@ async function switchTab(t) {
 
 async function loadReports() {
   const container = document.getElementById('reports');
-  container.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px;font-style:italic;">載鉄中...</div>';
+  container.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px;font-style:italic;">載入中...</div>';
   try {
     const res = await fetch('/api/reports');
     const list = await res.json();
