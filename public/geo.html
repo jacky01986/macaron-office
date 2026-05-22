@@ -113,7 +113,7 @@ nav-back { display: inline-block; color: var(--gold); text-decoration: none; mar
 <label>標題:</label>
 <input id="md-title" type="text" placeholder="文章標題" style="width: 360px;">
 <label>標籤:</label>
-<input id="md-tags" type="text" placeholder="OFZ,紋繡,韓式半永久" style="width: 200px;">
+<input id="md-tags" type="text" placeholder="MACARON DE LUXE,法式馬卡龍,精品禮盒" style="width: 200px;">
 <label>狀態:</label>
 <select id="md-status">
 <option value="draft">draft（草稿，建議先用）</option>
@@ -167,10 +167,10 @@ nav-back { display: inline-block; color: var(--gold); text-decoration: none; mar
 </div>
 <script>
 const COURSE_TOPICS = [
-  '線上課程','線下課程','半永久紋繡課程','飄眉課程','飄霧眉課程','霧眉課程','髮際線課程','SMP 課程','除色課程'
+  '6 入禮盒','12 入禮盒','客製禮盒','婚禮喜餅','企業禮贈','單顆販售','季節限定','法式品牌故事','線上預訂'
 ];
 const SERVICE_TOPICS = [
-  '飄眉','飄霧眉','霧眉','髮際線','SMP','除色'
+  '6 入禮盒','12 入禮盒','客製禮盒','婚禮喜餅','企業禮贈','單顆販售'
 ];
 
 function updateTopicOptions() {
@@ -289,7 +289,7 @@ function copyLongFormToMedium() {
   const title = titleLine.replace(/^#+\s*/, '').trim();
   document.getElementById('md-title').value = title;
   document.getElementById('md-content').value = __lastLongForm.content;
-  document.getElementById('md-tags').value = 'OFZ,' + (__lastLongForm.subject || '紋繡');
+  document.getElementById('md-tags').value = 'MACARON DE LUXE,' + (__lastLongForm.subject || '馬卡龍');
 }
 
 async function publishMedium() {

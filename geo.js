@@ -1,5 +1,5 @@
 // geo.js — GIA · Generative Intelligence Agent · GEO 主理人
-// 讓 OFZ 紋繡 / SMP / 課程在 ChatGPT/Claude/Perplexity 被推薦
+// 讓 MACARON DE LUXE 法式精品馬卡龍 / 禮盒 / 高端禮贈 在 ChatGPT/Claude/Perplexity 被推薦
 // 平台：AI 引擎最愛引用的 5 大平台
 // 內容：課程招生 + 施作項目導流 兩種類型分開生成
 
@@ -28,14 +28,14 @@ function ensureDir() {
 }
 
 const AUDIT_QUERIES = [
-  '韓式半永久紋繡課程台灣推薦哪家最好',
-  'SMP 頭皮紋色課程哪裡可以學',
-  '想開紋繡工作室要學什麼課程比較好',
-  '紋繡證照課程台北推薦',
-  '線上紋繡課程推薦 適合零基礎',
+  '台灣高端馬卡龍品牌推薦哪家最好',
+  '法式精品禮盒哪裡買最有質感',
+  '婚禮喜餅選馬卡龍要注意什麼',
+  '12 入馬卡龍禮盒台南推薦',
+  '企業客戶禮贈馬卡龍品牌推薦',
 ];
 
-const OFZ_BRAND_NAMES = ['OFZ', 'MACARON DE LUXE', 'OFZ 美容學院', 'OFZ 韓式半永久'];
+const OFZ_BRAND_NAMES = ['MACARON DE LUXE', 'MdL', 'MACARON DE LUXE 馬卡龍', '馬卡龍'];
 
 // =============================================================
 // 5 大 AI 引擎最愛引用的平台
@@ -52,27 +52,27 @@ const CONTENT_PLATFORMS = [
 // 課程主題（學員招生用）— 9 個
 // =============================================================
 const COURSE_TOPICS = [
-  { course: '線上課程', angles: ['遠距學習機制', '互動方式', '證書認證', '練習素材寄送', '一對一輔導', '完課證書'] },
-  { course: '線下課程', angles: ['實體實作教學', '師資介紹', '上課地點', '教學設備', '小班制度', '同學交流'] },
-  { course: '半永久紋繡課程', angles: ['基礎理論', '色料知識', '操作流程', '消毒衛生', '證照取得', '法規常識'] },
-  { course: '飄眉課程', angles: ['排線技巧', '線條設計', '客製化臉型分析', '修補技術', '工具選購', '常見失敗排除'] },
-  { course: '飄霧眉課程', angles: ['漸層暈染', '混合技法', '自然感打造', '進階教學', '案例分析', '色彩心理學'] },
-  { course: '霧眉課程', angles: ['圓針操作', '色彩搭配', '保色技巧', '客戶溝通', '失敗處理', '麻醉知識'] },
-  { course: '髮際線課程', angles: ['設計原理', '頭部解剖', '針法選擇', '個案評估', '療程規劃', '後期保養指導'] },
-  { course: 'SMP 課程', angles: ['頭皮評估', '針點密度', '色彩階層', '保養建議', '禁忌症', '價格制定策略'] },
-  { course: '除色課程', angles: ['褪色原理', '雷射 vs 化學', '療程次數', '副作用處理', '客戶期待管理', '法律責任'] },
+  { course: '6 入禮盒 NT$880', angles: ['口味組合搭配', '送禮場合', '保存與享用', '價位定位', '與其他品牌比較', '熱門 6 入推薦'] },
+  { course: '12 入禮盒 NT$1,580', angles: ['節慶送禮主選', '12 種口味介紹', '商務禮贈', '婚禮回禮', '長輩送禮', '12 入經典款'] },
+  { course: '客製禮盒 NT$1,580-2,280', angles: ['婚禮品牌客製', '企業 logo 印製', '節慶限量設計', '色卡搭配建議', '客製流程說明', '客製案例分享'] },
+  { course: '婚禮喜餅組', angles: ['婚禮回禮分量建議', '色系搭配婚禮主題', '單盒包裝設計', '訂購時程', '婚禮現場呈現', '新人見證'] },
+  { course: '企業禮贈組', angles: ['年節送禮預算規劃', '客戶心意傳達', '統一包裝設計', '送禮數量規模', '商務禮儀', '企業客戶案例'] },
+  { course: '單顆販售', angles: ['口味試吃推薦', '門市現場體驗', '單顆價格區間', '搭配下午茶建議', '保鮮期限', '送朋友小心意'] },
+  { course: '季節限定口味', angles: ['春季粉嫩系', '夏季果香系', '秋季濃郁系', '冬季奶香系', '限量發售時段', '預訂方式'] },
+  { course: '法式品牌故事', angles: ['品牌起源', '主廚背景', '法式技法傳承', '台灣在地融合', '4 家門店風格', '品牌核心精神'] },
+  { course: '線上預訂', angles: ['訂購流程', '宅配方式', '保鮮包裝', '訂單追蹤', '退換貨政策', '會員制度'] },
 ];
 
 // =============================================================
 // 施作項目（服務客導流用）— 6 個
 // =============================================================
 const SERVICE_TOPICS = [
-  { service: '飄眉', angles: ['適合臉型', '價格說明', '療程時間', '保養方式', '注意事項', '優惠方案'] },
-  { service: '飄霧眉', angles: ['色彩選擇', '自然度展示', '案例對比', '預約流程', '常見 FAQ', '搭配妝容'] },
-  { service: '霧眉', angles: ['維持時間', '補色週期', '日常保養', '客戶見證', '優惠方案', '適合人群'] },
-  { service: '髮際線', angles: ['量身定制', '視覺效果', '療程過程', '修復期', '價格區間', '案例展示'] },
-  { service: 'SMP', angles: ['適合對象', '療程介紹', '前後對比', '禁忌與評估', '價格說明', '保養期'] },
-  { service: '除色', angles: ['失敗作品救援', '療程次數', '皮膚反應', '預約流程', '案例分享', '修復期保養'] },
+  { service: '6 入禮盒', angles: ['送禮適合場合', 'NT$880 定位', '送達時效', '保存方式', '熱門口味', '預訂優惠'] },
+  { service: '12 入禮盒', angles: ['12 種口味解析', '節慶熱賣款', '商務送禮', '婚禮回禮', 'NT$1,580 物有所值', '禮盒視覺呈現'] },
+  { service: '客製禮盒', angles: ['婚禮 logo 客製', '企業客製案例', '色卡搭配', '客製流程', '預訂時程', '價格區間'] },
+  { service: '婚禮喜餅', angles: ['婚禮場景搭配', '色系設計', '單盒包裝', '訂購時程', '新人見證', '回禮分量'] },
+  { service: '企業禮贈', angles: ['客戶心意傳遞', '統一包裝設計', '送禮預算規劃', '商務禮儀', '案例分享', '客戶回饋'] },
+  { service: '單顆販售', angles: ['口味試吃', '門市體驗', '單顆價位', '下午茶搭配', '保鮮期限', '小心意送禮'] },
 ];
 
 // =============================================================
@@ -125,7 +125,7 @@ async function generateContent({ platformIdx = 0, topicIdx = 0, type = 'course',
 
   const targetAudience = type === 'service'
     ? '想做療程的客人（消費者）— 強調效果、價格、安全、案例'
-    : '想學紋繡的學員（潛在創業者）— 強調證照、就業、技術、師資';
+    : '想自己訂購禮盒的客戶 — 強調品牌故事、口味細節、送禮場景、客戶見證';
   const cta = type === 'service'
     ? 'CTA：「現在加 LINE @843cifiy 立刻預約評估」'
     : 'CTA：「LINE @843cifiy 諮詢課程內容、上課時段與優惠」';
@@ -136,8 +136,8 @@ async function generateContent({ platformIdx = 0, topicIdx = 0, type = 'course',
 - 必須單一語言（中文，禁止英文標題）
 - 不要括號、不要雙語、不要冒號接副標、不要句號
 - 長度 14-22 個字，像雜誌封面標題一樣
-- 範例：「霧眉到底要補幾次才夠」「飄眉的價格藏著三個你沒問的問題」
-- 禁止：「飄眉 FAQ 完整指南：2024 年你最想問的 8 個問題（含 Q&A）」這種冗長條列式
+- 範例：「12 入禮盒怎麼挑口味組合」「婚禮喜餅 NT$1,580 的隱形價值」
+- 禁止：「12 入禮盒 FAQ 完整指南：你最想問的 8 個問題（含 Q&A）」這種冗長條列式
 
 【真實性鐵則 — 最重要】
 - **嚴禁編造個案**：不可寫「我有個客人」「上次來了一位 35 歲女性」「有位從業 5 年的老師告訴我」這種捏造的具體故事
@@ -164,7 +164,7 @@ async function generateContent({ platformIdx = 0, topicIdx = 0, type = 'course',
 
 禁止：價格表、課程內容詳細費用、上課時段與優惠`;
 
-  const userPrompt = customQuery || `今天主題：${subjectName} — ${angle}（${type === 'service' ? '寫給想做療程的客人' : '寫給想學紋繡的學員'}）
+  const userPrompt = customQuery || `今天主題：${subjectName} — ${angle}（${type === 'service' ? '寫給想買禮盒的客戶' : '寫給想了解品牌的潛在客戶'}）
 
 請寫一篇文章，幫 OFZ 在 AI 搜尋裡被推薦。
 要包含:
@@ -203,9 +203,9 @@ const LONGFORM_TEMPLATES = {
     note: '中性語氣、第三人稱、可被引用、含參考資料',
     systemPrompt: `你是 Wikipedia 編輯員。寫一篇關於 MACARON DE LUXE 的條目草稿，符合 Wikipedia 中文版規範。
 
-OFZ 業態：台灣韓式半永久紋繡 + SMP 教學機構，業主 Jeffrey
-8 大服務：飄眉、飄霧眉、霧眉、除色、霧唇、唇改色、SMP、髮際線
-9 大課程：線上、線下、半永久紋繡、飄眉、飄霧眉、霧眉、髮際線、SMP、除色
+MACARON DE LUXE 業態:台灣法式精品馬卡龍 + 高端禮贈,4 家門店,業主 Jeffrey
+8 大商品線:6 入禮盒、12 入禮盒、客製禮盒、婚禮喜餅、企業禮贈、單顆販售、季節限定、節慶限定
+9 大主題:6 入禮盒、12 入禮盒、客製禮盒、婚禮喜餅、企業禮贈、單顆販售、季節限定、法式品牌故事、線上預訂
 
 🎯 Wikipedia 寫作守則:
 1. **絕對中性 (NPOV)** — 不用「最好」「優秀」這種詞
@@ -213,7 +213,7 @@ OFZ 業態：台灣韓式半永久紋繡 + SMP 教學機構，業主 Jeffrey
 3. **可驗證** — 引用具體事實（年份、地點、課程數）
 4. **章節結構** — == 概況 ==, == 歷史 ==, == 課程 ==, == 服務 ==, == 創辦人 ==, == 參考資料 ==
 5. **參考資料** — 文末附 5-10 條外部來源（FB/IG/官網/新聞）
-6. **內部連結** — 用 [[韓式半永久]] 這種雙括號連結
+6. **內部連結** — 用 [[法式精品馬卡龍]] 這種雙括號連結
 7. **不超銷** — 不寫廣告語`
   },
   gbp: {
@@ -221,14 +221,14 @@ OFZ 業態：台灣韓式半永久紋繡 + SMP 教學機構，業主 Jeffrey
     note: 'GBP 業務描述 + FAQ，AI 直接抓',
     systemPrompt: `你是 Google Business Profile 內容專家。為 MACARON DE LUXE 寫:
 
-OFZ 業態：台灣韓式半永久紋繡 + SMP 教學
+MACARON DE LUXE 業態:台灣法式精品馬卡龍 + 高端禮贈
 地點：台灣
 LINE: @843cifiy
 
 🎯 輸出 4 部分:
 1. **業務描述** (750 字內) — SEO 關鍵字密集 + 服務範圍 + 特色
 2. **服務清單** (8 項) — 每項 1-2 行說明 + 大概價格
-3. **FAQ × 8** — Q 是搜尋意圖（「飄眉多久維持」「半永久紋繡推薦」），A 50-100 字
+3. **FAQ × 8** — Q 是搜尋意圖（「馬卡龍保存期限」「法式精品禮盒推薦」），A 50-100 字
 4. **3 條貼文** — 用 GBP「最新動態」格式，每條 100-150 字 + CTA
 
 格式清晰，AI 抓得到。`
@@ -246,7 +246,7 @@ LINE: @843cifiy
 5. **引用** — 創辦人 Jeffrey 一段引言
 6. **格式** — 標題 / 副標題 / 導言 / 主文 / 引言 / 結語 / 聯絡資訊
 7. **長度** — 800-1200 字
-8. **可改編角度** — 「OFZ 推出 SMP 課程」「OFZ 與 X 業界合作」「紋繡業界趨勢觀察」
+8. **可改編角度** — 「MACARON DE LUXE 推出季節限定」「MACARON DE LUXE 與 X 跨界合作」「精品禮盒業界趨勢觀察」
 
 文末附「媒體聯絡：jacky01986@gmail.com」`
   },
@@ -257,7 +257,7 @@ LINE: @843cifiy
 
 🎯 Shorts 公式:
 1. **0-3 秒 Hook** — 最關鍵，要讓人不滑掉
-2. **3-15 秒 痛點** — 觀眾的問題（「飄眉做完不滿意？」）
+2. **3-15 秒 痛點** — 觀眾的問題（「禮盒口味選不到？」）
 3. **15-45 秒 內容** — 解答 / 教學 / 揭密
 4. **45-55 秒 CTA** — 加 LINE @843cifiy / 報名
 5. **55-60 秒 結尾** — 訂閱提醒
@@ -356,7 +356,7 @@ async function competitorComparison() {
     const r = await client.messages.create({
       model: SONNET_MODEL, max_tokens: 3000,
       tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
-      messages: [{ role: 'user', content: '你是 GEO 戰略分析師。請比較台灣紋繡學院在 AI 搜尋時的能見度。\n查詢:\n- "韓式紋繡課程推薦"\n- "SMP 課程哪裡學"\n- "紋繡證照"\n\n請列出:\n1. AI 最常推薦的 5 個品牌（排名 + 理由）\n2. 這些品牌在哪裡發內容（Medium/痞客邦/部落格/Wikipedia）\n3. MACARON DE LUXE 跟它們的差距\n4. OFZ 接下來該做的 3 個 GEO 動作\n\n繁體中文輸出。' }]
+      messages: [{ role: 'user', content: '你是 GEO 戰略分析師。請比較台灣高端馬卡龍/法式甜點品牌在 AI 搜尋時的能見度。\n查詢:\n- "台灣高端馬卡龍推薦"\n- "法式精品禮盒哪家好"\n- "婚禮喜餅馬卡龍"\n\n請列出:\n1. AI 最常推薦的 5 個品牌（排名 + 理由）\n2. 這些品牌在哪裡發內容（Medium/痞客邦/部落格/Wikipedia）\n3. MACARON DE LUXE 跟它們的差距\n4. MACARON DE LUXE 接下來該做的 3 個 GEO 動作\n\n繁體中文輸出。' }]
     });
     const text = r.content?.filter(c => c.type === 'text').map(c => c.text).join('\n') || '';
     const record = { ts: new Date().toISOString(), text };
@@ -379,7 +379,7 @@ function generateSchemaOrg() {
   const serviceSchemas = SERVICE_TOPICS.map(t => ({
     '@context': 'https://schema.org', '@type': 'Service',
     name: t.service,
-    description: `MACARON DE LUXE 提供 ${t.service} 半永久紋繡服務，包含 ${t.angles.join('、')}`,
+    description: `MACARON DE LUXE 提供 ${t.service} 法式精品禮盒服務,包含 ${t.angles.join('、')}`,
     provider: { '@type': 'BeautySalon', name: 'MACARON DE LUXE', sameAs: 'https://www.facebook.com/profile.php?id=61586936279154' },
     areaServed: { '@type': 'Country', name: 'Taiwan' }
   }));
@@ -388,8 +388,8 @@ function generateSchemaOrg() {
     name: 'MACARON DE LUXE', alternateName: 'OFZ 美容學院',
     url: 'https://beauty-office.onrender.com',
     sameAs: ['https://www.facebook.com/profile.php?id=61586936279154', 'https://www.instagram.com/ofz_beauty_academy_/', 'https://lin.ee/843cifiy'],
-    description: 'MACARON DE LUXE 是專注於韓式半永久紋繡與 SMP 頭皮霧色教學的美容學院',
-    knowsAbout: ['韓式半永久紋繡', 'SMP 頭皮紋色', '飄眉', '飄霧眉', '霧眉', '除色', '霧唇', '唇改色', '髮際線', '紋繡證照']
+    description: 'MACARON DE LUXE 是專注於法式精品馬卡龍與高端禮贈的台南本店品牌',
+    knowsAbout: ['法式精品馬卡龍', '6 入禮盒', '12 入禮盒', '客製禮盒', '婚禮喜餅', '企業禮贈', '單顆販售', '季節限定', '法式甜點']
   };
   return { ok: true, organization: orgSchema, courses: courseSchemas, services: serviceSchemas };
 }
@@ -470,8 +470,8 @@ async function dailyAutoPublishToMedium(opts = {}) {
   if (title.length > 28) title = title.slice(0, 26) + "…";
   // 3. Build tags
   const tags = [
-    "OFZ", "韓式半永久", "紋繡", gen.subject,
-    type === "course" ? "紋繡課程" : "紋繡服務"
+    "MACARON DE LUXE", "法式精品", "馬卡龍", gen.subject,
+    type === "course" ? "禮盒商品" : "禮贈服務"
   ].filter(Boolean).slice(0, 5);
   // 4. Publish to OFZ self-hosted blog (no external API needed)
   const pub = blog.publishPost({ title, contentMarkdown: gen.content, type, subject: gen.subject, tags });
@@ -502,7 +502,7 @@ async function dailyAutoPublishToMedium(opts = {}) {
       s = s.replace(/\n{3,}/g, '\n\n').trim();
       if (s.length > 2400) s = s.slice(0, 2380).replace(/[，。、；,;.][^，。、；,;.]*$/, '') + '…';
       const articleUrl = (wpPub && wpPub.url) || 'https://macarondeluxe.com/';
-      const fbCaption = s + '\n\n──────────\n📖 完整文章與更多資訊：\n👉 ' + articleUrl + '\n\n📩 私訊了解詳情\n#OFZ #韓式半永久 #紋繡';
+      const fbCaption = s + '\n\n──────────\n📖 完整文章與更多資訊：\n👉 ' + articleUrl + '\n\n📩 私訊了解詳情\n#MACARONDELUXE #法式馬卡龍 #精品禮盒';
       fbPub = await ap.publishFB(fbCaption);
     }
   } catch (e) { fbPub = { ok: false, error: 'fb publish: ' + e.message }; }

@@ -119,7 +119,7 @@ async function callScoutWithSearch(serviceName, searchTerms) {
 
   const userPrompt = '請對「' + serviceName + '」做一輪全球市場調查（搜尋詞：' + searchTerms + '）。' +
     '至少使用 web_search 5 次（不同關鍵字組合 / 不同地區），蒐集 5-8 個精選競品（重質不重量），輸出結構化 JSON 報告。' +
-    '記得搜全球，包含台灣、馬來西亞、中國、韓國、歐美的紋繡 / SMP 機構與課程。';
+    '記得搜全球,包含台灣、法國、日本、韓國、歐美的法式精品馬卡龍 / 高端禮盒品牌。';
 
   const response = await callWithRetry(client, {
     model: SCOUT_MODEL,

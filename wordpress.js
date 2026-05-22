@@ -109,7 +109,7 @@ function md2html(md) {
     html +
     '<div style="margin-top:56px;padding:32px 28px;background:#B8755C;border-radius:14px;text-align:center;color:#FFFFFF">' +
     '<div style="font-size:22px;font-weight:700;margin-bottom:10px;color:#FFFFFF;letter-spacing:0.5px;font-family:\'Playfair Display\',\'Noto Serif TC\',serif">專業諮詢 MACARON DE LUXE</div>' +
-    '<div style="font-size:15px;margin-bottom:20px;color:#F0E3DC;line-height:1.7;opacity:0.95">髮際線 SMP · 霧眉補色 · 美學紋繡 · 一對一專屬諮詢</div>' +
+    '<div style="font-size:15px;margin-bottom:20px;color:#F0E3DC;line-height:1.7;opacity:0.95">法式精品禮盒 · 客製婚禮喜餅 · 企業禮贈 · 一對一專屬諮詢</div>' +
     '<a href="https://www.facebook.com/ofzbeautyacademy" style="display:inline-block;background:#FFFFFF;color:#B8755C;padding:13px 36px;border-radius:30px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:0.5px">📩 私訊了解詳情</a>' +
     '</div></div>';
 }

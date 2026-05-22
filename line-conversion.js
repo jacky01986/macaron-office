@@ -270,7 +270,7 @@ function buildConversionFlex({ contactName = '這位客戶', contactId = '', lin
 function buildCategoryPicker({ contactId = '', lineUserId = '' } = {}) {
   const cats = [
     { label: '🎓 美甲課程', value: 'course-nail' },
-    { label: '🎨 紋繡課程', value: 'course-pmu' },
+    { label: '🎁 客製禮盒', value: 'custom-gift' },
     { label: '💅 美甲服務', value: 'service-nail' },
     { label: '🛍️ 商品/工具', value: 'product' },
     { label: '📦 其他', value: 'other' },
