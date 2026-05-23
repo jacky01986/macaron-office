@@ -36,7 +36,7 @@
   <strong>OFZ</strong>
   <a href="/" class="home">← 主辦公室</a>
   <a href="/conversion.html" class="home">💰 成交</a>
-  <a href="/ai-content.html" class="home">📚 AI 教研</a>
+  <a href="/ai-content.html" class="home">📚 AI 內容</a>
   <a href="#" class="active">📊 工作動態</a>
 </div>
 
@@ -51,7 +51,7 @@
         <div class="schedule-row"><span>🌅 VICTOR 早安簡報（含戰略段）</span><span class="when">每天 09:00</span></div>
         <div class="schedule-row"><span>📝 CAMILLE 寫 IG/FB 草稿</span><span class="when">每天 10:00</span></div>
         <div class="schedule-row"><span>📚 NORA 規劃下月主題</span><span class="when">每月 1 號 09:00</span></div>
-        <div class="schedule-row"><span>📜 YUKI 寫課程逐字稿</span><span class="when">每月 5 號 09:00</span></div>
+        <div class="schedule-row"><span>📜 YUKI 寫商品文章</span><span class="when">每月 5 號 09:00</span></div>
         <div class="schedule-row"><span>🎬 RIO 寫拍攝腳本</span><span class="when">每月 7 號 09:00</span></div>
         <div class="schedule-row"><span>💬 MIKA 寫週社群話題</span><span class="when">每週一 09:30</span></div>
         <div class="schedule-row"><span>📰 自動發已批准 FB 貼文</span><span class="when">每 5 分鐘</span></div>
@@ -71,12 +71,12 @@
 
     <div>
       <div class="card">
-        <h2>📚 AI 教研產出（本月） <span class="badge" id="monthBadge">--</span></h2>
+        <h2>📚 AI 內容產出（本月） <span class="badge" id="monthBadge">--</span></h2>
         <div id="monthData"><div class="empty">載入中...</div></div>
       </div>
 
       <div class="card">
-        <h2>💬 MIKA 學員問答 <span class="badge" id="qaCount">0</span></h2>
+        <h2>💬 MIKA 客戶問答 <span class="badge" id="qaCount">0</span></h2>
         <div id="qaList"><div class="empty">載入中...</div></div>
       </div>
 
@@ -132,7 +132,7 @@ async function loadMonth() {
     const keys = Object.keys(months).sort().reverse();
     document.getElementById('monthBadge').textContent = keys[0] || '--';
     if (keys.length === 0) {
-      document.getElementById('monthData').innerHTML = '<div class="empty">尚無 AI 教研產出</div>';
+      document.getElementById('monthData').innerHTML = '<div class="empty">尚無 AI 內容產出</div>';
       return;
     }
     const m = months[keys[0]];
@@ -146,7 +146,7 @@ async function loadMonth() {
     if (m.shooting_script) {
       html += '<div class="item">🎬 RIO 拍攝腳本：' + (m.shooting_script.content||'').length + ' 字<div class="meta">by ' + escapeHtml(m.shooting_script.by||'RIO') + ' · ' + escapeHtml(m.shooting_script.model||'') + '</div></div>';
     }
-    if (m.lessons) html += '<div class="item">📜 YUKI 課程逐字稿已寫入</div>';
+    if (m.lessons) html += '<div class="item">📜 YUKI 商品文章已寫入</div>';
     document.getElementById('monthData').innerHTML = html || '<div class="empty">月份僅有規劃，尚無內容產出</div>';
   } catch (e) { document.getElementById('monthData').innerHTML = '<div class="empty">載入失敗：' + e.message + '</div>'; }
 }
@@ -157,7 +157,7 @@ async function loadQA() {
     const qa = r.qa || [];
     document.getElementById('qaCount').textContent = qa.length;
     document.getElementById('qaList').innerHTML = qa.length === 0
-      ? '<div class="empty">尚無學員問答</div>'
+      ? '<div class="empty">尚無客戶問答</div>'
       : qa.slice(0, 5).map(q => '<div class="item"><strong>' + escapeHtml(q.student||'匿名') + ' 問：</strong>' + escapeHtml((q.question||'').slice(0, 50)) + '<div class="meta">MIKA 回答 ' + (q.answer||'').length + ' 字 · ' + timeAgo(q.at) + '</div></div>').join('');
   } catch (e) { document.getElementById('qaList').innerHTML = '<div class="empty">載入失敗：' + e.message + '</div>'; }
 }

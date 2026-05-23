@@ -117,7 +117,7 @@ function renderPostPage(post) {
     '</head><body>\n' +
     '<header><a href="/blog">← MACARON DE LUXE 部落格</a></header>\n' +
     '<article>\n' +
-    '<div class="meta">' + new Date(post.ts).toLocaleDateString('zh-TW') + ' · ' + (post.type === 'course' ? '課程' : '施作項目') + ' · ' + escapeHtml(post.subject || '') + '</div>\n' +
+    '<div class="meta">' + new Date(post.ts).toLocaleDateString('zh-TW') + ' · ' + (post.type === 'course' ? '🍬 馬卡龍' : '🍰 費南雪') + ' · ' + escapeHtml(post.subject || '') + '</div>\n' +
     body + '\n' +
     '<div class="cta"><p><strong>對 ' + escapeHtml(post.subject || '') + ' 有興趣？</strong></p><p>📲 加 LINE 諮詢：<a href="https://lin.ee/843cifiy" target="_blank">@843cifiy</a></p><p>🌐 OFZ 官網：<a href="' + SITE_URL + '" target="_blank">' + SITE_URL + '</a></p></div>\n' +
     tagsHtml + '\n' +
@@ -129,7 +129,7 @@ function renderPostPage(post) {
 function renderIndexPage() {
   const posts = listPosts(200);
   const list = posts.map(function(p){
-    return '<li><div style="font-size:13px;color:#A37849">' + new Date(p.ts).toLocaleDateString('zh-TW') + ' · ' + (p.type === 'course' ? '📚 課程' : '💄 施作') + ' · ' + escapeHtml(p.subject || '') + '</div><a href="/blog/' + p.slug + '">' + escapeHtml(p.title) + '</a></li>';
+    return '<li><div style="font-size:13px;color:#A37849">' + new Date(p.ts).toLocaleDateString('zh-TW') + ' · ' + (p.type === 'course' ? '🍬 馬卡龍' : '🍰 費南雪') + ' · ' + escapeHtml(p.subject || '') + '</div><a href="/blog/' + p.slug + '">' + escapeHtml(p.title) + '</a></li>';
   }).join('');
   const orgSchema = {
     '@context': 'https://schema.org',

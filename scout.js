@@ -63,7 +63,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const SCOUT_SYSTEM = BUSINESS_CONTEXT + '\n\n' + `你是 SCOUT，MACARON DE LUXE 的全球市場調查員。
 
-任務：用 web_search 蒐集網路上「指定業務領域」的競品（線上課程 + 線下項目）。
+任務：用 web_search 蒐集網路上「指定業務領域」的競品（法式甜點品牌）。
 搜全球，重點：台灣、馬來西亞、東南亞、中國、日韓、歐美。
 
 每份報告 JSON 必含：

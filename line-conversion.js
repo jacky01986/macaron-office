@@ -2,7 +2,7 @@
 //
 // 流程：
 //   1. 老闆/客服在 LINE 對話結束時收到 Flex Message（3 按鈕：✅成交 / ⏰待追 / ❌沒成交）
-//   2. 按「成交」會跳兩段 postback：先選「課程類別」→ 再輸入金額
+//   2. 按「成交」會跳兩段 postback：先選「商品類別」→ 再輸入金額
 //   3. server 接到完整 payload → 寫入 data/line-orders.json
 //   4. 推 Meta CAPI Purchase event → LEON 廣告演算法收到真實成交數據
 //   5. 加入決策卡 history（DEX 報表 + VICTOR 簡報用）
@@ -269,7 +269,7 @@ function buildConversionFlex({ contactName = '這位客戶', contactId = '', lin
 // 第二步：選類別
 function buildCategoryPicker({ contactId = '', lineUserId = '' } = {}) {
   const cats = [
-    { label: '🎓 美甲課程', value: 'course-nail' },
+    { label: '🍰 費南雪禮盒', value: 'financier-box' },
     { label: '🎁 客製禮盒', value: 'custom-gift' },
     { label: '💅 美甲服務', value: 'service-nail' },
     { label: '🛍️ 商品/工具', value: 'product' },
@@ -277,7 +277,7 @@ function buildCategoryPicker({ contactId = '', lineUserId = '' } = {}) {
   ];
   return {
     type: 'flex',
-    altText: '選擇課程類別',
+    altText: '選擇商品類別',
     contents: {
       type: 'bubble',
       size: 'kilo',

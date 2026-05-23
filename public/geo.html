@@ -41,7 +41,7 @@ nav-back { display: inline-block; color: var(--gold); text-decoration: none; mar
 <header>
 <div>
 <h1>🌐 GIA · GEO 主理人</h1>
-<div class="subtitle">Generative Intelligence Agent · 讓 AI 推薦 OFZ 課程</div>
+<div class="subtitle">Generative Intelligence Agent · 讓 AI 推薦 MACARON DE LUXE 馬卡龍與費南雪</div>
 </div>
 <div class="row">
 <button class="btn btn-gold" onclick="runDailyBriefing()">📊 跑今日 GEO 簡報</button>
@@ -62,8 +62,8 @@ nav-back { display: inline-block; color: var(--gold); text-decoration: none; mar
 <div class="row">
 <label>類型:</label>
 <select id="type-select" onchange="updateTopicOptions()">
-<option value="course">📚 課程招生（學員）</option>
-<option value="service">💆 施作項目（療程客）</option>
+<option value="brand">📚 品牌/禮贈內容</option>
+<option value="service">💆 商品介紹項目（療程客）</option>
 </select>
 <label>平台:</label>
 <select id="platform-select">
@@ -134,7 +134,7 @@ nav-back { display: inline-block; color: var(--gold); text-decoration: none; mar
 <!-- Auto-publish daily cron status + manual trigger -->
 <div class="section">
 <h2>🤖 自動發文機器人 (每天 09:00 自動跑)</h2>
-<p style="font-size:13px;color:#A37849;margin:0 0 10px 0">每天台灣時間 9 點自動輪流寫一篇 Medium 長文（9 課程 + 6 施作 = 15 天輪一輪），自動存成 draft 等你核可。需 MEDIUM_INTEGRATION_TOKEN env var。</p>
+<p style="font-size:13px;color:#A37849;margin:0 0 10px 0">每天台灣時間 9 點自動輪流寫一篇 Medium 長文(9 馬卡龍主題 + 6 費南雪/綜合主題 = 15 天輪一輪)，自動存成 draft 等你核可。需 MEDIUM_INTEGRATION_TOKEN env var。</p>
 <button class="btn" onclick="runAutoPublishNow()">🚀 立刻跑一次（測試用，60-90 秒）</button>
 <div id="auto-publish-status" style="margin-top:12px;font-size:13px;color:#5D2630"></div>
 <h3 style="margin-top:18px;font-size:16px;color:#8E3D4B">最近自動發文紀錄</h3>
@@ -200,7 +200,7 @@ async function runDailyBriefing() {
     document.getElementById('today-suggestion').innerHTML = `
       <div class="content-card">
         <div class="meta">今日 GIA 建議</div>
-        <div>📚 課程: <b>${t.course_today}</b> · 💆 施作: <b>${t.service_today}</b> · 平台: <b>${t.platform}</b></div>
+        <div>🍬 馬卡龍: <b>${t.course_today}</b> · 🍰 費南雪: <b>${t.service_today}</b> · 平台: <b>${t.platform}</b></div>
         <div style="font-size: 12px; opacity: 0.7; margin-top: 8px;">${t.tip}</div>
       </div>
     `;
@@ -221,7 +221,7 @@ async function generateContent() {
     document.getElementById('generated-content').innerHTML = `
       <div class="content-card">
         <button class="copy-btn" onclick="navigator.clipboard.writeText(this.parentNode.querySelector('.text').textContent); this.textContent='✅ 已複製'">📋 複製</button>
-        <div class="meta">${r.platform} · ${r.type === 'service' ? '💆 施作' : '📚 課程'} · ${r.subject} · ${r.angle} · ${r.word_count} 字</div>
+        <div class="meta">${r.platform} · ${r.type === 'service' ? '🍰 費南雪' : '🍬 馬卡龍'} · ${r.subject} · ${r.angle} · ${r.word_count} 字</div>
         <div class="text">${escapeHtml(r.content)}</div>
       </div>
     `;
@@ -239,7 +239,7 @@ async function loadRecent() {
     document.getElementById('recent-content').innerHTML = items.reverse().map(c => `
       <div class="content-card">
         <button class="copy-btn" onclick="navigator.clipboard.writeText(this.parentNode.querySelector('.text').textContent); this.textContent='✅ 已複製'">📋 複製</button>
-        <div class="meta">${new Date(c.ts).toLocaleString('zh-TW')} · ${c.platform} · ${c.type === 'service' ? '💆 施作' : '📚 課程'} · ${c.subject || c.course} · ${c.angle}</div>
+        <div class="meta">${new Date(c.ts).toLocaleString('zh-TW')} · ${c.platform} · ${c.type === 'service' ? '🍰 費南雪' : '🍬 馬卡龍'} · ${c.subject || c.course} · ${c.angle}</div>
         <div class="text">${escapeHtml(c.content || '')}</div>
       </div>
     `).join('');
@@ -357,7 +357,7 @@ async function loadAutoPublishLog() {
       const url = it.publish && it.publish.url;
       const dt = new Date(it.ts).toLocaleString("zh-TW");
       return "<div style=\"padding:6px 0;border-bottom:1px solid #EDDDC1\">" +
-        (ok?"✅":"❌") + " " + dt + " · " + (it.type==="course"?"📚 課程":"💄 施作") + " · <b>" + (it.subject||"") + "</b> · " + (it.title||"") +
+        (ok?"✅":"❌") + " " + dt + " · " + (it.type==="course"?"🍬 馬卡龍":"🍰 費南雪") + " · <b>" + (it.subject||"") + "</b> · " + (it.title||"") +
         (url ? " · <a href=\""+url+"\" target=\"_blank\">Medium</a>" : (it.publish && it.publish.error ? " · <span style=\"color:#8E3D4B\">" + it.publish.error.slice(0,80) + "</span>" : "")) +
         "</div>";
     }).join("");

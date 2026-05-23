@@ -90,7 +90,7 @@ async function sendLead({ contact_id, name, email, phone, source_channel, messag
   return postEvent('Lead', userData, customData, eventId);
 }
 
-// === Purchase 事件 — 客戶成交時送（例：訂禮盒、報名課程）===
+// === Purchase 事件 — 客戶成交時送（例：訂禮盒、客製訂購）===
 async function sendPurchase({
   contact_id, name, email, phone,
   value, currency = 'TWD',

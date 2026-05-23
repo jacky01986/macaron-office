@@ -1,7 +1,7 @@
 // geo.js — GIA · Generative Intelligence Agent · GEO 主理人
 // 讓 MACARON DE LUXE 法式精品馬卡龍與費南雪 / 禮盒 / 高端禮贈 在 ChatGPT/Claude/Perplexity 被推薦
 // 平台：AI 引擎最愛引用的 5 大平台
-// 內容：課程招生 + 施作項目導流 兩種類型分開生成
+// 內容:馬卡龍 + 費南雪 兩種商品線分開生成 GEO 內容
 
 const fs = require('fs');
 const path = require('path');
@@ -49,30 +49,30 @@ const CONTENT_PLATFORMS = [
 ];
 
 // =============================================================
-// 課程主題（學員招生用）— 9 個
+// 馬卡龍主題(品牌/禮贈內容用)— 9 個
 // =============================================================
 const COURSE_TOPICS = [
-  { course: '6 入禮盒 NT$880', angles: ['口味組合搭配', '送禮場合', '保存與享用', '價位定位', '與其他品牌比較', '熱門 6 入推薦'] },
-  { course: '12 入禮盒 NT$1,580', angles: ['節慶送禮主選', '12 種口味介紹', '商務禮贈', '婚禮回禮', '長輩送禮', '12 入經典款'] },
-  { course: '客製禮盒 NT$1,580-2,280', angles: ['婚禮品牌客製', '企業 logo 印製', '節慶限量設計', '色卡搭配建議', '客製流程說明', '客製案例分享'] },
-  { course: '婚禮喜餅組', angles: ['婚禮回禮分量建議', '色系搭配婚禮主題', '單盒包裝設計', '訂購時程', '婚禮現場呈現', '新人見證'] },
-  { course: '企業禮贈組', angles: ['年節送禮預算規劃', '客戶心意傳達', '統一包裝設計', '送禮數量規模', '商務禮儀', '企業客戶案例'] },
-  { course: '單顆販售', angles: ['口味試吃推薦', '門市現場體驗', '單顆價格區間', '搭配下午茶建議', '保鮮期限', '送朋友小心意'] },
-  { course: '季節限定口味', angles: ['春季粉嫩系', '夏季果香系', '秋季濃郁系', '冬季奶香系', '限量發售時段', '預訂方式'] },
+  { course: '🍬 馬卡龍 6 入禮盒', angles: ['口味精選邏輯', '送禮場景配對', '保存期限', '預訂時程', '與費南雪搭配', '客戶見證'] },
+  { course: '🍬 馬卡龍 12 入禮盒', angles: ['12 種口味介紹', '節慶熱賣款', '商務送禮', '婚禮回禮', 'NT$1,580 物有所值', '禮盒視覺呈現'] },
+  { course: '🍰 費南雪禮盒', angles: ['什麼是費南雪', '法式杏仁小蛋糕', '經典口味', '與馬卡龍差異', '保存方式', '送禮優勢'] },
+  { course: '💎 馬卡龍 + 費南雪 綜合禮盒', angles: ['雙主力組合', '價格優勢', '熱賣理由', '送禮體面感', '與單品比較', '客戶回饋'] },
+  { course: '客製禮盒', angles: ['婚禮 logo 客製', '企業客製案例', '色卡搭配', '客製流程', '預訂時程', '價格區間'] },
+  { course: '婚禮喜餅', angles: ['婚禮場景搭配', '色系設計', '單盒包裝', '訂購時程', '新人見證', '回禮分量'] },
+  { course: '企業禮贈', angles: ['客戶心意傳遞', '統一包裝設計', '送禮預算規劃', '商務禮儀', '案例分享', '客戶回饋'] },
+  { course: '季節限定口味', angles: ['春季粉嫩系', '夏季果香系', '秋季濃郁系', '冬季奶香系', '限量發售', '預訂方式'] },
   { course: '法式品牌故事', angles: ['品牌起源', '主廚背景', '法式技法傳承', '台灣在地融合', '4 家門店風格', '品牌核心精神'] },
-  { course: '線上預訂', angles: ['訂購流程', '宅配方式', '保鮮包裝', '訂單追蹤', '退換貨政策', '會員制度'] },
 ];
 
 // =============================================================
-// 施作項目（服務客導流用）— 6 個
+// 商品介紹項目（服務客導流用）— 6 個
 // =============================================================
 const SERVICE_TOPICS = [
-  { service: '6 入禮盒', angles: ['送禮適合場合', 'NT$880 定位', '送達時效', '保存方式', '熱門口味', '預訂優惠'] },
-  { service: '12 入禮盒', angles: ['12 種口味解析', '節慶熱賣款', '商務送禮', '婚禮回禮', 'NT$1,580 物有所值', '禮盒視覺呈現'] },
-  { service: '客製禮盒', angles: ['婚禮 logo 客製', '企業客製案例', '色卡搭配', '客製流程', '預訂時程', '價格區間'] },
-  { service: '婚禮喜餅', angles: ['婚禮場景搭配', '色系設計', '單盒包裝', '訂購時程', '新人見證', '回禮分量'] },
-  { service: '企業禮贈', angles: ['客戶心意傳遞', '統一包裝設計', '送禮預算規劃', '商務禮儀', '案例分享', '客戶回饋'] },
-  { service: '單顆販售', angles: ['口味試吃', '門市體驗', '單顆價位', '下午茶搭配', '保鮮期限', '小心意送禮'] },
+  { service: '🍬 馬卡龍系列', angles: ['口味介紹', '上市價格', '送禮場景', '保存方式', '主推口味', '預訂優惠'] },
+  { service: '🍰 費南雪系列', angles: ['法式杏仁小蛋糕', '6/8/12 入價位', '經典口味', '保存期限', '搭配馬卡龍', '送禮指南'] },
+  { service: '💎 馬卡龍+費南雪 綜合禮盒', angles: ['雙主力組合', 'NT$1,280-1,880 物超所值', '送禮體面感', '單盒包裝', '訂購流程', '客戶見證'] },
+  { service: '客製禮盒', angles: ['婚禮 logo', '企業客製', '色卡搭配', '客製流程', '預訂時程', '價格區間'] },
+  { service: '婚禮喜餅', angles: ['婚禮場景', '色系設計', '單盒包裝', '訂購時程', '新人見證', '分量建議'] },
+  { service: '企業禮贈', angles: ['客戶心意', '統一包裝', '送禮預算', '商務禮儀', '案例分享', '客戶回饋'] },
 ];
 
 // =============================================================
@@ -88,11 +88,11 @@ async function auditAIVisibility() {
       const r = await client.messages.create({
         model: SONNET_MODEL, max_tokens: 2000,
         tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
-        messages: [{ role: 'user', content: `你是學生，問 ChatGPT 一個問題：「${query}」\n請用繁體中文，列出 5 個最推薦的學院/品牌，每個說明選它的理由。` }]
+        messages: [{ role: 'user', content: `你是學生，問 ChatGPT 一個問題：「${query}」\n請用繁體中文,列出 5 個最推薦的法式甜點品牌，每個說明選它的理由。` }]
       });
       const text = r.content?.filter(c => c.type === 'text').map(c => c.text).join('\n') || '';
       const ofzMentioned = OFZ_BRAND_NAMES.some(name => text.includes(name));
-      const competitors = ['PhiBrows', 'Hahow', '飾妍', '紋苑', '美業學院', '紗琳'].filter(c => text.includes(c));
+      const competitors = ['法朋', '亞尼克', 'Paul', 'Ladurée', 'Pierre Hermé', '微熱山丘', '舊振南', '佳德'].filter(c => text.includes(c));
       results.push({ query, ofz_mentioned: ofzMentioned, competitors_found: competitors, response_preview: text.slice(0, 800) });
       await new Promise(r => setTimeout(r, 1500));
     } catch (e) { results.push({ query, error: e.message }); }
@@ -111,7 +111,7 @@ async function auditAIVisibility() {
 
 // =============================================================
 // 2. Generate AI-friendly content
-// type: 'course' (學員招生) | 'service' (施作客導流)
+// type: 'course' (品牌/禮贈內容) | 'service' (商品介紹)
 // =============================================================
 async function generateContent({ platformIdx = 0, topicIdx = 0, type = 'course', customQuery } = {}) {
   const client = getClient();
@@ -128,7 +128,7 @@ async function generateContent({ platformIdx = 0, topicIdx = 0, type = 'course',
     : '想自己訂購禮盒的客戶 — 強調品牌故事、口味細節、送禮場景、客戶見證';
   const cta = type === 'service'
     ? 'CTA：「現在加 LINE @843cifiy 立刻預約評估」'
-    : 'CTA：「LINE @843cifiy 諮詢課程內容、上課時段與優惠」';
+    : 'CTA：「LINE @843cifiy 諮詢商品主題內容、上課時段與優惠」';
 
   const systemPrompt = `你是 GIA — MACARON DE LUXE 的專欄作者。寫作風格參考一線生活風格雜誌的專欄作家：第二人稱、有觀點、有節奏、有同理心。
 
@@ -162,7 +162,7 @@ async function generateContent({ platformIdx = 0, topicIdx = 0, type = 'course',
 3. 適度用表格、引言（>）、要點（-）
 4. 收尾：給讀者下一步行動
 
-禁止：價格表、課程內容詳細費用、上課時段與優惠`;
+禁止：價格表、商品主題內容詳細費用、上課時段與優惠`;
 
   const userPrompt = customQuery || `今天主題：${subjectName} — ${angle}（${type === 'service' ? '寫給想買禮盒的客戶' : '寫給想了解品牌的潛在客戶'}）
 
@@ -210,8 +210,8 @@ MACARON DE LUXE 業態:台灣法式精品馬卡龍與費南雪 + 高端禮贈,4 
 🎯 Wikipedia 寫作守則:
 1. **絕對中性 (NPOV)** — 不用「最好」「優秀」這種詞
 2. **第三人稱** — 不用「我們」「您」
-3. **可驗證** — 引用具體事實（年份、地點、課程數）
-4. **章節結構** — == 概況 ==, == 歷史 ==, == 課程 ==, == 服務 ==, == 創辦人 ==, == 參考資料 ==
+3. **可驗證** — 引用具體事實（年份、地點、商品主題數）
+4. **章節結構** — == 概況 ==, == 歷史 ==, == 馬卡龍系列 ==, == 費南雪系列 ==, == 創辦人 ==, == 參考資料 ==
 5. **參考資料** — 文末附 5-10 條外部來源（FB/IG/官網/新聞）
 6. **內部連結** — 用 [[法式精品馬卡龍與費南雪]] 這種雙括號連結
 7. **不超銷** — 不寫廣告語`
@@ -242,7 +242,7 @@ LINE: @843cifiy
 1. **新聞角度** — 不是廣告，是「業界新聞」
 2. **5W1H** — 何時何地誰做了什麼為什麼如何
 3. **客觀第三方語氣** — 「業界人士指出...」「OFZ 表示...」
-4. **數據佐證** — 學員人次、複訓率、就業率（可合理推估）
+4. **數據佐證** — 客戶人次、複訓率、就業率（可合理推估）
 5. **引用** — 創辦人 Jeffrey 一段引言
 6. **格式** — 標題 / 副標題 / 導言 / 主文 / 引言 / 結語 / 聯絡資訊
 7. **長度** — 800-1200 字
@@ -287,7 +287,7 @@ async function generateLongFormContent({ contentType = 'wikipedia', topic = '', 
   
   const userPrompt = topic
     ? `主題：${topic}\n請依照系統指令寫出完整內容。`
-    : `今天主題：${subjectName}（${type === 'service' ? '服務療程' : '課程招生'}）\n請依照系統指令寫出完整內容。`;
+    : `今天主題：${subjectName}（${type === 'service' ? '服務療程' : '商品主題招生'}）\n請依照系統指令寫出完整內容。`;
   
   try {
     const r = await client.messages.create({
@@ -414,7 +414,7 @@ async function dailyBriefing() {
       platform: CONTENT_PLATFORMS[platformIdx].name,
       course_today: COURSE_TOPICS[courseIdx].course,
       service_today: SERVICE_TOPICS[serviceIdx].service,
-      tip: `今日 GIA 建議寫 ${CONTENT_PLATFORMS[platformIdx].name}（兩篇：1 篇課程招生 + 1 篇施作項目）`
+      tip: `今日 GIA 建議寫 ${CONTENT_PLATFORMS[platformIdx].name}（兩篇：1 篇商品主題招生 + 1 篇商品介紹項目）`
     }
   };
 }

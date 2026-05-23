@@ -1,16 +1,16 @@
-// ai-team-content.js — OFZ AI 教研團隊（NORA + YUKI 第一波）
+// ai-team-content.js — MACARON DE LUXE AI 內容團隊(NORA + YUKI 第一波)
 //
 // 第一年訂閱內容用 AI 團隊產出，老闆只要每月拍 1 小時片 + 半小時 Q&A 直播
 //
 // 角色：
 //   NORA  Opus 4.6   訂閱內容主編 — 每月 1 號規劃下個月主題
-//   YUKI  Sonnet 4.6 教學腳本撰寫 — 每月 5 號寫完整課文 + 講師逐字稿
+//   YUKI  Sonnet 4.6 內容撰寫 — 每月 5 號寫完整品牌文章 + 商品介紹
 //   RIO   (M2 才接)  影片製作助理 — 拍攝腳本、shot list、字幕
-//   MIKA  (M2 才接)  學員社群輔導 — 24/7 答疑 + 週話題
+//   MIKA  (M2 才接)  客戶社群輔導 — 24/7 答疑 + 週話題
 //
 // cron:
 //   每月 1 號 09:00 → NORA 規劃下月主題
-//   每月 5 號 09:00 → YUKI 接手 NORA 主題 → 寫完整課文
+//   每月 5 號 09:00 → YUKI 接手 NORA 主題 → 寫完整文章
 //   產出存到 data/ai-content-monthly.json，並推 LINE 給老闆
 //
 // 環境變數：
@@ -87,7 +87,7 @@ async function callClaude(model, systemPrompt, userPrompt, maxTokens = 3000) {
       let extra = '';
       if (svc) extra += '\n\n' + svc;
       if (crs) extra += '\n\n' + crs;
-      if (extra) systemPrompt = (systemPrompt || '') + '\n\n[OFZ 真實客人畫像快照 — 你寫的內容必須針對這些客人在問的問題、興趣的服務/課程設計]:' + extra;
+      if (extra) systemPrompt = (systemPrompt || '') + '\n\n[MACARON DE LUXE 真實客人畫像快照 — 你寫的內容必須針對這些客人在問的問題、興趣的商品設計]:' + extra;
     }
   } catch (e) {}
 
@@ -153,18 +153,18 @@ async function noraPlanNextMonth(targetMonth) {
   const sys = `${BUSINESS_CONTEXT}${scout ? '\n\n' + scout.getContextForOtherAgents() : ''}
 
 你是 NORA — MACARON DE LUXE 訂閱內容主編。
-你的任務是規劃 ${monthKey} 月的進修訂閱主題（給已經學完 Lv1 的學員）。
+你的任務是規劃 ${monthKey} 月的內容主題(給已經買過第一次禮盒的客戶,讓他們回購)。
 
 OFZ 的客戶結構：
 - 禮贈客戶為主、自我犒賞客戶為輔
-- 已學完 Lv1 想升級的舊生 = 訂閱主要受眾
-- 訂閱方案 NT$ 1,999/月，含每月 1 個新技術短課 + 學員社群 + 月 1 次直播 Q&A
+- 已學完 首次購買 想升級的舊生 = 訂閱主要受眾
+- 訂閱方案 NT$ 1,999/月，含每月 1 個新技術短課 + 客戶社群 + 月 1 次直播 Q&A
 
 你要產出：
 1. 主題（1 個明確的技術重點）
-2. 為什麼這個月選這個（連到本月時節 / 最近成交數據 / 學員需求）
+2. 為什麼這個月選這個（連到本月時節 / 最近成交數據 / 客戶需求）
 3. 4 個子主題（拆解技術點）
-4. 學完後學員能做出什麼成果
+4. 學完後客戶能做出什麼成果
 5. 行銷 tagline 1 句（給 CAMILLE 寫推廣文用）
 
 最近 6 個月主題（避免重複）：${recentThemes.length ? recentThemes.join('、') : '（首期）'}
@@ -220,7 +220,7 @@ OFZ 的客戶結構：
 }
 
 // ============================================================
-// YUKI — 教學腳本撰寫
+// YUKI — 內容文章撰寫
 // ============================================================
 async function yukiWriteLesson(targetKey) {
   const monthKey = (targetKey || thisMonthKey());
@@ -239,14 +239,14 @@ async function yukiWriteLesson(targetKey) {
   const plan = monthEntry.plan;
   const sys = `${BUSINESS_CONTEXT}${scout ? '\n\n' + scout.getContextForOtherAgents() : ''}
 
-你是 YUKI — MACARON DE LUXE 的教學腳本撰寫師。
-你的任務是把 NORA 規劃的主題轉成完整教學腳本，給老闆照念拍片。
+你是 YUKI — MACARON DE LUXE 的內容文章撰寫師。
+你的任務是把 NORA 規劃的主題轉成完整內容文章，給老闆照念拍片。
 
 要求：
-1. 課程時長假設 30 分鐘（拆 4-5 段）
-2. 講師逐字稿要口語化、像在教好朋友（不要太正式）
-3. 每段含：標題、講師逐字稿、要 demo 的動作 cue、學員筆記重點
-4. 最後加：學員作業 + 評分標準
+1. 商品內容時長假設 30 分鐘（拆 4-5 段）
+2. 商品介紹文要口語化、像在教好朋友（不要太正式）
+3. 每段含：標題、商品介紹文、要 demo 的動作 cue、客戶筆記重點
+4. 最後加：客戶作業 + 評分標準
 
 輸出嚴格用 JSON 格式：
 {
@@ -254,7 +254,7 @@ async function yukiWriteLesson(targetKey) {
   "duration_min": 30,
   "intro": "...",
   "sections": [
-    { "title": "...", "lines": "（講師逐字稿，口語化）", "demo_cue": "...", "notes": "..." }
+    { "title": "...", "lines": "（商品介紹文，口語化）", "demo_cue": "...", "notes": "..." }
   ],
   "assignment": "...",
   "rubric": ["...", "..."]
@@ -263,9 +263,9 @@ async function yukiWriteLesson(targetKey) {
   const user = `主題：${plan.theme}
 理由：${plan.reasoning}
 子主題：${(plan.subtopics || []).join('、')}
-預期學員產出：${plan.outcome}
+預期客戶產出：${plan.outcome}
 
-請寫完整教學腳本。只回 JSON 不要其他文字。`;
+請寫完整內容文章。只回 JSON 不要其他文字。`;
 
   let out;
   try {
@@ -295,7 +295,7 @@ async function yukiWriteLesson(targetKey) {
   if (decisions && decisions.addPending) {
     try {
       await decisions.addPending({
-        title: '✏️ ' + monthKey + ' 教學腳本完成：' + lesson.title,
+        title: '✏️ ' + monthKey + ' 內容文章完成：' + lesson.title,
         recommendation: 'YUKI 已寫好 ' + (lesson.sections || []).length + ' 段腳本（含逐字稿）。建議本週找時間拍片。',
         source: 'ai-team-yuki',
         metadata: { type: 'content-lesson', month: monthKey, title: lesson.title },
@@ -318,8 +318,8 @@ async function rioWriteShootingScript(monthKey) {
     return { ok: false, reason: 'no plan or lesson for ' + key + '. 先請 NORA 規劃或 YUKI 寫腳本' };
   }
   const lessons = monthData.lessons || monthData.raw || monthData.plan;
-  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 RIO，MACARON DE LUXE 的影片製作助理。專長：把講師逐字稿轉成可拍攝的影片腳本，包含每段時長、鏡位、運鏡、字幕重點、shot list、道具清單。攝影師看了就能直接拍。';
-  const userReq = '依下列課程逐字稿，產每課拍攝腳本：\n1. 開場（前 10 秒抓眼球）\n2. 主體分段（時長 / 鏡位 / 運鏡 / 字幕重點）\n3. 結尾 CTA\n4. shot list 必需鏡頭清單\n5. 道具清單\n\n課程資料：\n' + JSON.stringify(lessons, null, 2);
+  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 RIO，MACARON DE LUXE 的影片製作助理。專長：把商品介紹文轉成可拍攝的影片腳本，包含每段時長、鏡位、運鏡、字幕重點、shot list、道具清單。攝影師看了就能直接拍。';
+  const userReq = '依下列商品內容逐字稿，產每課拍攝腳本：\n1. 開場（前 10 秒抓眼球）\n2. 主體分段（時長 / 鏡位 / 運鏡 / 字幕重點）\n3. 結尾 CTA\n4. shot list 必需鏡頭清單\n5. 道具清單\n\n商品內容資料：\n' + JSON.stringify(lessons, null, 2);
   const text = await callClaude(YUKI_MODEL, sys, userReq, 4500);
   if (!text || typeof text !== 'string') return { ok: false, reason: 'no response' };
   state.months[key].shooting_script = {
@@ -332,11 +332,11 @@ async function rioWriteShootingScript(monthKey) {
   return { ok: true, month: key, length: text.length };
 }
 
-// === MIKA 學員社群輔導 — 答疑 + 週話題 ===
+// === MIKA 客戶社群輔導 — 答疑 + 週話題 ===
 async function mikaAnswerStudent(question, studentName) {
   if (!question) return { ok: false, reason: 'question required' };
-  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 MIKA，MACARON DE LUXE 學員社群輔導員。溫暖、專業、耐心。回答美甲技術問題並鼓勵學員。如果問題超出範圍，引導他們看哪一堂課或請教老師。回答 200-400 字，給可實作的建議。';
-  const userReq = (studentName ? '學員：' + studentName + '\n' : '') + '問題：' + question;
+  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 MIKA，MACARON DE LUXE 客戶社群輔導員。溫暖、專業、耐心。回答美甲技術問題並鼓勵客戶。如果問題超出範圍，引導他們看哪一堂課或請教主理人。回答 200-400 字，給可實作的建議。';
+  const userReq = (studentName ? '客戶：' + studentName + '\n' : '') + '問題：' + question;
   const text = await callClaude(YUKI_MODEL, sys, userReq, 1500);
   if (!text || typeof text !== 'string') return { ok: false, reason: 'no response' };
   const state = loadContent();
@@ -354,8 +354,8 @@ async function mikaAnswerStudent(question, studentName) {
 }
 
 async function mikaWeeklyTopic() {
-  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 MIKA，MACARON DE LUXE 學員社群輔導。每週寫一個能引爆討論的話題，給學員社群（FB 社團 / LINE 群）。要實用、有爭議、能讓學員分享自己作品。';
-  const userReq = '寫本週學員社群話題（200-300 字），含：\n1. 一句話勾起好奇\n2. 為什麼這個話題重要（背景）\n3. 引導留言的 3-5 個具體問題';
+  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 MIKA，MACARON DE LUXE 客戶社群輔導。每週寫一個能引爆討論的話題，給客戶社群（FB 社團 / LINE 群）。要實用、有爭議、能讓客戶分享自己作品。';
+  const userReq = '寫本週客戶社群話題（200-300 字），含：\n1. 一句話勾起好奇\n2. 為什麼這個話題重要（背景）\n3. 引導留言的 3-5 個具體問題';
   const text = await callClaude(YUKI_MODEL, sys, userReq, 1500);
   if (!text || typeof text !== 'string') return { ok: false, reason: 'no response' };
   const state = loadContent();

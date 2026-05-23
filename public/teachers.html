@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<title>👩 老師戰報 · MACARON DE LUXE</title>
+<title>👩 門店戰報 · MACARON DE LUXE</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   :root {
@@ -83,8 +83,8 @@
   <a href="/teachers.html" class="active">👩 老�戰報</a>
 </div>
 <div class="container">
-  <h1>👩 老師戰報</h1>
-  <div class="subtitle">每位老師 / 分店的廣告成效、詢問品質與顧客之聲 · 即時數據</div>
+  <h1>👩 門店戰報</h1>
+  <div class="subtitle">每位門店 / 分店的廣告成效、詢問品質與顧客之聲 · 即時數據</div>
   <div class="controls">
     <label>區間：</label>
     <select id="days">
@@ -137,7 +137,7 @@ async function load() {
       fetch('/api/teachers/summary?days=' + days + '&_=' + Date.now()).then(r => r.json()),
       fetch('/api/customers/inquiries?days=' + days + '&_=' + Date.now()).then(r => r.json()).catch(() => ({ customers:[], segments:{} }))
     ]);
-    if (!summary.ok) throw new Error(summary.error || '老師資料載入失敗');
+    if (!summary.ok) throw new Error(summary.error || '門店資料載入失敗');
     DATA = summary.teachers || {};
     DETAIL = { customers: customers.customers || [], segments: customers.segments || {} };
     buildTabs();
@@ -149,7 +149,7 @@ async function load() {
 
 function render() {
   if (Object.keys(DATA || {}).length === 0) {
-    document.getElementById('content').innerHTML = '<div class="error-box">尚未設定任何老師 / 分店。<br><br>請在 Render 環境變數設定 <code>TEACHERS_CONFIG</code>，例如：<pre>[\n  { "key": "main", "name": "MACARON DE LUXE", "page_id": "你的FB粉專ID", "match": "" },\n  { "key": "antoine", "name": "Antoine 主廚", "page_id": "另一個粉專ID", "match": "antoine" }\n]</pre>match 用 regex 比對 campaign 名稱（不分大小寫），留空代表 fallback 預設。</div>';
+    document.getElementById('content').innerHTML = '<div class="error-box">尚未設定任何門店 / 分店。<br><br>請在 Render 環境變數設定 <code>TEACHERS_CONFIG</code>，例如：<pre>[\n  { "key": "main", "name": "MACARON DE LUXE", "page_id": "你的FB粉專ID", "match": "" },\n  { "key": "antoine", "name": "Antoine 主廚", "page_id": "另一個粉專ID", "match": "antoine" }\n]</pre>match 用 regex 比對 campaign 名稱（不分大小寫），留空代表 fallback 預設。</div>';
     return;
   }
   if (CURRENT === 'compare') return renderCompare();
@@ -173,7 +173,7 @@ function renderCompare() {
     table += '</tr>';
   }
   table += '</tbody></table>';
-  table += '<div style="margin-top:12px;color:var(--muted);font-size:13px">💡 點任一列查看該老師詳細數據</div>';
+  table += '<div style="margin-top:12px;color:var(--muted);font-size:13px">💡 點任一列查看該門店詳細數據</div>';
   table += '</div>';
   const totalLeads = teachers.reduce((s,[k,t]) => s+(t.lead_count||0),0);
   const totalSpend = teachers.reduce((s,[k,t]) => s+(t.spend_ntd||0),0);
@@ -183,14 +183,14 @@ function renderCompare() {
     '<div class="card"><div class="label">總廣告花費</div><div class="value">'+fmtNT(totalSpend)+'</div></div>' +
     '<div class="card"><div class="label">平均 CPL</div><div class="value">'+(totalLeads>0?fmtNT(Math.round(totalSpend/totalLeads)):'—')+'</div></div>' +
     '<div class="card"><div class="label">總曝光</div><div class="value">'+totalImpressions.toLocaleString()+'</div></div>' +
-    '<div class="card"><div class="label">老師 / 分店數</div><div class="value">'+teachers.length+'</div></div>' +
+    '<div class="card"><div class="label">門店 / 分店數</div><div class="value">'+teachers.length+'</div></div>' +
     '</div>' + table;
   document.getElementById('content').innerHTML = html;
 }
 
 function renderTeacher(key) {
   const t = DATA[key];
-  if (!t) { document.getElementById('content').innerHTML = '<div class="error-box">找不到該老師資料</div>'; return; }
+  if (!t) { document.getElementById('content').innerHTML = '<div class="error-box">找不到該門店資料</div>'; return; }
   const teacherCustomers = (DETAIL.customers || []).filter(c => {
     if (!c.channel_id && !c.source) return key === 'main' || key === 'ofz';
     return (c.channel_id == t.page_id) || (c.source && c.source.toLowerCase().includes(key));
@@ -240,7 +240,7 @@ function renderTeacher(key) {
   html += '</div>';
   html += '<div class="section"><h3>💬 最新客戶（'+teacherCustomers.length+' 個）</h3>';
   if (teacherCustomers.length === 0) {
-    html += '<div style="color:var(--muted);padding:20px 0;text-align:center">本期間還沒有客戶詢問此老師</div>';
+    html += '<div style="color:var(--muted);padding:20px 0;text-align:center">本期間還沒有客戶詢問此門店</div>';
   } else {
     for (const c of teacherCustomers.slice(0,10)) {
       html += '<div class="conv-item">';

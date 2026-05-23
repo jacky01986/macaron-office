@@ -1469,7 +1469,7 @@ cron.schedule("*/30 * * * *", async () => {
   }
 }, { timezone: CRON_TZ });
 
-// 每天 09:00 (Asia/Taipei) 自動發 1 篇 Medium 草稿（GIA 自動輪流 9 課程 + 6 施作）
+// 每天 09:00 (Asia/Taipei) 自動發 1 篇 Medium 草稿（GIA 自動輪流 9 馬卡龍主題 + 6 費南雪主題）
 cron.schedule('0 9 * * *', async () => {
   console.log('[GIA] daily auto-publish starting...');
   try {
@@ -1993,7 +1993,7 @@ app.get('/api/voc/mine', async (req, res) => {
     if (!allMsgs.length) return res.json({ ok: true, total_sessions: list.length, customer_messages: 0, sample_keys: firstSampleKeys, message: 'Sessions found but no message content extracted' });
     const Anthropic = require('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const prompt = '以下是 MACARON DE LUXE 過去 ' + days + ' 天，SaleSmartly / Messenger 的對話紀錄（' + allMsgs.length + ' 則訊息）。每則前面標記 [CUSTOMER] 或 [UNKNOWN]。請當「顧客之聲」分析師，著重看 [CUSTOMER] 訊息（也可參考 [UNKNOWN] 推論），歸納：\n\n1. **Top 10 最常被問的問題**（用客戶原話風格）\n2. **Top 5 客戶顧慮 / 反對意見**\n3. **客戶常用的詞彙 / 說法**\n4. **意圖分類百分比**（價格 / 預約 / 教學 / 售後 / 其他）\n5. **3 個立即可執行的行銷動作**\n\n用條列輸出，給 MACARON DE LUXE 行銷團隊用，直接結論不要客套。\n\n--- 訊息 ---\n' + allMsgs.map((m, i) => (i+1) + '. ' + (m.from_customer ? '[CUSTOMER]' : '[UNKNOWN]') + ' ' + m.text).join('\n');
+    const prompt = '以下是 MACARON DE LUXE 過去 ' + days + ' 天，SaleSmartly / Messenger 的對話紀錄（' + allMsgs.length + ' 則訊息）。每則前面標記 [CUSTOMER] 或 [UNKNOWN]。請當「顧客之聲」分析師，著重看 [CUSTOMER] 訊息（也可參考 [UNKNOWN] 推論），歸納：\n\n1. **Top 10 最常被問的問題**（用客戶原話風格）\n2. **Top 5 客戶顧慮 / 反對意見**\n3. **客戶常用的詞彙 / 說法**\n4. **意圖分類百分比**（價格 / 預約 / 客戶教育 / 售後 / 其他）\n5. **3 個立即可執行的行銷動作**\n\n用條列輸出，給 MACARON DE LUXE 行銷團隊用，直接結論不要客套。\n\n--- 訊息 ---\n' + allMsgs.map((m, i) => (i+1) + '. ' + (m.from_customer ? '[CUSTOMER]' : '[UNKNOWN]') + ' ' + m.text).join('\n');
     const resp = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4000,
@@ -2599,7 +2599,7 @@ app.post('/api/ai-team/run/:role', async (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// W2: AI 教研團隊 — RIO/MIKA 查詢端點
+// W2: AI 內容團隊 — RIO/MIKA 查詢端點
 app.get('/api/ai-team/qa/recent', (req, res) => {
   try {
     const fs = require('fs'), path = require('path');
@@ -2870,7 +2870,7 @@ app.get('/api/wordpress/posts', async (req, res) => {
 
 app.post('/api/admin/create-privacy-policy', async (req, res) => {
   if (!wp || !wp.publishPost) return res.status(500).json({ ok: false, error: 'wp module missing' });
-  const md = '## 隱私權政策\n\nMACARON DE LUXE（以下簡稱「我們」）尊重您的個人隱私，並依《個人資料保護法》及相關法規處理您所提供的資料。\n\n## 一、我們蒐集哪些資訊\n\n當您透過我們的網站、Facebook 粉絲專頁、Instagram、Messenger 或 LINE 與我們聯繫時，我們可能蒐集以下資訊：\n\n- 您的姓名、聯絡電話、電子信箱\n- 您與我們的對話內容\n- 您的瀏覽行為（透過 Meta Pixel 與 Cookie）\n- 您的地理位置（用於判斷服務區域）\n\n## 二、我們如何使用您的資訊\n\n- 提供諮詢、預約、課程及服務\n- 改善網站體驗與行銷投放精準度\n- 寄送您主動訂閱的活動資訊\n- 配合法律或主管機關要求\n\n## 三、第三方資料分享\n\n我們會與下列服務商共享必要資訊：\n\n- Meta（Facebook / Instagram）：透過 Pixel 與 Conversions API 進行廣告效益追蹤\n- SaleSmartly：客服訊息整合與管理\n- Google：網站分析\n\n我們不會將您的資訊販售給第三方。\n\n## 四、Cookie 與追蹤技術\n\n本網站使用 Cookie 與類似技術記錄您的瀏覽行為，您可隨時透過瀏覽器設定關閉 Cookie。\n\n## 五、您的權利\n\n您可隨時：\n\n- 查詢、閱覽您的個人資料\n- 要求修正或補充\n- 要求停止蒐集、處理或利用\n- 要求刪除\n\n請透過 Messenger 與我們聯繫提出請求。\n\n## 六、資料保留期限\n\n客戶資料會保留至客戶要求刪除為止，或於我們業務需求結束後 5 年內銷毀。\n\n## 七、政策更新\n\n本政策可能不定期修訂，最新版本將公告於本頁。\n\n## 八、聯絡方式\n\n如有任何隱私權相關疑問，歡迎透過 Facebook 粉絲專頁 MACARON DE LUXE 與我們聯繫。\n\n---\n\n最後更新日期：' + new Date().toISOString().slice(0, 10);
+  const md = '## 隱私權政策\n\nMACARON DE LUXE（以下簡稱「我們」）尊重您的個人隱私，並依《個人資料保護法》及相關法規處理您所提供的資料。\n\n## 一、我們蒐集哪些資訊\n\n當您透過我們的網站、Facebook 粉絲專頁、Instagram、Messenger 或 LINE 與我們聯繫時，我們可能蒐集以下資訊：\n\n- 您的姓名、聯絡電話、電子信箱\n- 您與我們的對話內容\n- 您的瀏覽行為（透過 Meta Pixel 與 Cookie）\n- 您的地理位置（用於判斷服務區域）\n\n## 二、我們如何使用您的資訊\n\n- 提供諮詢、預訂、商品介紹及服務\n- 改善網站體驗與行銷投放精準度\n- 寄送您主動訂閱的活動資訊\n- 配合法律或主管機關要求\n\n## 三、第三方資料分享\n\n我們會與下列服務商共享必要資訊：\n\n- Meta（Facebook / Instagram）：透過 Pixel 與 Conversions API 進行廣告效益追蹤\n- SaleSmartly：客服訊息整合與管理\n- Google：網站分析\n\n我們不會將您的資訊販售給第三方。\n\n## 四、Cookie 與追蹤技術\n\n本網站使用 Cookie 與類似技術記錄您的瀏覽行為，您可隨時透過瀏覽器設定關閉 Cookie。\n\n## 五、您的權利\n\n您可隨時：\n\n- 查詢、閱覽您的個人資料\n- 要求修正或補充\n- 要求停止蒐集、處理或利用\n- 要求刪除\n\n請透過 Messenger 與我們聯繫提出請求。\n\n## 六、資料保留期限\n\n客戶資料會保留至客戶要求刪除為止，或於我們業務需求結束後 5 年內銷毀。\n\n## 七、政策更新\n\n本政策可能不定期修訂，最新版本將公告於本頁。\n\n## 八、聯絡方式\n\n如有任何隱私權相關疑問，歡迎透過 Facebook 粉絲專頁 MACARON DE LUXE 與我們聯繫。\n\n---\n\n最後更新日期：' + new Date().toISOString().slice(0, 10);
   try {
     const r = await wp.publishPost({ title: '隱私權政策 Privacy Policy', contentMarkdown: md, status: 'publish' });
     res.json({ ok: true, link: r.link, id: r.id });
@@ -3448,7 +3448,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
         const parsed = bk.parseBookedCommand(text);
         if (!parsed) { await tgSend(chatId, '格式：/booked 客戶名 NT$1580 12入禮盒 台南店'); return; }
         const r = bk.addBooking(parsed);
-        await tgSend(chatId, '✅ 預約已記錄\n客戶：' + r.customer_name + '\n金額：NT$' + r.amount_ntd + (r.service ? '\n服務：' + r.service : '') + (r.teacher ? '\n老師：' + r.teacher : ''));
+        await tgSend(chatId, '✅ 預約已記錄\n客戶：' + r.customer_name + '\n金額：NT$' + r.amount_ntd + (r.service ? '\n服務：' + r.service : '') + (r.teacher ? '\n主理人：' + r.teacher : ''));
       } catch (e) { await tgSend(chatId, '錯誤：' + e.message); }
       return;
     }
@@ -3460,7 +3460,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
         msg += '📦 預約數：' + r.total_bookings + '\n';
         msg += '🎯 平均客單價：NT$' + r.avg_ticket + '\n\n';
         if (r.teachers_roi) {
-          msg += '👩 各老師 ROI：\n';
+          msg += '👩 各主理人 ROI：\n';
           for (const [k, t] of Object.entries(r.teachers_roi)) {
             msg += '  ' + (t.name || k) + ': ' + t.bookings + ' 預約 / NT$' + (t.revenue || 0).toLocaleString() + ' / ROAS ' + t.roas + ' / 轉約率 ' + t.conversion_rate + '\n';
           }

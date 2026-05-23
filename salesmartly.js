@@ -150,7 +150,7 @@ async function listMessages(chat_user_id, { page = 1, page_size = 50 } = {}) {
 
 const BUCKETS = {
   'price': { rx: /價錢|學費|多少錢|費用|報價|價格/, label: '價格 / 學費' },
-  'content': { rx: /課程|教什麼|內容|大綱|學什麼/, label: '課程內容' },
+  'content': { rx: /商品|禮盒|內容|口味|介紹/, label: '商品內容' },
   'time': { rx: /時間|什麼時候|開課|何時/, label: '上課時間' },
   'pay': { rx: /怎麼報名|付款|匯款|刷卡|分期/, label: '報名 / 付款' },
   'cert': { rx: /證照|證書|執照|結業/, label: '證照 / 結業' },

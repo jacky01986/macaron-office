@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="utf-8">
-<title>AI 教研團隊 — MACARON DE LUXE</title>
+<title>AI 內容團隊 — MACARON DE LUXE</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   :root { --brand:#6B4226; --bg:#FAF7F2; --ink:#3B2A1F; --line:#E5DACB; --accent:#F5A623; }
@@ -36,7 +36,7 @@
 </head>
 <body>
 
-<h1>📚 AI 教研團隊</h1>
+<h1>📚 AI 內容團隊</h1>
 <p class="subtitle">訂閱內容自動產出 — NORA 規劃 → YUKI 寫稿 → 你拍片</p>
 
 <div class="card">
@@ -50,7 +50,7 @@
     </div>
     <div class="team-card">
       <div class="name">✏️ YUKI</div>
-      <div class="role">教學腳本撰寫 · Sonnet 4.6</div>
+      <div class="role">寫作腳本撰寫 · Sonnet 4.6</div>
       <div class="status">每月 5 號 09:00 寫本月</div>
       <button class="run-btn" onclick="run('yuki')">🚀 立刻執行</button>
     </div>
@@ -62,7 +62,7 @@
     </div>
     <div class="team-card" style="opacity: 0.5;">
       <div class="name">💬 MIKA</div>
-      <div class="role">學員社群輔導 — 答疑 + 週話題</div>
+      <div class="role">客戶社群輔導 — 答疑 + 週話題</div>
       <div class="status">每週一 09:30 寫週話題</div>
       <button class="run-btn" onclick="run('mika-topic')">🚀 寫週話題</button>
     </div>
@@ -139,7 +139,7 @@ async function showDetail(monthKey) {
         '<div><strong>Tagline：</strong>' + escape(m.plan.tagline || '') + '</div></div>';
     }
     if (m.lesson) {
-      html += '<div class="lesson-section"><h3>✏️ YUKI 教學腳本：' + escape(m.lesson.title || '') + '</h3>' +
+      html += '<div class="lesson-section"><h3>✏️ YUKI 寫作腳本：' + escape(m.lesson.title || '') + '</h3>' +
         '<div><strong>時長：</strong>' + (m.lesson.duration_min || 0) + ' 分</div>' +
         '<div style="margin-top:8px;"><strong>開場：</strong><div class="lines">' + escape(m.lesson.intro || '') + '</div></div>';
       (m.lesson.sections || []).forEach((s, i) => {
@@ -148,7 +148,7 @@ async function showDetail(monthKey) {
           (s.demo_cue ? '<div style="font-size:12px;color:#888;margin-top:4px;">🎬 ' + escape(s.demo_cue) + '</div>' : '') +
           '</div>';
       });
-      html += '<div style="margin-top:10px;"><strong>學員作業：</strong>' + escape(m.lesson.assignment || '') + '</div></div>';
+      html += '<div style="margin-top:10px;"><strong>客戶任務：</strong>' + escape(m.lesson.assignment || '') + '</div></div>';
     }
     document.getElementById('detailTitle').textContent = monthKey + ' 詳細';
     document.getElementById('detailBody').innerHTML = html;
