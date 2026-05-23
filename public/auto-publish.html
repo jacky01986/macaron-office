@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🤖 自動發文控制台 · MACARON DE LUXE</title>
+<style>
+  :root {
+    --burgundy: #6D2E46;
+    --burgundy-dark: #4A1D2E;
+    --burgundy-light: #8B3A4E;
+    --gold: #B08D57;
+    --gold-bright: #D4AF7A;
+    --ivory: #FCF6F5;
+    --dark: #1C1213;
+    --dark-2: #2A1C1D;
+    --dark-3: #362527;
+    --muted: #8B7278;
+    --green: #7FB069;
+    --amber: #E8B54B;
+    --red: #C77B7D;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", "Segoe UI", sans-serif;
+    background: var(--dark); color: var(--ivory);
+    min-height: 100vh; padding: 24px;
+  }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--dark-2); }
+  ::-webkit-scrollbar-thumb { background: var(--burgundy); border-radius: 4px; }
+  .container { max-width: 1400px; margin: 0 auto; }
+  header.page-head {
+    border-bottom: 1px solid var(--burgundy); padding-bottom: 18px; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  header.page-head h1 {
+    font-family: Georgia, serif; font-size: 26px; letter-spacing: 2px;
+    color: var(--ivory);
+  }
+  header.page-head .gold { color: var(--gold); }
+  header.page-head .back {
+    background: transparent; color: var(--gold); border: 1px solid var(--gold);
+    padding: 6px 14px; border-radius: 18px; font-size: 12px;
+    text-decoration: none; transition: background 0.2s, color 0.2s;
+  }
+  header.page-head .back:hover { background: var(--gold); color: var(--dark); }
+  header.page-head .spacer { flex: 1; }
+
+  .status-bar {
+    background: var(--dark-2); border: 1px solid var(--burgundy-dark);
+    border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .status-item { font-size: 13px; }
+  .status-item .lbl { color: var(--muted); font-family: Georgia, serif; font-size: 11px; letter-spacing: 1px; display: block; margin-bottom: 2px; }
+  .status-item .val { color: var(--gold-bright); font-weight: 600; }
+  .status-item .val.ok { color: var(--green); }
+  .status-item .val.warn { color: var(--amber); }
+  .status-item .val.err { color: var(--red); }
+
+  .action-bar {
+    display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .btn {
+    background: var(--burgundy); color: var(--ivory); border: 1px solid var(--burgundy-light);
+    padding: 12px 22px; border-radius: 24px; font-size: 14px; cursor: pointer;
+    font-family: inherit; transition: background 0.2s, transform 0.1s;
+  }
+  .btn:hover { background: var(--burgundy-light); }
+  .btn:active { transform: scale(0.97); }
+  .btn.primary {
+    background: linear-gradient(135deg, var(--gold), var(--burgundy-light));
+    color: var(--dark); border-color: var(--gold-bright); font-weight: 600;
+  }
+  .btn.primary:hover { background: linear-gradient(135deg, var(--gold-bright), var(--burgundy)); }
+  .btn.ghost { background: transparent; color: var(--gold); border-color: var(--burgundy); }
+  .btn.ghost:hover { background: var(--burgundy-dark); }
+
+  h2.section-title {
+    font-family: Georgia, serif; font-size: 14px; letter-spacing: 3px;
+    color: var(--gold); border-left: 3px solid var(--gold);
+    padding-left: 10px; margin: 32px 0 16px;
+  }
+
+  .drafts-grid {
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  }
+  .draft-card {
+    background: var(--dark-2); border: 1px solid var(--burgundy-dark);
+    border-radius: 12px; overflow: hidden; transition: border-color 0.2s;
+  }
+  .draft-card:hover { border-color: var(--gold); }
+  .draft-card .img-wrap {
+    background: var(--dark-3); aspect-ratio: 1/1; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid var(--burgundy-dark);
+  }
+  .draft-card .img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .draft-card .img-wrap .no-img {
+    color: var(--muted); font-size: 12px; font-style: italic;
+  }
+  .draft-card .img-wrap .platform-tag {
+    position: absolute; top: 8px; left: 8px;
+    background: var(--burgundy); color: var(--ivory);
+    padding: 4px 10px; border-radius: 12px; font-size: 11px;
+    font-family: Georgia, serif; letter-spacing: 1px;
+  }
+  .draft-card .img-wrap .status-tag {
+    position: absolute; top: 8px; right: 8px;
+    padding: 4px 10px; border-radius: 12px; font-size: 11px;
+    font-weight: 600; letter-spacing: 1px;
+  }
+  .draft-card .status-tag.pending { background: var(--amber); color: var(--dark); }
+  .draft-card .status-tag.published { background: var(--green); color: var(--dark); }
+  .draft-card .status-tag.failed { background: var(--red); color: var(--ivory); }
+  .draft-card .body {
+    padding: 14px;
+  }
+  .draft-card .caption {
+    font-size: 13px; line-height: 1.7; color: var(--ivory);
+    white-space: pre-wrap; word-break: break-word;
+    max-height: 140px; overflow-y: auto;
+  }
+  .draft-card .meta {
+    display: flex; gap: 12px; margin-top: 10px;
+    font-size: 10px; color: var(--muted); font-family: Georgia, serif;
+  }
+  .draft-card .actions {
+    display: flex; gap: 8px; padding: 10px 14px;
+    border-top: 1px solid var(--burgundy-dark); background: var(--dark-3);
+  }
+  .draft-card .actions .btn { padding: 6px 12px; font-size: 11px; }
+
+  .empty {
+    text-align: center; padding: 60px 20px;
+    color: var(--muted); font-style: italic;
+  }
+  .empty .icon { font-size: 60px; margin-bottom: 12px; opacity: 0.3; }
+
+  .gallery {
+    display: grid; gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  .gallery img {
+    width: 100%; aspect-ratio: 1/1; object-fit: cover;
+    border-radius: 8px; border: 1px solid var(--burgundy-dark);
+    cursor: pointer; transition: transform 0.2s, border-color 0.2s;
+  }
+  .gallery img:hover { transform: scale(1.04); border-color: var(--gold); }
+
+  .modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100; padding: 20px;
+  }
+  .modal.active { display: flex; }
+  .modal img { max-width: 90vw; max-height: 90vh; border-radius: 12px; }
+  .modal .close { position: absolute; top: 20px; right: 30px; color: var(--ivory); font-size: 32px; cursor: pointer; background: none; border: none; }
+
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: var(--burgundy); color: var(--ivory);
+    padding: 14px 24px; border-radius: 24px; border: 1px solid var(--gold);
+    font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; max-width: 80vw;
+  }
+  .toast.show { opacity: 1; }
+  .toast.ok { background: var(--green); color: var(--dark); }
+  .toast.err { background: var(--red); color: var(--ivory); }
+
+  .config-card {
+    background: var(--dark-2); border: 1px solid var(--burgundy-dark);
+    border-radius: 10px; padding: 16px; margin-bottom: 16px;
+    font-size: 12px; line-height: 1.7;
+  }
+  .config-card h3 { font-family: Georgia, serif; color: var(--gold); font-size: 12px; letter-spacing: 2px; margin-bottom: 10px; }
+  .config-card code { background: var(--dark-3); padding: 2px 6px; border-radius: 3px; color: var(--gold-bright); font-size: 11px; }
+  .config-card .env-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted var(--burgundy-dark); }
+  .config-card .env-row:last-child { border: none; }
+  .config-card .env-name { color: var(--gold); }
+  .config-card .env-status { color: var(--muted); }
+  .config-card .env-status.ok { color: var(--green); }
+  .config-card .env-status.missing { color: var(--red); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="page-head">
+    <a href="/" class="back">← 主控台</a>
+    <h1>🤖 自動發文 <span class="gold">控制台</span></h1>
+    <div class="spacer"></div>
+    <div style="font-size: 11px; color: var(--muted);">每天 09:00 + 19:00 自動產草稿</div>
+  </header>
+
+  <div class="status-bar" id="statusBar">
+    <div class="status-item"><span class="lbl">系統狀態</span><span class="val" id="sysStatus">⏳ 載入中…</span></div>
+    <div class="status-item"><span class="lbl">未發布草稿</span><span class="val" id="pendingCount">—</span></div>
+    <div class="status-item"><span class="lbl">已發布(累計)</span><span class="val" id="publishedCount">—</span></div>
+    <div class="status-item"><span class="lbl">最近一次產草稿</span><span class="val" id="lastRun">—</span></div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn primary" onclick="triggerNow()">🚀 立刻產 IG + FB 草稿</button>
+    <button class="btn" onclick="processNow()">📤 立刻處理已通過的草稿</button>
+    <button class="btn ghost" onclick="loadAll()">🔄 重新整理</button>
+    <button class="btn ghost" onclick="testImage()">🎨 測試生圖</button>
+  </div>
+
+  <div class="config-card">
+    <h3>🔧 環境變數檢查</h3>
+    <div id="envCheck">⏳ 檢查中…</div>
+    <div style="margin-top: 10px; color: var(--muted); font-size: 11px;">
+      ⚠️ 沒設 <code>OPENAI_API_KEY</code> 不會生圖;沒設 <code>META_*</code> 不會發 FB/IG;沒設 <code>TELEGRAM_BOT_TOKEN</code> 不會推送預覽。請到 Render Settings → Environment 設定。
+    </div>
+  </div>
+
+  <h2 class="section-title">📋 待審草稿</h2>
+  <div id="draftsArea" class="drafts-grid"></div>
+
+  <h2 class="section-title">🎨 最近生成圖庫</h2>
+  <div id="galleryArea" class="gallery"></div>
+
+</div>
+
+<div class="modal" id="modal" onclick="closeModal(event)">
+  <button class="close" onclick="closeModal(true)">×</button>
+  <img id="modalImg" src="">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+async function api(method, url, body) {
+  const opts = { method };
+  if (body) { opts.headers = { 'Content-Type': 'application/json' }; opts.body = JSON.stringify(body); }
+  const r = await fetch(url, opts);
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+function fmtTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('zh-TW', { hour12: false });
+}
+
+async function loadDrafts() {
+  try {
+    const data = await api('GET', '/api/auto-publish/drafts');
+    const drafts = (data.drafts || []).slice().reverse();
+    const pending = drafts.filter(d => d.status === 'pending');
+    const published = drafts.filter(d => d.status === 'published');
+    document.getElementById('pendingCount').textContent = pending.length;
+    document.getElementById('publishedCount').textContent = published.length;
+    if (drafts.length > 0) {
+      const latest = drafts.find(d => d.created_at);
+      document.getElementById('lastRun').textContent = fmtTime(latest?.created_at);
+    }
+    const area = document.getElementById('draftsArea');
+    if (drafts.length === 0) {
+      area.innerHTML = `<div class="empty" style="grid-column:1/-1;"><div class="icon">📭</div>還沒有草稿。點上方「立刻產 IG + FB 草稿」開始。</div>`;
+      return;
+    }
+    area.innerHTML = drafts.slice(0, 20).map(d => `
+      <div class="draft-card">
+        <div class="img-wrap">
+          ${d.image_url
+            ? `<img src="${escapeHtml(d.image_url)}" alt="" onclick="showModal('${escapeHtml(d.image_url)}')">`
+            : `<div class="no-img">⚠️ 無圖${d.image_error ? '<br>'+escapeHtml(d.image_error.slice(0,60)) : ''}</div>`}
+          <span class="platform-tag">${escapeHtml(d.platform)}</span>
+          <span class="status-tag ${escapeHtml(d.status)}">${statusLabel(d.status)}</span>
+        </div>
+        <div class="body">
+          <div class="caption">${escapeHtml(d.caption || '')}</div>
+          <div class="meta">
+            <span>🕐 ${fmtTime(d.created_at)}</span>
+            ${d.published_at ? '<span>📤 ' + fmtTime(d.published_at) + '</span>' : ''}
+          </div>
+        </div>
+        ${d.status === 'pending' ? `
+        <div class="actions">
+          <button class="btn primary" onclick="approveDraft('${escapeHtml(d.decisionId)}', '${escapeHtml(d.platform)}', '${escapeHtml(d.id)}')">✅ 通過發布</button>
+          <button class="btn ghost" onclick="copyCap(\`${escapeJs(d.caption)}\`)">📋 複製文案</button>
+        </div>` : ''}
+      </div>
+    `).join('');
+  } catch (e) {
+    document.getElementById('draftsArea').innerHTML = `<div class="empty" style="grid-column:1/-1;color:var(--red);">載入失敗:${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadGallery() {
+  try {
+    const data = await api('GET', '/api/image-gen/recent?n=24');
+    const images = data.images || [];
+    const area = document.getElementById('galleryArea');
+    if (!images.length) {
+      area.innerHTML = `<div class="empty" style="grid-column:1/-1;"><div class="icon">🎨</div>還沒生過圖。設好 OPENAI_API_KEY 後就會自動產圖。</div>`;
+      return;
+    }
+    area.innerHTML = images.map(img =>
+      `<img src="${escapeHtml(img.url)}" alt="" onclick="showModal('${escapeHtml(img.url)}')" loading="lazy">`
+    ).join('');
+  } catch (e) {
+    document.getElementById('galleryArea').innerHTML = `<div class="empty" style="grid-column:1/-1;color:var(--red);">圖庫載入失敗:${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadEnvCheck() {
+  try {
+    // 簡單呼叫一個輕量端點看 server 在不在
+    await api('GET', '/api/employees');
+    document.getElementById('sysStatus').textContent = '✅ 上線';
+    document.getElementById('sysStatus').className = 'val ok';
+  } catch (e) {
+    document.getElementById('sysStatus').textContent = '❌ 離線';
+    document.getElementById('sysStatus').className = 'val err';
+  }
+  // env vars 沒辦法直接從 client 端看,顯示說明
+  document.getElementById('envCheck').innerHTML = `
+    <div class="env-row"><span class="env-name">ANTHROPIC_API_KEY</span><span class="env-status">→ 給 CAMILLE 寫文案</span></div>
+    <div class="env-row"><span class="env-name">OPENAI_API_KEY</span><span class="env-status">→ 給 ARIA 生圖</span></div>
+    <div class="env-row"><span class="env-name">META_ACCESS_TOKEN</span><span class="env-status">→ 發 FB/IG</span></div>
+    <div class="env-row"><span class="env-name">META_FB_PAGE_ID</span><span class="env-status">→ 指定 FB 粉專</span></div>
+    <div class="env-row"><span class="env-name">META_IG_USER_ID</span><span class="env-status">→ 指定 IG 商用帳號</span></div>
+    <div class="env-row"><span class="env-name">TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID</span><span class="env-status">→ 預覽推送</span></div>
+    <div class="env-row"><span class="env-name">SITE_URL</span><span class="env-status">→ 預設 https://macaron-office.onrender.com (給 IG 抓圖用)</span></div>
+  `;
+}
+
+async function triggerNow() {
+  toast('🚀 開始產草稿…(需 30-60 秒)');
+  try {
+    const r = await api('POST', '/api/auto-publish/run-now');
+    if (r.ok) {
+      toast(`✅ 產了 ${r.generated_count} 份草稿`, 'ok');
+      setTimeout(loadAll, 1500);
+    } else {
+      toast('⚠️ ' + (r.reason || '未知錯誤'), 'err');
+    }
+  } catch (e) { toast('❌ ' + e.message, 'err'); }
+}
+async function processNow() {
+  toast('📤 處理已通過的草稿…');
+  try {
+    const r = await api('POST', '/api/auto-publish/process-decisions');
+    toast(`✅ 處理 ${r.processed || 0}, 發布 ${r.published || 0}`, 'ok');
+    setTimeout(loadAll, 1500);
+  } catch (e) { toast('❌ ' + e.message, 'err'); }
+}
+async function testImage() {
+  toast('🎨 測試生圖中…(30 秒)');
+  try {
+    const r = await api('POST', '/api/image-gen/test', { brief: '法式精品馬卡龍 12 入禮盒,玫瑰花瓣與絲帶' });
+    if (r.ok) {
+      toast('✅ 生圖成功', 'ok');
+      showModal(r.publicUrl);
+      setTimeout(loadGallery, 1000);
+    } else { toast('❌ ' + r.error, 'err'); }
+  } catch (e) { toast('❌ ' + e.message, 'err'); }
+}
+async function approveDraft(decisionId, platform, draftId) {
+  if (!decisionId) { toast('⚠️ 沒有 decisionId,可能 decisions module 沒設定', 'err'); return; }
+  if (!confirm(`確定要發布這份 ${platform} 草稿嗎?`)) return;
+  // 直接呼叫 decisions API 標記為 ok (假定有 1-based index 對應 — 用 decisionId 找)
+  // 簡化做法:直接觸發 processDecidedDrafts,但需先有 decision 設成 ok
+  // TODO:應該加個 /api/decisions/approve/:id 端點。先用 alert 提醒
+  toast(`📱 請到 LINE 回「1ok」批准這份草稿,或設定 /api/decisions/approve/${decisionId} 端點`, 'err');
+}
+function copyCap(text) {
+  navigator.clipboard.writeText(text).then(() => toast('📋 已複製文案', 'ok'));
+}
+function statusLabel(s) {
+  return { pending: '⏳ 待審', published: '✅ 已發', failed: '❌ 失敗', 'needs-image': '⚠️ 缺圖' }[s] || s;
+}
+function escapeHtml(t) {
+  return String(t || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+function escapeJs(t) {
+  return String(t || '').replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$/g,'\\$');
+}
+function showModal(url) {
+  document.getElementById('modalImg').src = url;
+  document.getElementById('modal').classList.add('active');
+}
+function closeModal(e) {
+  if (e === true || e.target.id === 'modal') {
+    document.getElementById('modal').classList.remove('active');
+  }
+}
+
+async function loadAll() {
+  await loadEnvCheck();
+  await loadDrafts();
+  await loadGallery();
+}
+
+loadAll();
+// 自動刷新一次(每 30 秒)
+setInterval(loadAll, 30000);
+</script>
+</body>
+</html>

@@ -75,6 +75,58 @@
     width: 1px; height: 18px; background: var(--burgundy-dark);
     margin: 0 4px; flex-shrink: 0;
   }
+  /* 更多功能 dropdown */
+  .nav-more-wrap { position: relative; flex-shrink: 0; }
+  .nav-more-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    background: var(--dark-3); color: var(--ivory);
+    font-size: 12px; font-family: inherit;
+    border: 1px solid var(--burgundy); border-radius: 18px;
+    cursor: pointer; transition: background 0.15s, border-color 0.15s;
+  }
+  .nav-more-btn:hover { background: var(--burgundy-dark); border-color: var(--gold); color: var(--gold); }
+  .nav-more-btn .caret { font-size: 10px; transition: transform 0.2s; }
+  .nav-more-wrap.open .nav-more-btn .caret { transform: rotate(180deg); }
+  .nav-more-wrap.open .nav-more-btn { background: var(--burgundy); border-color: var(--gold); color: var(--gold); }
+  .nav-more-panel {
+    position: absolute; top: calc(100% + 6px); right: 0;
+    background: var(--dark-2); border: 1px solid var(--gold);
+    border-radius: 12px; padding: 16px;
+    min-width: 480px; max-width: 90vw;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    display: none; z-index: 50;
+  }
+  .nav-more-wrap.open .nav-more-panel { display: block; }
+  .nav-more-panel .group { margin-bottom: 14px; }
+  .nav-more-panel .group:last-child { margin-bottom: 0; }
+  .nav-more-panel .group-title {
+    font-family: Georgia, serif; font-size: 10px; letter-spacing: 2px;
+    color: var(--gold); text-transform: uppercase;
+    padding-bottom: 6px; margin-bottom: 6px;
+    border-bottom: 1px dotted var(--burgundy-dark);
+  }
+  .nav-more-panel .group-links {
+    display: grid; gap: 4px;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .nav-more-panel .group-links a {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 8px;
+    color: var(--ivory); text-decoration: none;
+    font-size: 12px; transition: background 0.15s, color 0.15s;
+  }
+  .nav-more-panel .group-links a:hover {
+    background: var(--burgundy-dark); color: var(--gold);
+  }
+  .nav-more-panel .group-links a .icon { font-size: 16px; }
+  /* 點外面關閉 dropdown 的遮罩 */
+  .nav-more-mask {
+    position: fixed; inset: 0; z-index: 49;
+    display: none; background: transparent;
+  }
+  .nav-more-wrap.open ~ .nav-more-mask,
+  body.nav-more-open .nav-more-mask { display: block; }
   header {
     grid-area: header;
     background: linear-gradient(90deg, var(--dark-2) 0%, var(--dark) 100%);
@@ -551,23 +603,71 @@
   <nav class="subnav" aria-label="功能導覽">
     <a href="/" class="featured">🥐 主控台</a>
     <a href="/social.html" class="featured">📱 社群草稿</a>
+    <a href="/auto-publish.html" class="featured">🤖 自動發文</a>
     <a href="/ai-content.html" class="featured">📚 AI 內容團隊</a>
     <span class="nav-divider"></span>
-    <a href="/roas.html">📈 ROAS</a>
-    <a href="/customers.html">👥 客戶</a>
-    <a href="/line.html">💬 LINE</a>
-    <a href="/google.html">📊 Google Ads</a>
-    <a href="/scout.html">📡 競品</a>
-    <span class="nav-divider"></span>
-    <a href="/teachers.html">🏪 門店戰報</a>
-    <a href="/geo.html">🌐 GEO/SEO</a>
-    <a href="/optimize.html">⚡ 廣告體檢</a>
-    <a href="/competitor.html">🎯 競品追蹤</a>
-    <a href="/conversion.html">💎 對話成交</a>
-    <a href="/actions.html">📋 行動建議</a>
-    <a href="/work-status.html">🧠 AI 大腦</a>
-    <a href="/switcher.html">🔄 帳戶切換</a>
+    <div class="nav-more-wrap" id="navMoreWrap">
+      <button class="nav-more-btn" onclick="toggleNavMore(event)" aria-haspopup="true" aria-expanded="false">
+        ⋯ 更多功能 <span class="caret">▾</span>
+      </button>
+      <div class="nav-more-panel" role="menu">
+        <div class="group">
+          <div class="group-title">📊 數據儀表板</div>
+          <div class="group-links">
+            <a href="/roas.html"><span class="icon">📈</span><span>ROAS 兩層儀表板</span></a>
+            <a href="/google.html"><span class="icon">📊</span><span>Google Ads 報表</span></a>
+            <a href="/optimize.html"><span class="icon">⚡</span><span>廣告自動體檢</span></a>
+            <a href="/teachers.html"><span class="icon">🏪</span><span>門店戰報</span></a>
+          </div>
+        </div>
+        <div class="group">
+          <div class="group-title">👥 客戶 / 對話</div>
+          <div class="group-links">
+            <a href="/customers.html"><span class="icon">👥</span><span>客戶畫像 / 分群</span></a>
+            <a href="/conversion.html"><span class="icon">💎</span><span>對話成交記錄</span></a>
+            <a href="/line.html"><span class="icon">💬</span><span>LINE 客服中心</span></a>
+            <a href="/actions.html"><span class="icon">📋</span><span>行動建議</span></a>
+          </div>
+        </div>
+        <div class="group">
+          <div class="group-title">📡 競品 / 市場 / SEO</div>
+          <div class="group-links">
+            <a href="/scout.html"><span class="icon">📡</span><span>SCOUT 市場掃描</span></a>
+            <a href="/competitor.html"><span class="icon">🎯</span><span>競品追蹤</span></a>
+            <a href="/geo.html"><span class="icon">🌐</span><span>GEO / SEO 控制台</span></a>
+          </div>
+        </div>
+        <div class="group">
+          <div class="group-title">⚙ 系統 / 進階</div>
+          <div class="group-links">
+            <a href="/work-status.html"><span class="icon">🧠</span><span>AI 大腦狀態</span></a>
+            <a href="/switcher.html"><span class="icon">🔄</span><span>Meta 多帳戶切換</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-more-mask" onclick="closeNavMore()"></div>
   </nav>
+
+  <script>
+    function toggleNavMore(e) {
+      e.stopPropagation();
+      const wrap = document.getElementById('navMoreWrap');
+      const isOpen = wrap.classList.toggle('open');
+      const btn = wrap.querySelector('.nav-more-btn');
+      btn.setAttribute('aria-expanded', isOpen);
+      document.body.classList.toggle('nav-more-open', isOpen);
+    }
+    function closeNavMore() {
+      const wrap = document.getElementById('navMoreWrap');
+      if (wrap) {
+        wrap.classList.remove('open');
+        wrap.querySelector('.nav-more-btn')?.setAttribute('aria-expanded', 'false');
+      }
+      document.body.classList.remove('nav-more-open');
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNavMore(); });
+  </script>
 
   <aside class="sidebar" id="sidebar">
     <h2>AI 員工編制</h2>
