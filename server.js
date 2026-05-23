@@ -1353,6 +1353,79 @@ app.post('/api/image-gen/test', express.json(), async (req, res) => {
   }
 });
 
+// === 手動上傳圖片給某個草稿 ===
+const imgUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => { try { require('fs').mkdirSync(AUTO_IMG_DIR, { recursive: true }); } catch {} cb(null, AUTO_IMG_DIR); },
+    filename: (req, file, cb) => {
+      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const ext = (file.originalname.split('.').pop() || 'png').toLowerCase();
+      cb(null, `manual-${ts}.${ext}`);
+    }
+  }),
+  limits: { fileSize: 12 * 1024 * 1024 } // 12 MB
+});
+app.post('/api/auto-publish/upload-image/:draftId', imgUpload.single('image'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ ok: false, error: 'no file uploaded' });
+    const draftId = req.params.draftId;
+    const state = autoPublish.loadDrafts();
+    const draft = (state.drafts || []).find(d => d.id === draftId);
+    if (!draft) return res.status(404).json({ ok: false, error: 'draft not found' });
+    const filename = req.file.filename;
+    const publicUrl = (process.env.SITE_URL || 'https://macaron-office.onrender.com').replace(/\/$/, '') + '/uploads/auto-images/' + filename;
+    draft.image_url = publicUrl;
+    draft.image_filename = filename;
+    draft.image_source = 'manual';
+    delete draft.image_error;
+    require('fs').writeFileSync(require('path').join(__dirname, 'data', 'auto-drafts.json'), JSON.stringify(state, null, 2));
+    res.json({ ok: true, draftId, image_url: publicUrl, filename });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// === 手動將草稿標記為 approved (繞過 LINE 1ok 流程) ===
+app.post('/api/auto-publish/approve/:draftId', express.json(), async (req, res) => {
+  try {
+    const draftId = req.params.draftId;
+    const state = autoPublish.loadDrafts();
+    const draft = (state.drafts || []).find(d => d.id === draftId);
+    if (!draft) return res.status(404).json({ ok: false, error: 'draft not found' });
+    if (draft.status === 'published') return res.json({ ok: true, already: true });
+    if (draft.platform === 'IG' && !draft.image_url) return res.status(400).json({ ok: false, error: 'IG 草稿需要先上傳圖片' });
+    // 直接發
+    if (draft.platform === 'FB') {
+      const r = await autoPublish.publishFB(draft.caption);
+      draft.status = 'published';
+      draft.published_at = new Date().toISOString();
+      draft.publish_id = r.id;
+    } else if (draft.platform === 'IG') {
+      const r = await autoPublish.publishIG(draft.caption, draft.image_url);
+      draft.status = 'published';
+      draft.published_at = new Date().toISOString();
+      draft.publish_id = r.id;
+    }
+    require('fs').writeFileSync(require('path').join(__dirname, 'data', 'auto-drafts.json'), JSON.stringify(state, null, 2));
+    res.json({ ok: true, draft });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// === 刪掉某個草稿 ===
+app.post('/api/auto-publish/delete/:draftId', (req, res) => {
+  try {
+    const draftId = req.params.draftId;
+    const state = autoPublish.loadDrafts();
+    state.drafts = (state.drafts || []).filter(d => d.id !== draftId);
+    require('fs').writeFileSync(require('path').join(__dirname, 'data', 'auto-drafts.json'), JSON.stringify(state, null, 2));
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 autoPublish.registerCronJobs(cron);
 if (scout && typeof scout.registerCronJobs === 'function') scout.registerCronJobs(cron);
 if (aiTeamContent && typeof aiTeamContent.registerCronJobs === 'function') aiTeamContent.registerCronJobs(cron);

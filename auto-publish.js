@@ -153,8 +153,13 @@ async function generateAndQueueDrafts() {
     }
 
     // ★ Telegram 預覽推送 (有圖就推圖文,無圖只推文字)
-    const previewCaption = '<b>📱 ' + platform + ' 新草稿</b>\n\n' + caption
-      + '\n\n────────────\n回覆 <code>1ok</code> 或 <code>2ok</code> 來發佈 (1=IG, 2=FB,依產出順序)';
+    const baseCap = '<b>📱 ' + platform + ' 新草稿</b>\n\n' + caption;
+    const tail = draft.image_url
+      ? '\n\n────────────\n✅ 圖已配好,回覆 <code>1ok</code> / <code>2ok</code> 即發布(1=IG, 2=FB,依產出順序)'
+      : (platform === 'IG'
+          ? '\n\n────────────\n⚠️ IG 還缺圖片,到 ' + (process.env.SITE_URL || 'https://macaron-office.onrender.com') + '/auto-publish.html 上傳圖片後再發'
+          : '\n\n────────────\n回覆 <code>2ok</code> 即發布 FB');
+    const previewCaption = baseCap + tail;
     try {
       if (draft.image_url) {
         await tgSendPhoto(draft.image_url, previewCaption);
@@ -222,8 +227,9 @@ async function processDecidedDrafts() {
         await tgSendText('✅ FB 已發佈\n\n' + draft.caption.slice(0, 200));
       } else if (draft.platform === 'IG') {
         if (!draft.image_url) {
-          draft.status = 'needs-image';
-          draft.note = 'IG 需要圖片才能發佈,但生圖失敗或沒設 OPENAI_API_KEY';
+          // 不報錯,只是先把狀態維持為 pending 等待手動上傳
+          draft.note = '⏳ IG 等你手動上傳圖片(到 /auto-publish.html 控制台拖圖)';
+          continue;
         } else {
           const r = await publishIG(draft.caption, draft.image_url);
           draft.status = 'published';
