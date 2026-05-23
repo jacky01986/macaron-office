@@ -213,7 +213,7 @@
     <h3>🔧 環境變數檢查</h3>
     <div id="envCheck">⏳ 檢查中…</div>
     <div style="margin-top: 10px; color: var(--muted); font-size: 11px;">
-      ⚠️ 沒設 <code>OPENAI_API_KEY</code> 不會生圖;沒設 <code>META_*</code> 不會發 FB/IG;沒設 <code>TELEGRAM_BOT_TOKEN</code> 不會推送預覽。請到 Render Settings → Environment 設定。
+      💡 <b>運作模式</b>:沒設 <code>OPENAI_API_KEY</code> → 草稿產生後 IG 部分會顯示「📤 上傳圖片」按鈕,你拖一張圖上去就能發。<br>沒設 <code>META_*</code> 不會發 FB/IG;沒設 <code>TELEGRAM_BOT_TOKEN</code> 不會推送預覽。
     </div>
   </div>
 
@@ -275,7 +275,14 @@ async function loadDrafts() {
         <div class="img-wrap">
           ${d.image_url
             ? `<img src="${escapeHtml(d.image_url)}" alt="" onclick="showModal('${escapeHtml(d.image_url)}')">`
-            : `<div class="no-img">⚠️ 無圖${d.image_error ? '<br>'+escapeHtml(d.image_error.slice(0,60)) : ''}</div>`}
+            : `<div class="no-img" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px;">
+            <div>⚠️ 還沒配圖</div>
+            <label class="btn primary" style="cursor:pointer;font-size:11px;padding:6px 14px;">
+              📤 上傳圖片
+              <input type="file" accept="image/*" style="display:none;" onchange="uploadImage('${escapeHtml(d.id)}', this)">
+            </label>
+            ${d.image_error ? '<div style="font-size:10px;color:var(--red);">'+escapeHtml(d.image_error.slice(0,60))+'</div>' : ''}
+          </div>`}
           <span class="platform-tag">${escapeHtml(d.platform)}</span>
           <span class="status-tag ${escapeHtml(d.status)}">${statusLabel(d.status)}</span>
         </div>
@@ -286,10 +293,16 @@ async function loadDrafts() {
             ${d.published_at ? '<span>📤 ' + fmtTime(d.published_at) + '</span>' : ''}
           </div>
         </div>
-        ${d.status === 'pending' ? `
+        ${d.status !== 'published' ? `
         <div class="actions">
-          <button class="btn primary" onclick="approveDraft('${escapeHtml(d.decisionId)}', '${escapeHtml(d.platform)}', '${escapeHtml(d.id)}')">✅ 通過發布</button>
-          <button class="btn ghost" onclick="copyCap(\`${escapeJs(d.caption)}\`)">📋 複製文案</button>
+          ${(d.platform === 'FB' || d.image_url)
+            ? `<button class="btn primary" onclick="approveDraft('${escapeHtml(d.decisionId || '')}', '${escapeHtml(d.platform)}', '${escapeHtml(d.id)}')">✅ 立刻發布</button>`
+            : `<label class="btn primary" style="cursor:pointer;">
+                 📤 上傳圖片
+                 <input type="file" accept="image/*" style="display:none;" onchange="uploadImage('${escapeHtml(d.id)}', this)">
+               </label>`}
+          <button class="btn ghost" onclick="copyCap(\`${escapeJs(d.caption)}\`)">📋 複製</button>
+          <button class="btn ghost" style="color:var(--red);border-color:var(--red);" onclick="deleteDraft('${escapeHtml(d.id)}')">🗑</button>
         </div>` : ''}
       </div>
     `).join('');
@@ -328,7 +341,7 @@ async function loadEnvCheck() {
   // env vars 沒辦法直接從 client 端看,顯示說明
   document.getElementById('envCheck').innerHTML = `
     <div class="env-row"><span class="env-name">ANTHROPIC_API_KEY</span><span class="env-status">→ 給 CAMILLE 寫文案</span></div>
-    <div class="env-row"><span class="env-name">OPENAI_API_KEY</span><span class="env-status">→ 給 ARIA 生圖</span></div>
+    <div class="env-row"><span class="env-name">OPENAI_API_KEY</span><span class="env-status">→ ARIA 自動生圖(<b>選用</b>,沒設就手動上傳)</span></div>
     <div class="env-row"><span class="env-name">META_ACCESS_TOKEN</span><span class="env-status">→ 發 FB/IG</span></div>
     <div class="env-row"><span class="env-name">META_FB_PAGE_ID</span><span class="env-status">→ 指定 FB 粉專</span></div>
     <div class="env-row"><span class="env-name">META_IG_USER_ID</span><span class="env-status">→ 指定 IG 商用帳號</span></div>
@@ -368,13 +381,44 @@ async function testImage() {
     } else { toast('❌ ' + r.error, 'err'); }
   } catch (e) { toast('❌ ' + e.message, 'err'); }
 }
-async function approveDraft(decisionId, platform, draftId) {
-  if (!decisionId) { toast('⚠️ 沒有 decisionId,可能 decisions module 沒設定', 'err'); return; }
-  if (!confirm(`確定要發布這份 ${platform} 草稿嗎?`)) return;
-  // 直接呼叫 decisions API 標記為 ok (假定有 1-based index 對應 — 用 decisionId 找)
-  // 簡化做法:直接觸發 processDecidedDrafts,但需先有 decision 設成 ok
-  // TODO:應該加個 /api/decisions/approve/:id 端點。先用 alert 提醒
-  toast(`📱 請到 LINE 回「1ok」批准這份草稿,或設定 /api/decisions/approve/${decisionId} 端點`, 'err');
+async function approveDraft(_decisionId, platform, draftId) {
+  if (!confirm(`確定要立刻發布這份 ${platform} 草稿嗎?`)) return;
+  try {
+    const r = await api('POST', '/api/auto-publish/approve/' + draftId);
+    if (r.ok) {
+      toast('✅ ' + platform + ' 已發布!', 'ok');
+      setTimeout(loadAll, 1000);
+    } else {
+      toast('❌ ' + (r.error || '發佈失敗'), 'err');
+    }
+  } catch (e) { toast('❌ ' + e.message, 'err'); }
+}
+
+async function uploadImage(draftId, fileInput) {
+  const file = fileInput.files[0];
+  if (!file) return;
+  if (file.size > 12 * 1024 * 1024) { toast('❌ 圖片超過 12 MB', 'err'); return; }
+  toast('📤 上傳中…');
+  const fd = new FormData();
+  fd.append('image', file);
+  try {
+    const r = await fetch('/api/auto-publish/upload-image/' + draftId, { method: 'POST', body: fd });
+    const j = await r.json();
+    if (j.ok) {
+      toast('✅ 圖片上傳成功', 'ok');
+      setTimeout(loadAll, 800);
+    } else {
+      toast('❌ ' + (j.error || '上傳失敗'), 'err');
+    }
+  } catch (e) { toast('❌ ' + e.message, 'err'); }
+}
+
+async function deleteDraft(draftId) {
+  if (!confirm('確定刪掉這份草稿?')) return;
+  try {
+    const r = await api('POST', '/api/auto-publish/delete/' + draftId);
+    if (r.ok) { toast('🗑 已刪除', 'ok'); setTimeout(loadAll, 800); }
+  } catch (e) { toast('❌ ' + e.message, 'err'); }
 }
 function copyCap(text) {
   navigator.clipboard.writeText(text).then(() => toast('📋 已複製文案', 'ok'));

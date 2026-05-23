@@ -458,6 +458,30 @@
   .feed-item .what { color: var(--ivory); margin-top: 3px; line-height: 1.5; }
   .feed-item.active { border-left-color: var(--amber); background: var(--burgundy-dark); }
 
+  /* 右欄功能列表 */
+  #features { padding: 4px 0; }
+  .ff-group { margin-bottom: 16px; }
+  .ff-group:last-child { margin-bottom: 0; }
+  .ff-title {
+    font-family: Georgia, serif; color: var(--gold); font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding-bottom: 6px; margin-bottom: 4px;
+    border-bottom: 1px dotted var(--burgundy-dark);
+  }
+  .ff-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px;
+    color: var(--ivory); text-decoration: none;
+    font-size: 12px; transition: background 0.15s, color 0.15s;
+    border: 1px solid transparent;
+  }
+  .ff-link:hover {
+    background: var(--burgundy-dark); color: var(--gold);
+    border-color: var(--burgundy);
+  }
+  .ff-ic { font-size: 16px; width: 22px; text-align: center; }
+
+
   .modal-backdrop {
     position: fixed; inset: 0; background: rgba(0,0,0,0.7);
     display: none; align-items: center; justify-content: center;
@@ -605,69 +629,7 @@
     <a href="/social.html" class="featured">📱 社群草稿</a>
     <a href="/auto-publish.html" class="featured">🤖 自動發文</a>
     <a href="/ai-content.html" class="featured">📚 AI 內容團隊</a>
-    <span class="nav-divider"></span>
-    <div class="nav-more-wrap" id="navMoreWrap">
-      <button class="nav-more-btn" onclick="toggleNavMore(event)" aria-haspopup="true" aria-expanded="false">
-        ⋯ 更多功能 <span class="caret">▾</span>
-      </button>
-      <div class="nav-more-panel" role="menu">
-        <div class="group">
-          <div class="group-title">📊 數據儀表板</div>
-          <div class="group-links">
-            <a href="/roas.html"><span class="icon">📈</span><span>ROAS 兩層儀表板</span></a>
-            <a href="/google.html"><span class="icon">📊</span><span>Google Ads 報表</span></a>
-            <a href="/optimize.html"><span class="icon">⚡</span><span>廣告自動體檢</span></a>
-            <a href="/teachers.html"><span class="icon">🏪</span><span>門店戰報</span></a>
-          </div>
-        </div>
-        <div class="group">
-          <div class="group-title">👥 客戶 / 對話</div>
-          <div class="group-links">
-            <a href="/customers.html"><span class="icon">👥</span><span>客戶畫像 / 分群</span></a>
-            <a href="/conversion.html"><span class="icon">💎</span><span>對話成交記錄</span></a>
-            <a href="/line.html"><span class="icon">💬</span><span>LINE 客服中心</span></a>
-            <a href="/actions.html"><span class="icon">📋</span><span>行動建議</span></a>
-          </div>
-        </div>
-        <div class="group">
-          <div class="group-title">📡 競品 / 市場 / SEO</div>
-          <div class="group-links">
-            <a href="/scout.html"><span class="icon">📡</span><span>SCOUT 市場掃描</span></a>
-            <a href="/competitor.html"><span class="icon">🎯</span><span>競品追蹤</span></a>
-            <a href="/geo.html"><span class="icon">🌐</span><span>GEO / SEO 控制台</span></a>
-          </div>
-        </div>
-        <div class="group">
-          <div class="group-title">⚙ 系統 / 進階</div>
-          <div class="group-links">
-            <a href="/work-status.html"><span class="icon">🧠</span><span>AI 大腦狀態</span></a>
-            <a href="/switcher.html"><span class="icon">🔄</span><span>Meta 多帳戶切換</span></a>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="nav-more-mask" onclick="closeNavMore()"></div>
   </nav>
-
-  <script>
-    function toggleNavMore(e) {
-      e.stopPropagation();
-      const wrap = document.getElementById('navMoreWrap');
-      const isOpen = wrap.classList.toggle('open');
-      const btn = wrap.querySelector('.nav-more-btn');
-      btn.setAttribute('aria-expanded', isOpen);
-      document.body.classList.toggle('nav-more-open', isOpen);
-    }
-    function closeNavMore() {
-      const wrap = document.getElementById('navMoreWrap');
-      if (wrap) {
-        wrap.classList.remove('open');
-        wrap.querySelector('.nav-more-btn')?.setAttribute('aria-expanded', 'false');
-      }
-      document.body.classList.remove('nav-more-open');
-    }
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNavMore(); });
-  </script>
 
   <aside class="sidebar" id="sidebar">
     <h2>AI 員工編制</h2>
@@ -737,10 +699,38 @@
   <aside class="activity">
     <h2>工作動態</h2>
     <div class="tab-bar">
-      <button class="tab active" data-tab="feed" onclick="switchTab('feed')">即時動態</button>
+      <button class="tab active" data-tab="features" onclick="switchTab('features')">🎯 功能</button>
+      <button class="tab" data-tab="feed" onclick="switchTab('feed')">即時動態</button>
       <button class="tab" data-tab="reports" onclick="switchTab('reports')">排程報告</button>
     </div>
-    <div id="feed"></div>
+    <div id="features">
+      <div class="ff-group">
+        <div class="ff-title">📊 數據儀表板</div>
+        <a href="/roas.html" class="ff-link"><span class="ff-ic">📈</span><span>ROAS 兩層儀表板</span></a>
+        <a href="/google.html" class="ff-link"><span class="ff-ic">📊</span><span>Google Ads 報表</span></a>
+        <a href="/optimize.html" class="ff-link"><span class="ff-ic">⚡</span><span>廣告自動體檢</span></a>
+        <a href="/teachers.html" class="ff-link"><span class="ff-ic">🏪</span><span>門店戰報</span></a>
+      </div>
+      <div class="ff-group">
+        <div class="ff-title">👥 客戶 / 對話</div>
+        <a href="/customers.html" class="ff-link"><span class="ff-ic">👥</span><span>客戶畫像 / 分群</span></a>
+        <a href="/conversion.html" class="ff-link"><span class="ff-ic">💎</span><span>對話成交記錄</span></a>
+        <a href="/line.html" class="ff-link"><span class="ff-ic">💬</span><span>LINE 客服中心</span></a>
+        <a href="/actions.html" class="ff-link"><span class="ff-ic">📋</span><span>行動建議</span></a>
+      </div>
+      <div class="ff-group">
+        <div class="ff-title">📡 競品 / 市場 / SEO</div>
+        <a href="/scout.html" class="ff-link"><span class="ff-ic">📡</span><span>SCOUT 市場掃描</span></a>
+        <a href="/competitor.html" class="ff-link"><span class="ff-ic">🎯</span><span>競品追蹤</span></a>
+        <a href="/geo.html" class="ff-link"><span class="ff-ic">🌐</span><span>GEO / SEO 控制台</span></a>
+      </div>
+      <div class="ff-group">
+        <div class="ff-title">⚙ 系統 / 進階</div>
+        <a href="/work-status.html" class="ff-link"><span class="ff-ic">🧠</span><span>AI 大腦狀態</span></a>
+        <a href="/switcher.html" class="ff-link"><span class="ff-ic">🔄</span><span>Meta 多帳戶切換</span></a>
+      </div>
+    </div>
+    <div id="feed" style="display:none;"></div>
     <div id="reports" style="display:none;"></div>
   </aside>
 </div>
@@ -1029,6 +1019,8 @@ function renderFeed() {
 }
 
 async function switchTab(t) {
+  // features tab
+  document.getElementById('features').style.display = (t === 'features') ? 'block' : 'none';
   document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   document.querySelector(`.tab[data-tab="${t}"]`).classList.add('active');
   document.getElementById('feed').style.display = t === 'feed' ? 'block' : 'none';
