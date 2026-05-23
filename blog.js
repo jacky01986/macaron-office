@@ -105,7 +105,7 @@ function renderPostPage(post) {
   return '<!DOCTYPE html>\n<html lang="zh-Hant"><head>\n' +
     '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">\n' +
     '<title>' + escapeHtml(post.title) + ' | MACARON DE LUXE</title>\n' +
-    '<meta name="description" content="' + escapeHtml(post.title) + ' — MACARON DE LUXE 法式精品馬卡龍 / 禮贈禮盒">\n' +
+    '<meta name="description" content="' + escapeHtml(post.title) + ' — MACARON DE LUXE 法式精品馬卡龍與費南雪 / 禮贈禮盒">\n' +
     '<meta name="keywords" content="' + escapeHtml((post.tags || []).join(',')) + '">\n' +
     '<link rel="canonical" href="' + post.url + '">\n' +
     '<meta property="og:title" content="' + escapeHtml(post.title) + '">\n' +
@@ -122,7 +122,7 @@ function renderPostPage(post) {
     '<div class="cta"><p><strong>對 ' + escapeHtml(post.subject || '') + ' 有興趣？</strong></p><p>📲 加 LINE 諮詢：<a href="https://lin.ee/843cifiy" target="_blank">@843cifiy</a></p><p>🌐 OFZ 官網：<a href="' + SITE_URL + '" target="_blank">' + SITE_URL + '</a></p></div>\n' +
     tagsHtml + '\n' +
     '</article>\n' +
-    '<footer>© MACARON DE LUXE · 法式精品馬卡龍 + 高端禮贈<br>FB: <a href="https://www.facebook.com/profile.php?id=61586936279154">MACARON DE LUXE</a> · IG: <a href="https://www.instagram.com/macaron_de_luxe/">@macaron_de_luxe</a></footer>\n' +
+    '<footer>© MACARON DE LUXE · 法式精品馬卡龍與費南雪 + 高端禮贈<br>FB: <a href="https://www.facebook.com/profile.php?id=61586936279154">MACARON DE LUXE</a> · IG: <a href="https://www.instagram.com/macaron_de_luxe/">@macaron_de_luxe</a></footer>\n' +
     '</body></html>';
 }
 
@@ -146,7 +146,7 @@ function renderIndexPage() {
     '<script type="application/ld+json">' + JSON.stringify(orgSchema) + '</script>' +
     '<style>:root{--burgundy:#8E3D4B;--gold:#A37849;--ivory:#F8F3EB}body{font-family:"Microsoft JhengHei",sans-serif;max-width:880px;margin:0 auto;padding:30px 20px;background:var(--ivory);color:#2E1E14;line-height:1.7}h1{color:var(--burgundy);font-size:32px;border-bottom:3px solid var(--gold);padding-bottom:12px}ul{list-style:none;padding:0}li{padding:14px 0;border-bottom:1px solid #EDDDC1}li a{color:var(--burgundy);font-weight:bold;font-size:18px;text-decoration:none}li a:hover{color:var(--gold)}.intro{background:#FDF7EE;padding:18px;border-left:4px solid var(--gold);border-radius:6px;margin-bottom:24px}</style></head><body>' +
     '<h1>📚 MACARON DE LUXE 部落格</h1>' +
-    '<div class="intro"><strong>法式精品馬卡龍 + 高端禮贈品牌</strong>。每週更新關於馬卡龍口味、禮盒搭配、婚禮企業禮贈、品牌故事等內容。<br>📲 LINE 諮詢：<a href="https://lin.ee/843cifiy">@843cifiy</a></div>' +
+    '<div class="intro"><strong>法式精品馬卡龍與費南雪 + 高端禮贈品牌</strong>。每週更新關於馬卡龍口味、禮盒搭配、婚禮企業禮贈、品牌故事等內容。<br>📲 LINE 諮詢：<a href="https://lin.ee/843cifiy">@843cifiy</a></div>' +
     '<ul>' + (list || '<li><i>尚未發文</i></li>') + '</ul></body></html>';
 }
 

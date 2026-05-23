@@ -27,12 +27,12 @@ function publicUrlForFile(filename) {
 }
 
 // MACARON DE LUXE 視覺風格基底 (ARIA 風)
-const STYLE_BASE = '法式精品攝影風格 / 馬卡龍特寫,自然採光,玫瑰金 + 深酒紅 + 象牙白色調,景深淺,構圖留白,雜誌等級質感,廣告攝影風格,1:1 方形';
+const STYLE_BASE = '法式精品攝影風格 / 馬卡龍與費南雪雙主力特寫,自然採光,玫瑰金 + 深酒紅 + 象牙白色調,景深淺,構圖留白,雜誌等級質感,廣告攝影風格,1:1 方形';
 const STYLE_NEGATIVE = '不要 卡通/插畫/低品質/水印/文字/亂塗鴉/雜亂背景';
 
 // 從 IG/FB 文案 + brief 產出 ARIA 級的圖片 prompt
 function buildImagePrompt({ caption, brief, platform }) {
-  const base = (caption || brief || '法式精品馬卡龍 12 入禮盒,搭配玫瑰花瓣與絲帶').slice(0, 300);
+  const base = (caption || brief || '法式精品馬卡龍與費南雪混合禮盒,搭配玫瑰花瓣與絲帶').slice(0, 300);
   const sizeHint = platform === 'IG' ? '1:1 方形' : '4:5 直式';
   return base + '\n\n畫面風格: ' + STYLE_BASE + ' ' + sizeHint + '。' + STYLE_NEGATIVE;
 }

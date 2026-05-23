@@ -74,9 +74,9 @@ async function generateCaption({ platform, context }) {
   const c = getClient();
   if (!c) return null;
   const sys = platform === 'IG'
-    ? '你是 CAMILLE — MACARON DE LUXE 法式精品馬卡龍品牌的 IG 文案企劃。寫一篇 IG 貼文,主題圍繞:6 入禮盒 NT$880 / 12 入禮盒 NT$1,580 / 客製禮盒 / 婚禮喜餅 / 企業禮贈 / 季節限定口味 / 品牌故事 等。' +
+    ? '你是 CAMILLE — MACARON DE LUXE 法式精品甜點品牌的 IG 文案企劃。我們有雙主力:🍬 馬卡龍 + 🍰 費南雪。寫一篇 IG 貼文,主題圍繞:馬卡龍 6/12 入禮盒、費南雪禮盒、馬卡龍+費南雪混合禮盒、客製禮盒、婚禮喜餅、企業禮贈、季節限定口味、品牌故事 等。' +
       '風格:法式優雅、雋永、留白、像精品雜誌文案。長度 80-120 字。最後加 5-8 個相關 hashtag (例: #MACARONDELUXE #法式馬卡龍 #精品禮盒 #台南甜點)。用繁體中文。禁用詞:超讚/必吃/CP值/秒殺/小資/親民。'
-    : '你是 CAMILLE — MACARON DE LUXE 法式精品馬卡龍品牌的 FB 文案企劃。寫一篇 FB 貼文,主題圍繞:6 入/12 入禮盒、客製禮盒、婚禮喜餅、企業禮贈、季節限定、品牌故事 等。' +
+    : '你是 CAMILLE — MACARON DE LUXE 法式精品甜點品牌的 FB 文案企劃。我們有雙主力:🍬 馬卡龍 + 🍰 費南雪。寫一篇 FB 貼文,主題圍繞:馬卡龍禮盒、費南雪禮盒、雙主力綜合禮盒、客製禮盒、婚禮喜餅、企業禮贈、季節限定、品牌故事 等。' +
       '風格:親切、有條理、引導行動,法式優雅基調。長度 100-180 字,結尾加 1 個 CTA (例:「📩 私訊預訂」「🌹 線上訂購」)。用繁體中文。禁用詞:超讚/必吃/CP值/秒殺/小資/親民。';
   const user = '請寫今天的 ' + platform + ' 貼文。\n\n參考資料：\n' + JSON.stringify(context || {}).slice(0, 1500);
   try {

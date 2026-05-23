@@ -27,14 +27,14 @@ const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 30000;
 
 const SERVICES = [
-  { id: 'gift_box_6', name: '6入禮盒', search_terms: '馬卡龍 6入禮盒 法式 高端' },
-  { id: 'gift_box_12', name: '12入禮盒', search_terms: '馬卡龍 12入禮盒 高端禮贈' },
-  { id: 'custom_gift', name: '客製禮盒', search_terms: '馬卡龍 客製禮盒 婚禮 企業' },
-  { id: 'wedding_gift', name: '婚禮小物', search_terms: '婚禮 馬卡龍 喜餅 小物' },
+  { id: 'macaron_gift_box', name: '馬卡龍禮盒', search_terms: '馬卡龍 6入 12入 法式 精品' },
+  { id: 'financier_gift_box', name: '費南雪禮盒', search_terms: '費南雪 financier 法式 杏仁小蛋糕 禮盒' },
+  { id: 'combo_gift', name: '馬卡龍+費南雪 綜合禮盒', search_terms: '馬卡龍 費南雪 綜合禮盒 雙主力' },
+  { id: 'custom_gift', name: '客製禮盒', search_terms: '馬卡龍 費南雪 客製禮盒 婚禮 企業' },
+  { id: 'wedding_gift', name: '婚禮小物', search_terms: '婚禮 馬卡龍 費南雪 喜餅 小物' },
   { id: 'corporate_gift', name: '企業禮贈', search_terms: '企業禮贈 高端甜點 客戶禮' },
-  { id: 'macaron_flavor', name: '單顆口味', search_terms: '馬卡龍 口味 法式 推薦' },
-  { id: 'french_competitor', name: '法式品牌競品', search_terms: '法朋 亞尼克 Paul Ladurée 法式甜點' },
-  { id: 'lujsury_brand', name: '高端品牌策略', search_terms: 'Pierre Hermé 高端馬卡龍 精品禮盒 品牌策略' },
+  { id: 'french_competitor', name: '法式品牌競品', search_terms: '法朋 亞尼克 Paul Ladurée Pierre Hermé 法式甜點 費南雪' },
+  { id: 'luxury_brand', name: '高端品牌策略', search_terms: '精品法式甜點 馬卡龍 費南雪 品牌策略' },
 ];
 
 function ensureDir() {

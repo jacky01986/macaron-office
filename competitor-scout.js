@@ -7,7 +7,7 @@ try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 const SNAPSHOT_FILE = path.join(DATA_DIR, 'competitor_snapshot.json');
 const HISTORY_FILE = path.join(DATA_DIR, 'competitor_history.jsonl');
 
-const KEYWORDS = ['馬卡龍', '法朋', '亞尼克', 'Paul', 'Ladurée', 'Pierre Hermé', '法式甜點', '法式禮盒'];
+const KEYWORDS = ['馬卡龍', '費南雪', 'financier', '法朋', '亞尼克', 'Paul', 'Ladurée', 'Pierre Hermé', '法式甜點', '法式禮盒', '法式精品'];
 
 function appendHistory(e) { try { fs.appendFileSync(HISTORY_FILE, JSON.stringify(e) + '\n'); } catch {} }
 
