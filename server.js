@@ -164,6 +164,12 @@ app.use(express.static(path.join(__dirname, "public")));
 // Serve LINE uploaded images publicly (LINE CDN 會抓這個 URL)
 app.use("/uploads", express.static(LINE_UPLOAD_DIR, { maxAge: "30d" }));
 
+// === 自動生圖的靜態 serve (給 IG / FB 抓圖用) ===
+const imageGen = (() => { try { return require('./image-gen'); } catch { return null; } })();
+const AUTO_IMG_DIR = (imageGen && imageGen.IMG_DIR) || require('path').join(__dirname, 'data', 'auto-images');
+try { require('fs').mkdirSync(AUTO_IMG_DIR, { recursive: true }); } catch {}
+app.use("/uploads/auto-images", express.static(AUTO_IMG_DIR, { maxAge: "365d" }));
+
 // POST /api/line/upload  上傳圖片檔給 LINE 用（multipart/form-data, field: file）
 app.post("/api/line/upload", (req, res) => {
   lineUpload.single("file")(req, res, (err) => {
@@ -1298,6 +1304,54 @@ async function runScheduledTask(empId, prompt, label) {
     console.error(`[cron:${label}]`, err);
   }
 }
+
+// === 自動發文相關 API ===
+app.post('/api/auto-publish/run-now', async (req, res) => {
+  try {
+    const r = await autoPublish.generateAndQueueDrafts();
+    res.json(r);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+app.post('/api/auto-publish/process-decisions', async (req, res) => {
+  try {
+    const r = await autoPublish.processDecidedDrafts();
+    res.json(r);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+app.get('/api/auto-publish/drafts', (req, res) => {
+  try {
+    const state = autoPublish.loadDrafts();
+    res.json(state);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+app.get('/api/image-gen/recent', (req, res) => {
+  try {
+    const n = parseInt(req.query.n) || 20;
+    res.json({ ok: true, images: imageGen ? imageGen.listRecent(n) : [] });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+app.post('/api/image-gen/test', express.json(), async (req, res) => {
+  if (!imageGen) return res.status(500).json({ ok: false, error: 'image-gen module missing' });
+  try {
+    const r = await imageGen.generateImage({
+      caption: req.body.caption || '',
+      brief: req.body.brief || '法式精品馬卡龍 12 入禮盒',
+      platform: req.body.platform || 'IG',
+      slug: req.body.slug || 'test'
+    });
+    res.json({ ok: true, ...r });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
 
 autoPublish.registerCronJobs(cron);
 if (scout && typeof scout.registerCronJobs === 'function') scout.registerCronJobs(cron);

@@ -17,6 +17,33 @@ try { Anthropic = require('@anthropic-ai/sdk'); } catch {}
 const decisions = (() => { try { return require('./decisions'); } catch { return null; } })();
 const customers = (() => { try { return require('./customers'); } catch { return null; } })();
 const salesmartly = (() => { try { return require('./salesmartly'); } catch { return null; } })();
+const imageGen = (() => { try { return require('./image-gen'); } catch { return null; } })();
+
+// Telegram 通知 helper
+async function tgSendPhoto(photoUrl, caption) {
+  const token = process.env.TELEGRAM_BOT_TOKEN, chat = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chat) return false;
+  try {
+    const resp = await fetch('https://api.telegram.org/bot' + token + '/sendPhoto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chat, photo: photoUrl, caption: caption.slice(0, 1024), parse_mode: 'HTML' })
+    });
+    return resp.ok;
+  } catch { return false; }
+}
+async function tgSendText(text) {
+  const token = process.env.TELEGRAM_BOT_TOKEN, chat = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chat) return false;
+  try {
+    const resp = await fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chat, text: text.slice(0, 4000), parse_mode: 'HTML' })
+    });
+    return resp.ok;
+  } catch { return false; }
+}
 
 const MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-6';
 
@@ -47,10 +74,10 @@ async function generateCaption({ platform, context }) {
   const c = getClient();
   if (!c) return null;
   const sys = platform === 'IG'
-    ? '你是 CAMILLE — Macaron de Luxe 的 IG 文案企劃。寫一篇 IG 貼文，主題環繞美甲/美容課程。' +
-      '風格：溫暖、療癒、誠懇。長度 80-120 字。最後加 5-8 個相關 hashtag。用繁體中文。'
-    : '你是 CAMILLE — Macaron de Luxe 的 FB 文案企劃。寫一篇 FB 貼文，主題環繞美甲/美容課程或品牌故事。' +
-      '風格：親切、有條理、引導行動。長度 100-180 字，結尾加 1 個 CTA。用繁體中文。';
+    ? '你是 CAMILLE — MACARON DE LUXE 法式精品馬卡龍品牌的 IG 文案企劃。寫一篇 IG 貼文,主題圍繞:6 入禮盒 NT$880 / 12 入禮盒 NT$1,580 / 客製禮盒 / 婚禮喜餅 / 企業禮贈 / 季節限定口味 / 品牌故事 等。' +
+      '風格:法式優雅、雋永、留白、像精品雜誌文案。長度 80-120 字。最後加 5-8 個相關 hashtag (例: #MACARONDELUXE #法式馬卡龍 #精品禮盒 #台南甜點)。用繁體中文。禁用詞:超讚/必吃/CP值/秒殺/小資/親民。'
+    : '你是 CAMILLE — MACARON DE LUXE 法式精品馬卡龍品牌的 FB 文案企劃。寫一篇 FB 貼文,主題圍繞:6 入/12 入禮盒、客製禮盒、婚禮喜餅、企業禮贈、季節限定、品牌故事 等。' +
+      '風格:親切、有條理、引導行動,法式優雅基調。長度 100-180 字,結尾加 1 個 CTA (例:「📩 私訊預訂」「🌹 線上訂購」)。用繁體中文。禁用詞:超讚/必吃/CP值/秒殺/小資/親民。';
   const user = '請寫今天的 ' + platform + ' 貼文。\n\n參考資料：\n' + JSON.stringify(context || {}).slice(0, 1500);
   try {
     const res = await c.messages.create({
@@ -92,20 +119,50 @@ async function generateAndQueueDrafts() {
       status: 'pending',
       created_at: new Date().toISOString(),
       published_at: null,
+      image_url: null,
     };
+
+    // ★ IG 一定要圖;FB 順便也產一張(可選不發)
+    if (imageGen && process.env.OPENAI_API_KEY) {
+      try {
+        const img = await imageGen.generateImage({
+          caption, brief: caption, platform, slug: platform + '-' + draft.id.slice(-6)
+        });
+        draft.image_url = img.publicUrl;
+        draft.image_filename = img.filename;
+        console.log('[auto-publish] ' + platform + ' 生圖完成: ' + img.publicUrl);
+      } catch (e) {
+        console.error('[auto-publish] 生圖失敗 (' + platform + '):', e.message);
+        draft.image_error = e.message;
+      }
+    }
+
     generated.push(draft);
     if (decisions && decisions.addPending) {
       try {
         const dec = await decisions.addPending({
-          title: '📱 ' + platform + ' 草稿：' + caption.slice(0, 30) + (caption.length > 30 ? '...' : ''),
-          recommendation: '建議發佈（VICTOR/CAMILLE 已預覽）',
+          title: '📱 ' + platform + ' 草稿:' + caption.slice(0, 30) + (caption.length > 30 ? '...' : ''),
+          recommendation: '建議發佈(CAMILLE 已寫、ARIA 已配圖)',
           source: 'auto-publish',
-          metadata: { type: 'auto-draft', draftId: draft.id, platform },
+          metadata: { type: 'auto-draft', draftId: draft.id, platform, imageUrl: draft.image_url },
         });
         draft.decisionId = dec.id;
       } catch (e) {
         console.error('[auto-publish] add to decisions failed:', e.message);
       }
+    }
+
+    // ★ Telegram 預覽推送 (有圖就推圖文,無圖只推文字)
+    const previewCaption = '<b>📱 ' + platform + ' 新草稿</b>\n\n' + caption
+      + '\n\n────────────\n回覆 <code>1ok</code> 或 <code>2ok</code> 來發佈 (1=IG, 2=FB,依產出順序)';
+    try {
+      if (draft.image_url) {
+        await tgSendPhoto(draft.image_url, previewCaption);
+      } else {
+        await tgSendText(previewCaption);
+      }
+    } catch (e) {
+      console.error('[auto-publish] TG 推送失敗:', e.message);
     }
   }
   const state = loadDrafts();
@@ -162,9 +219,20 @@ async function processDecidedDrafts() {
         draft.publish_id = r.id;
         publishedThis++;
         console.log('[auto-publish] FB published:', r.id);
+        await tgSendText('✅ FB 已發佈\n\n' + draft.caption.slice(0, 200));
       } else if (draft.platform === 'IG') {
-        draft.status = 'needs-image';
-        draft.note = 'IG 需要圖片才能發佈，請手動到 IG 貼文 + 把這份草稿的 caption 貼上';
+        if (!draft.image_url) {
+          draft.status = 'needs-image';
+          draft.note = 'IG 需要圖片才能發佈,但生圖失敗或沒設 OPENAI_API_KEY';
+        } else {
+          const r = await publishIG(draft.caption, draft.image_url);
+          draft.status = 'published';
+          draft.published_at = new Date().toISOString();
+          draft.publish_id = r.id;
+          publishedThis++;
+          console.log('[auto-publish] IG published:', r.id);
+          await tgSendText('✅ IG 已發佈\n\n' + draft.caption.slice(0, 200));
+        }
       }
     } catch (e) {
       draft.status = 'failed';
@@ -179,9 +247,12 @@ async function processDecidedDrafts() {
 function registerCronJobs(cron) {
   if (!cron || typeof cron.schedule !== 'function') return;
   const tz = process.env.TZ || 'Asia/Taipei';
-  cron.schedule('0 10 * * *', generateAndQueueDrafts, { timezone: tz });
+  // 早上 09:00 + 晚上 19:00 雙峰時段,Telegram 預覽推送讓你看
+  cron.schedule('0 9 * * *', generateAndQueueDrafts, { timezone: tz });
+  cron.schedule('0 19 * * *', generateAndQueueDrafts, { timezone: tz });
+  // 每 5 分鐘掃決策清單,看有 1ok 就發
   cron.schedule('*/5 * * * *', processDecidedDrafts, { timezone: tz });
-  console.log('[auto-publish] cron jobs registered (drafts daily 10:00, publish every 5min)');
+  console.log('[auto-publish] cron jobs registered (drafts 09:00 + 19:00 daily, publish check every 5min)');
 }
 
 module.exports = {
