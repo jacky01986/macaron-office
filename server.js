@@ -1613,6 +1613,19 @@ async function handleLineEvent(event) {
     try { profile = await line.getUserProfile(userId); } catch (e) {}
   }
 
+  // /whoami — 回傳你的 LINE userId（拿去設 Render ADMIN_LINE_USER_ID env var）
+  if (text.trim() === "/whoami" || text.trim() === "/me" || text.trim() === "/id") {
+    if (userId) {
+      try {
+        await line.replyMessage(replyToken, [{
+          type: "text",
+          text: `👤 你的 LINE User ID：\n\n${userId}\n\n複製整段 → Render env var 設成 ADMIN_LINE_USER_ID`,
+        }]);
+      } catch (e) {}
+    }
+    return;
+  }
+
   // 偵測 admin 註冊指令：使用者在 LINE Bot 對話傳「/admin」就把 userId 存起來
   if (text.trim() === "/admin" || text.trim() === "/admin註冊") {
     if (userId) {
@@ -1620,7 +1633,7 @@ async function handleLineEvent(event) {
       try {
         await line.replyMessage(replyToken, [{
           type: "text",
-          text: `✅ 已註冊為 admin！\n\n你會收到：\n📊 每日早上 09:00 早安簡報\n⚠️ 廣告/客戶/預算 即時警示\n\n第一份簡報明天早上見。先傳「/admin test」可以馬上跑一份測試簡報。`,
+          text: `✅ 已註冊為 admin！\n\n你的 LINE User ID：\n${userId}\n\n（這串 ID 也請複製貼到 Render env var「ADMIN_LINE_USER_ID」)\n\n你會收到：\n📊 每日早上 09:00 早安簡報\n⚠️ 廣告/客戶/預算 即時警示\n\n第一份簡報明天早上見。先傳「/admin test」可以馬上跑一份測試簡報。`,
         }]);
       } catch (e) {}
     }
@@ -3937,18 +3950,11 @@ app.get('/api/admin/ss-probe2', async (req, res) => {
       results[path] = { status: r.status };
       if (r.status !== 404) {
         const text = await r.text();
-        try { results[path].body = JSON.parse(text); } catch { results[path].body = text.slice(0, 150); }
+        let body;
+        try { body = JSON.parse(text); } catch { body = text.slice(0, 200); }
+        results[path].body = body;
       }
     } catch (e) { results[path] = { error: e.message }; }
   }
-  res.json({ ok: true, results });
-});
-
-
-app.listen(PORT, () => {
-  console.log(`\n🥐 MACARON DE LUXE · Virtual Office v2`);
-  console.log(`   Listening on http://localhost:${PORT}`);
-  console.log(`   Model: ${MODEL} | Director: ${DIRECTOR_MODEL}`);
-  console.log(`   Employees: ${Object.keys(EMPLOYEES).length}`);
-  console.log(`   Cron: VICTOR Mon 09:00 / DEX Fri 17:00 (Asia/Taipei)\n`);
+  res.json({ ok: true, base: BASE, results });
 });
