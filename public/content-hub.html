@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>📚 內容中心 · MACARON DE LUXE</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root { --brand:#6B4226; --bg:#FAF7F2; --ink:#3B2A1F; --line:#E5DACB; --accent:#10b981; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; }
+  .topnav { background: linear-gradient(135deg,#6B4226,#8B5A33); padding: 8px 16px; display: flex; gap: 8px; align-items: center; overflow-x: auto; white-space: nowrap; flex-shrink: 0; }
+  .topnav strong { color:#FAF7F2; font-size:14px; margin-right:8px; flex-shrink:0; }
+  .topnav a { padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; flex-shrink:0; background:#FAF7F2; color:#6B4226; }
+  .topnav .active { background:#10b981; color:white; }
+  .tabbar { background: white; border-bottom: 1px solid var(--line); padding: 0 16px; display: flex; gap: 2px; overflow-x: auto; white-space: nowrap; flex-shrink: 0; }
+  .tabbar button { background: transparent; border: 0; padding: 12px 18px; cursor: pointer; font-size: 14px; font-weight: 600; color: #888; border-bottom: 3px solid transparent; transition: all 0.15s; }
+  .tabbar button:hover { color: var(--brand); }
+  .tabbar button.active { color: var(--brand); border-bottom-color: var(--brand); }
+  .frame-wrap { flex: 1; min-height: 0; position: relative; }
+  iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--bg); }
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <strong>MACARON</strong>
+  <a href="/">🏠 主控台</a>
+  <a href="#" class="active">📚 內容中心</a>
+  <a href="/customer-hub.html">👥 客戶中心</a>
+  <a href="/ads-hub.html">📊 廣告中心</a>
+  <a href="/market-intel.html">🔍 市場情報</a>
+  <a href="/teachers.html">🏪 門店戰報</a>
+  <a href="/switcher.html">🔄 Meta 切換</a>
+</div>
+
+<div class="tabbar" id="tabbar"></div>
+<div class="frame-wrap"><iframe id="frame" src="/social.html"></iframe></div>
+
+<script>
+const TABS = [
+  { label: '📱 社群草稿', url: '/social.html' },
+  { label: '🤖 自動發文', url: '/auto-publish.html' },
+  { label: '📚 AI 內容團隊', url: '/ai-content.html' },
+  { label: '⚡ 行動建議', url: '/actions.html' },
+];
+const bar = document.getElementById('tabbar');
+const frame = document.getElementById('frame');
+TABS.forEach((t, i) => {
+  const b = document.createElement('button');
+  b.textContent = t.label;
+  if (i === 0) b.classList.add('active');
+  b.onclick = () => {
+    bar.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    frame.src = t.url;
+  };
+  bar.appendChild(b);
+});
+</script>
+</body>
+</html>
