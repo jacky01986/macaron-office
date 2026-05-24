@@ -95,8 +95,8 @@ const EMPLOYEES = {
     },
     focusAreas: '客戶分群動態、活躍 / 流失趨勢、漏斗轉換、隱藏的數據洞察'
   },
-  emi: {
-    name: 'EMI', emoji: '📝', role: '客戶經營',
+  nova: {
+    name: 'NOVA', emoji: '💫', role: '品牌經理 (社群+公關)',
     collectMetrics: async () => {
       try {
         const r = await fetch('http://localhost:' + (process.env.PORT || 10000) + '/api/customers/inquiries?days=30').then(x => x.json());

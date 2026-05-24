@@ -43,7 +43,7 @@ setInterval(() => { const now = Date.now(); for (const [k, v] of PROPOSALS) if (
 const multer = require("multer");
 
 // Employees that benefit from Meta live data in their prompt
-const META_AWARE_EMPLOYEES = new Set(["victor", "leon", "camille", "aria", "dex", "nova", "sofia", "milo", "emi"]);
+const META_AWARE_EMPLOYEES = new Set(["victor", "leon", "camille", "aria", "dex", "nova", "milo"]);
 
 const FORMAT_ENFORCEMENT = `
 
@@ -1519,12 +1519,12 @@ cron.schedule('30 9 * * 4', async () => {
 }, { timezone: 'Asia/Taipei' });
 
 
-// Mon-Fri 09:30 各員工輪流自我改進（VICTOR/CAMILLE/DEX/EMI）
+// Mon-Fri 09:30 各員工輪流自我改進（VICTOR/CAMILLE/DEX/NOVA）
 // LEON 已在週四上面有自己的 cron
 cron.schedule('30 9 * * 1', async () => { runEmpBrain('victor', 'Monday 戰略總監'); }, { timezone: 'Asia/Taipei' });
 cron.schedule('30 9 * * 2', async () => { runEmpBrain('camille', 'Tuesday 文案企劃'); }, { timezone: 'Asia/Taipei' });
 cron.schedule('30 9 * * 3', async () => { runEmpBrain('dex', 'Wednesday 數據分析'); }, { timezone: 'Asia/Taipei' });
-cron.schedule('30 9 * * 5', async () => { runEmpBrain('emi', 'Friday 客戶經營'); }, { timezone: 'Asia/Taipei' });
+cron.schedule('30 9 * * 5', async () => { runEmpBrain('nova', 'Friday 品牌經理'); }, { timezone: 'Asia/Taipei' });
 
 async function runEmpBrain(key, label) {
   console.log('[ai-brain ' + label + '] starting...');
@@ -1556,7 +1556,7 @@ cron.schedule('30 8 * * *', async () => {
     if (!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) && !(adminId && lineToken)) { console.warn('[VICTOR] no notification channel configured'); return; }
     let parts = ['🌅 MACARON DE LUXE 早安簡報 ' + new Date().toLocaleDateString('zh-TW')];
     try {
-      const r = await fetch('https://beauty-office.onrender.com/api/roas/today').then(x => x.json());
+      const r = await fetch('https://macaron-office.onrender.com/api/roas/today').then(x => x.json());
       if (r && r.ok) parts.push('\n💰 過去 7 天: 詢問 ' + r.lead_count + ' · 新好友 ' + r.new_followers + (r.ad_spend ? ' · 廣告 NT$' + r.ad_spend : ''));
     } catch {}
     parts.push('\n📝 GIA 今日 9:00 + 15:00 各發 1 篇文章到 ofzbeautyacademy.com');
@@ -1662,11 +1662,11 @@ async function handleLineEvent(event) {
       } catch (e) { console.error("[admin-decision log]", e); }
       let replyText;
       if (action === "ok") {
-        replyText = `${actionLabel} 決策 ${decisionNum}\n\n已記錄。VICTOR 會在下一份簡報納入這個答案，相關的執行（廣告調整、文案發佈、客人回覆）請到 https://beauty-office.onrender.com 找對應員工完成。`;
+        replyText = `${actionLabel} 決策 ${decisionNum}\n\n已記錄。VICTOR 會在下一份簡報納入這個答案，相關的執行（廣告調整、文案發佈、客人回覆）請到 https://macaron-office.onrender.com 找對應員工完成。`;
       } else if (action === "no") {
         replyText = `${actionLabel} 決策 ${decisionNum}\n\n已記錄為拒絕。VICTOR 明天會用新角度想對策。`;
       } else {
-        replyText = `${actionLabel} 決策 ${decisionNum}\n\n打開 https://beauty-office.onrender.com 找 VICTOR 開始討論`;
+        replyText = `${actionLabel} 決策 ${decisionNum}\n\n打開 https://macaron-office.onrender.com 找 VICTOR 開始討論`;
       }
       try { await line.replyMessage(replyToken, [{ type: "text", text: replyText }]); } catch (e) {}
       return;
@@ -2957,7 +2957,7 @@ app.get('/api/admin/fb-comment-bot/log', (req, res) => {
 app.post('/api/admin/wp-fix-title-overlap', async (req, res) => {
   if (!wp || !wp.listPosts || !wp.updatePost || !wp.getPostRaw) return res.status(500).json({ ok: false, error: 'wp helpers missing' });
   const STYLE = '<style>.wp-block-post-title,h1.wp-block-post-title,.entry-title,article h1.alignwide,article h1{margin-top:140px !important;padding-top:24px !important;line-height:1.4 !important;text-wrap:balance;text-wrap:pretty;word-break:keep-all;overflow-wrap:break-word;max-width:780px;margin-left:auto !important;margin-right:auto !important;text-align:center;font-size:clamp(24px,4vw,38px) !important}@media (max-width:768px){.wp-block-post-title,h1.wp-block-post-title,.entry-title,article h1.alignwide,article h1{margin-top:100px !important;padding-top:16px !important;font-size:22px !important;line-height:1.45 !important;padding-left:16px;padding-right:16px}}</style>';
-  const PIXEL = '<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");fbq("init","1475056767679373");fbq("track","PageView");document.addEventListener("click",function(e){var a=e.target.closest("a");if(!a)return;var h=a.getAttribute("href")||"";if(/(facebook\\.com|m\\.me|wa\\.me|whatsapp|line\\.me|line\\/|t\\.me|telegram|mailto:|tel:)/i.test(h)||/私訊|諮詢|聯絡|預約|報名/.test(a.textContent||"")){fbq("track","Lead",{content_name:document.title,source_url:location.href});try{fetch("https://beauty-office.onrender.com/api/lead/track",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content_name:document.title,source_url:location.href,fbclid:new URLSearchParams(location.search).get("fbclid")||null})})}catch(e){}}});</script><noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1475056767679373&ev=PageView&noscript=1"/></noscript>';
+  const PIXEL = '<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");fbq("init","1475056767679373");fbq("track","PageView");document.addEventListener("click",function(e){var a=e.target.closest("a");if(!a)return;var h=a.getAttribute("href")||"";if(/(facebook\\.com|m\\.me|wa\\.me|whatsapp|line\\.me|line\\/|t\\.me|telegram|mailto:|tel:)/i.test(h)||/私訊|諮詢|聯絡|預約|報名/.test(a.textContent||"")){fbq("track","Lead",{content_name:document.title,source_url:location.href});try{fetch("https://macaron-office.onrender.com/api/lead/track",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content_name:document.title,source_url:location.href,fbclid:new URLSearchParams(location.search).get("fbclid")||null})})}catch(e){}}});</script><noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1475056767679373&ev=PageView&noscript=1"/></noscript>';
   try {
     const lr = await wp.listPosts({ per_page: 50 });
     const list = (lr && lr.items) || lr || [];
@@ -3273,7 +3273,7 @@ app.post('/api/admin/test-victor-briefing', async (req, res) => {
     if (!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) && !(adminId && lineToken)) return res.json({ ok: false, error: 'no notification channel: set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID OR ADMIN_LINE_USER_ID + LINE_CHANNEL_ACCESS_TOKEN' });
     let parts = ['🌅 MACARON DE LUXE 早安簡報（測試）' + new Date().toLocaleString('zh-TW')];
     try {
-      const r = await fetch('https://beauty-office.onrender.com/api/roas/today').then(x => x.json());
+      const r = await fetch('https://macaron-office.onrender.com/api/roas/today').then(x => x.json());
       if (r && r.ok) parts.push('\n💰 過去 7 天: 詢問 ' + r.lead_count + ' · 新好友 ' + r.new_followers);
     } catch {}
     parts.push('\n— VICTOR · MACARON DE LUXE 行銷總監');
@@ -3376,7 +3376,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
       try {
         await tgSend(chatId, '📊 正在拉 ' + teacher.toUpperCase() + ' 的數據...');
         if (cmd.toLowerCase() === 'today') {
-          const r = await fetch('https://beauty-office.onrender.com/api/teachers/summary?days=7').then(x => x.json());
+          const r = await fetch('https://macaron-office.onrender.com/api/teachers/summary?days=7').then(x => x.json());
           const t = r.teachers && r.teachers[teacher.toLowerCase()];
           if (!t) { await tgSend(chatId, '找不到 ' + teacher); return; }
           const msg = '👩 ' + t.name + ' · 過去 7 天\n' +
@@ -3393,12 +3393,12 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
       return;
     }
     // Generic /brain <emp> command
-    const brainCmd = text && text.match(/^\/brain\s+(victor|leon|camille|dex|emi)$/i);
+    const brainCmd = text && text.match(/^\/brain\s+(victor|leon|camille|dex|nova)$/i);
     if (brainCmd) {
       const key = brainCmd[1].toLowerCase();
       try {
         await tgSend(chatId, '🧠 ' + key.toUpperCase() + ' 大腦啟動... 1-2 分鐘');
-        const r = await fetch('https://beauty-office.onrender.com/api/brain/' + key + '/weekly-run', { method: 'POST' }).then(x => x.json());
+        const r = await fetch('https://macaron-office.onrender.com/api/brain/' + key + '/weekly-run', { method: 'POST' }).then(x => x.json());
         if (!r.ok) { await tgSend(chatId, '❌ ' + (r.error || 'unknown')); return; }
         await tgSend(chatId, r.telegram_preview || '無內容');
       } catch (e) { await tgSend(chatId, '錯誤：' + e.message); }
@@ -3407,12 +3407,12 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
     if (text === '/brain-all' || text === '/all-brains') {
       try {
         await tgSend(chatId, '🧠 5 個員工大腦全部啟動！每人 1-2 分鐘，5 分鐘後 Telegram 收完整報告。');
-        fetch('https://beauty-office.onrender.com/api/brain/run-all', { method: 'POST' });
-        const keys = ['victor','leon','camille','dex','emi'];
+        fetch('https://macaron-office.onrender.com/api/brain/run-all', { method: 'POST' });
+        const keys = ['victor','leon','camille','dex','nova'];
         for (const k of keys) {
           await new Promise(rs => setTimeout(rs, 90000));
           try {
-            const r = await fetch('https://beauty-office.onrender.com/api/brain/' + k + '/history').then(x => x.json());
+            const r = await fetch('https://macaron-office.onrender.com/api/brain/' + k + '/history').then(x => x.json());
             const last = r.recent && r.recent.filter(x => x.type === 'suggestions').slice(-1)[0];
             if (last) await tgSend(chatId, '✅ ' + k.toUpperCase() + ' 完成 — ' + (last.suggestions || []).length + ' 條建議');
           } catch {}
@@ -3422,7 +3422,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
     }
     if (text === '/brain' || text === 'brain') {
       try {
-        const r = await fetch('https://beauty-office.onrender.com/api/brain/all/status').then(x => x.json());
+        const r = await fetch('https://macaron-office.onrender.com/api/brain/all/status').then(x => x.json());
         let msg = '🧠 全員 AI 大腦狀態\n─────\n';
         for (const [k, e] of Object.entries(r.employees || {})) {
           msg += e.emoji + ' ' + e.name + ' — 準確率 ' + e.accuracy.correct_rate + ' (' + e.accuracy.weekly_runs + ' 週)\n';
@@ -3435,7 +3435,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
     if (text === '/leon' || text === 'leon週報' || text === 'leon brain') {
       try {
         await tgSend(chatId, '🧠 LEON 大腦啟動中... 預計 1-2 分鐘\n（拍快照 + 對比上週 + 產建議）');
-        const r = await fetch('https://beauty-office.onrender.com/api/leon/brain/weekly-run', { method: 'POST' }).then(x => x.json());
+        const r = await fetch('https://macaron-office.onrender.com/api/leon/brain/weekly-run', { method: 'POST' }).then(x => x.json());
         if (!r.ok) { await tgSend(chatId, '❌ ' + (r.error || 'unknown')); return; }
         await tgSend(chatId, r.telegram_preview || '無內容');
       } catch (e) { await tgSend(chatId, 'LEON 大腦錯誤：' + e.message); }
@@ -3454,7 +3454,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
     }
     if (text === '/bookings' || text === '預約報表') {
       try {
-        const r = await fetch('https://beauty-office.onrender.com/api/bookings/stats?days=30').then(x => x.json());
+        const r = await fetch('https://macaron-office.onrender.com/api/bookings/stats?days=30').then(x => x.json());
         let msg = '📊 過去 30 天預約報表\n────\n';
         msg += '💰 總營收：NT$' + (r.total_revenue || 0).toLocaleString() + '\n';
         msg += '📦 預約數：' + r.total_bookings + '\n';
@@ -3472,7 +3472,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
     if (text === '/cpl' || text === 'cpl體檢') {
       try {
         await tgSend(chatId, '⏳ 跑 CPL 體檢中...');
-        const r = await fetch('https://beauty-office.onrender.com/api/admin/cpl-check-now', { method: 'POST' }).then(x => x.json());
+        const r = await fetch('https://macaron-office.onrender.com/api/admin/cpl-check-now', { method: 'POST' }).then(x => x.json());
         let msg = '📊 CPL 即時體檢\n────\n';
         msg += '檢查 Campaign：' + (r.total_campaigns_checked || 0) + '\n';
         msg += '觸發警報：' + (r.alerts || []).length + ' 條\n';
@@ -3537,7 +3537,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
     if (text === '/voc' || text === 'voc' || text === '顧客之聲') {
       try {
         await tgSend(chatId, '🔬 正在分析過去 90 天客戶訊息，請稍候 30-60 秒...');
-        const r = await fetch('https://beauty-office.onrender.com/api/voc/mine?days=90').then(x => x.json());
+        const r = await fetch('https://macaron-office.onrender.com/api/voc/mine?days=90').then(x => x.json());
         if (!r.ok) { await tgSend(chatId, '❌ VOC 分析失敗：' + (r.error || 'unknown')); return; }
         if (!r.analysis) { await tgSend(chatId, '⚠️ 找到 ' + r.total_sessions + ' 個對話但抽不到客戶訊息。' + (r.message || '')); return; }
         await tgSend(chatId, '📊 VOC 分析（' + r.messages_analyzed + ' 則訊息 / ' + r.total_sessions + ' 個對話）\n\n' + r.analysis);
@@ -3546,7 +3546,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
     }
     if (text === '/today' || text === '今日') {
       try {
-        const r = await fetch('https://beauty-office.onrender.com/api/roas/today').then(x => x.json());
+        const r = await fetch('https://macaron-office.onrender.com/api/roas/today').then(x => x.json());
         await tgSend(chatId, '📊 今日 MACARON DE LUXE\n\n💰 過去 7 天:\n• 詢問 ' + (r.lead_count||0) + '\n• 新好友 ' + (r.new_followers||0) + '\n• 廣告 NT$' + (r.ad_spend||0) + '\n• 曝光 ' + (r.impressions||0));
       } catch (e) { await tgSend(chatId, '❌ ' + e.message); }
       return;
@@ -3614,7 +3614,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
       const c = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
       let context = '';
       try {
-        const r = await fetch('https://beauty-office.onrender.com/api/roas/today').then(x => x.json());
+        const r = await fetch('https://macaron-office.onrender.com/api/roas/today').then(x => x.json());
         if (r.ok) context = '\n\n當前 MACARON DE LUXE 數據（過去 7 天）：詢問 ' + r.lead_count + ' · 新好友 ' + r.new_followers + ' · 廣告 NT$' + r.ad_spend;
       } catch {}
       const sys = employees[employee] + context + '\n\n業態：台灣法式精品馬卡龍 + 高端禮贈品牌，主力商品：6 入禮盒 NT$880、12 入 NT$1,580、客製禮盒、單顆零售；4 家門店：台南本店 / 新光西門 B2 / 新光中港 B2 / 新光南西 B2。回覆要簡潔、可行動、用繁體中文。';
