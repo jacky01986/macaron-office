@@ -271,7 +271,7 @@ function buildCategoryPicker({ contactId = '', lineUserId = '' } = {}) {
   const cats = [
     { label: '🍰 費南雪禮盒', value: 'financier-box' },
     { label: '🎁 客製禮盒', value: 'custom-gift' },
-    { label: '💅 美甲服務', value: 'service-nail' },
+    { label: '🎁 婚禮喜餅', value: 'wedding-gift' },
     { label: '🛍️ 商品/工具', value: 'product' },
     { label: '📦 其他', value: 'other' },
   ];

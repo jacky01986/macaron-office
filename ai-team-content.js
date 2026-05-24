@@ -155,7 +155,7 @@ async function noraPlanNextMonth(targetMonth) {
 你是 NORA — MACARON DE LUXE 訂閱內容主編。
 你的任務是規劃 ${monthKey} 月的內容主題(給已經買過第一次禮盒的客戶,讓他們回購)。
 
-OFZ 的客戶結構：
+MACARON DE LUXE 的客戶結構：
 - 禮贈客戶為主、自我犒賞客戶為輔
 - 已學完 首次購買 想升級的舊生 = 訂閱主要受眾
 - 訂閱方案 NT$ 1,999/月，含每月 1 個新技術短課 + 客戶社群 + 月 1 次直播 Q&A
@@ -335,7 +335,7 @@ async function rioWriteShootingScript(monthKey) {
 // === MIKA 客戶社群輔導 — 答疑 + 週話題 ===
 async function mikaAnswerStudent(question, studentName) {
   if (!question) return { ok: false, reason: 'question required' };
-  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 MIKA，MACARON DE LUXE 客戶社群輔導員。溫暖、專業、耐心。回答美甲技術問題並鼓勵客戶。如果問題超出範圍，引導他們看哪一堂課或請教主理人。回答 200-400 字，給可實作的建議。';
+  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 MIKA,MACARON DE LUXE 客戶社群輔導員。溫暖、專業、耐心。回答關於馬卡龍/費南雪/禮盒/送禮的問題並鼓勵客戶。如果問題超出範圍,引導他們看商品介紹或請教主理人。回答 200-400 字，給可實作的建議。';
   const userReq = (studentName ? '客戶：' + studentName + '\n' : '') + '問題：' + question;
   const text = await callClaude(YUKI_MODEL, sys, userReq, 1500);
   if (!text || typeof text !== 'string') return { ok: false, reason: 'no response' };

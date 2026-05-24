@@ -173,7 +173,7 @@
   <div class="cat-grid" id="catGrid">
     <button type="button" class="cat-btn" data-cat="financier">🍰 費南雪</button>
     <button type="button" class="cat-btn" data-cat="custom-gift">🎁 客製禮盒</button>
-    <button type="button" class="cat-btn" data-cat="service-nail">💅 美甲服務</button>
+    <button type="button" class="cat-btn" data-cat="wedding-gift">🎁 婚禮喜餅</button>
     <button type="button" class="cat-btn" data-cat="product">🛍️ 商品/工具</button>
     <button type="button" class="cat-btn" data-cat="other">📦 其他</button>
   </div>
@@ -299,9 +299,9 @@ async function loadRecent() {
       const t = new Date(o.created_at);
       const tStr = (t.getMonth()+1) + '/' + t.getDate() + ' ' + String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
       const catLabel = ({
-        'course-nail': '🎓 美甲課',
+        'wedding-gift': '🎁 婚禮喜餅',
         'custom-gift': '🎁 客製禮盒',
-        'service-nail': '💅 美甲',
+        'macaron-box': '🍬 馬卡龍禮盒',
         'product': '🛍️ 商品',
         'other': '📦 其他',
       })[o.category] || o.category;

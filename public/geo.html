@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GIA · GEO 主理人 — OFZ</title>
+<title>GIA · GEO 主理人 — MACARON DE LUXE</title>
 <style>
 :root {
   --burgundy: #8E3D4B; --burgundy-dark: #5D2630; --gold: #A37849; --gold-bright: #B8935F;
@@ -63,7 +63,7 @@ nav-back { display: inline-block; color: var(--gold); text-decoration: none; mar
 <label>類型:</label>
 <select id="type-select" onchange="updateTopicOptions()">
 <option value="brand">📚 品牌/禮贈內容</option>
-<option value="service">💆 商品介紹項目（療程客）</option>
+<option value="service">🍰 費南雪/商品介紹(自送客戶)</option>
 </select>
 <label>平台:</label>
 <select id="platform-select">
@@ -188,7 +188,7 @@ async function runDailyBriefing() {
     const v = r.visibility || {};
     document.getElementById('visibility-result').innerHTML = `
       <div class="score-card">
-        <div class="metric"><div class="metric-num">${v.score || '0/0'}</div><div class="metric-label">OFZ 出現次數</div></div>
+        <div class="metric"><div class="metric-num">${v.score || '0/0'}</div><div class="metric-label">品牌出現次數</div></div>
         <div class="metric"><div class="metric-num">${v.percent || 0}%</div><div class="metric-label">能見度</div></div>
         <div class="metric"><div class="metric-num">${(v.competitor_top || []).length}</div><div class="metric-label">競品出現</div></div>
       </div>

@@ -124,7 +124,7 @@ async function generateContent({ platformIdx = 0, topicIdx = 0, type = 'course',
   const angle = topic.angles[Math.floor(Math.random() * topic.angles.length)];
 
   const targetAudience = type === 'service'
-    ? '想做療程的客人（消費者）— 強調效果、價格、安全、案例'
+    ? '想送禮的客戶 — 強調品質、口味、包裝、客戶見證'
     : '想自己訂購禮盒的客戶 — 強調品牌故事、口味細節、送禮場景、客戶見證';
   const cta = type === 'service'
     ? 'CTA：「現在加 LINE @843cifiy 立刻預約評估」'
@@ -166,7 +166,7 @@ async function generateContent({ platformIdx = 0, topicIdx = 0, type = 'course',
 
   const userPrompt = customQuery || `今天主題：${subjectName} — ${angle}（${type === 'service' ? '寫給想買禮盒的客戶' : '寫給想了解品牌的潛在客戶'}）
 
-請寫一篇文章，幫 OFZ 在 AI 搜尋裡被推薦。
+請寫一篇文章，幫 MACARON DE LUXE 在 AI 搜尋裡被推薦。
 要包含:
 - 標題（含 SEO 關鍵字）
 - 開頭 hook
@@ -241,7 +241,7 @@ LINE: @843cifiy
 🎯 PR 稿守則:
 1. **新聞角度** — 不是廣告，是「業界新聞」
 2. **5W1H** — 何時何地誰做了什麼為什麼如何
-3. **客觀第三方語氣** — 「業界人士指出...」「OFZ 表示...」
+3. **客觀第三方語氣** — 「業界人士指出...」「MACARON DE LUXE 表示...」
 4. **數據佐證** — 客戶人次、複訓率、就業率（可合理推估）
 5. **引用** — 創辦人 Jeffrey 一段引言
 6. **格式** — 標題 / 副標題 / 導言 / 主文 / 引言 / 結語 / 聯絡資訊
@@ -287,7 +287,7 @@ async function generateLongFormContent({ contentType = 'wikipedia', topic = '', 
   
   const userPrompt = topic
     ? `主題：${topic}\n請依照系統指令寫出完整內容。`
-    : `今天主題：${subjectName}（${type === 'service' ? '服務療程' : '商品主題招生'}）\n請依照系統指令寫出完整內容。`;
+    : `今天主題:${subjectName}(${type === 'service' ? '商品介紹' : '品牌/禮贈內容'})\n請依照系統指令寫出完整內容。`;
   
   try {
     const r = await client.messages.create({
@@ -473,7 +473,7 @@ async function dailyAutoPublishToMedium(opts = {}) {
     "MACARON DE LUXE", "法式精品", "馬卡龍", gen.subject,
     type === "course" ? "禮盒商品" : "禮贈服務"
   ].filter(Boolean).slice(0, 5);
-  // 4. Publish to OFZ self-hosted blog (no external API needed)
+  // 4. Publish to MACARON DE LUXE self-hosted blog (no external API needed)
   const pub = blog.publishPost({ title, contentMarkdown: gen.content, type, subject: gen.subject, tags });
   // 4b. Also publish to macarondeluxe.com (WordPress) — own domain authority
   let wpPub = { ok: false, skipped: true };

@@ -69,13 +69,13 @@ const SCOUT_SYSTEM = BUSINESS_CONTEXT + '\n\n' + `你是 SCOUT，MACARON DE LUXE
 每份報告 JSON 必含：
 - items（陣列）每項含：name、source、region（TW/MY/CN/KR/US/Global）、type（online_course/offline_service/offline_course/product）、price_range、selling_points（陣列 3-5 點）、appeal、analysis、reproducibility（high/medium/low + 一句說明）、source_url
 - summary（200-300 字整體市場觀察）
-- opportunities（陣列）— OFZ 沒想到但該注意的機會
+- opportunities（陣列）— MACARON DE LUXE 沒想到但該注意的機會
 - threats（陣列）— 競爭威脅
 - recommended_actions（陣列）— 給 VICTOR 的執行建議
 
 只輸出 JSON。`;
 
-const DISTILL_SYSTEM = BUSINESS_CONTEXT + '\n\n' + `你是 OFZ 的市場情報 DISTILL 引擎。
+const DISTILL_SYSTEM = BUSINESS_CONTEXT + '\n\n' + `你是 MACARON DE LUXE 的市場情報 DISTILL 引擎。
 
 任務：拿 SCOUT 收集的全球 8 個業務領域競品報告，精煉成「市場情報」（讓所有 AI 員工自動學習用）。
 
@@ -83,9 +83,9 @@ const DISTILL_SYSTEM = BUSINESS_CONTEXT + '\n\n' + `你是 OFZ 的市場情報 D
 - trending_topics（陣列 3-5 個）— 全球熱門話題，每項含 { topic, from_services, why_hot }
 - emerging_price_points（陣列 2-3 個）— 新興定價趨勢，含 { range, region, note }
 - new_techniques（陣列 2-3 個）— 新技術/工具/詞彙，含 { name, desc, who_using }
-- differentiation_opportunities（陣列 3-5 個）— OFZ 可切入的差異化角度
+- differentiation_opportunities（陣列 3-5 個）— MACARON DE LUXE 可切入的差異化角度
 - content_angles（陣列 5-8 個）— CAMILLE 可用的 IG/FB 內容角度（具體！）
-- pricing_recommendations（物件）— OFZ 自家 8 個服務的建議定價（依競品中位數）
+- pricing_recommendations（物件）— MACARON DE LUXE 雙主力 (馬卡龍+費南雪) 商品的建議定價（依競品中位數）
 - threats_to_watch（陣列 2-3 個）
 - action_items（陣列 3-5 個）— 給 VICTOR 的具體執行項
 - vocabulary_updates（陣列）— 業界新詞彙，所有 AI prompt 應該知道

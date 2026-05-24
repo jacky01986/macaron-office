@@ -81,7 +81,7 @@ async function handleCommentEvent(entry) {
   return results;
 }
 
-// 訂閱 webhook — 一鍵讓所有 MdL pages 開始送 comment events 給我們
+// 訂閱 webhook — 一鍵讓所有 MACARON DE LUXE pages 開始送 comment events 給我們
 async function subscribeAllOfzPages() {
   const userToken = process.env.META_ACCESS_TOKEN;
   if (!userToken) throw new Error('META_ACCESS_TOKEN missing');

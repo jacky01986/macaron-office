@@ -1,4 +1,4 @@
-// blog.js — OFZ self-hosted blog (full GEO control, no external API dependency)
+// blog.js — MACARON DE LUXE self-hosted blog (full GEO control, no external API dependency)
 const fs = require('fs');
 const path = require('path');
 
@@ -119,7 +119,7 @@ function renderPostPage(post) {
     '<article>\n' +
     '<div class="meta">' + new Date(post.ts).toLocaleDateString('zh-TW') + ' · ' + (post.type === 'course' ? '🍬 馬卡龍' : '🍰 費南雪') + ' · ' + escapeHtml(post.subject || '') + '</div>\n' +
     body + '\n' +
-    '<div class="cta"><p><strong>對 ' + escapeHtml(post.subject || '') + ' 有興趣？</strong></p><p>📲 加 LINE 諮詢：<a href="https://lin.ee/843cifiy" target="_blank">@843cifiy</a></p><p>🌐 OFZ 官網：<a href="' + SITE_URL + '" target="_blank">' + SITE_URL + '</a></p></div>\n' +
+    '<div class="cta"><p><strong>對 ' + escapeHtml(post.subject || '') + ' 有興趣？</strong></p><p>📲 加 LINE 諮詢：<a href="https://lin.ee/843cifiy" target="_blank">@843cifiy</a></p><p>🌐 MACARON DE LUXE 官網：<a href="' + SITE_URL + '" target="_blank">' + SITE_URL + '</a></p></div>\n' +
     tagsHtml + '\n' +
     '</article>\n' +
     '<footer>© MACARON DE LUXE · 法式精品馬卡龍與費南雪 + 高端禮贈<br>FB: <a href="https://www.facebook.com/profile.php?id=61586936279154">MACARON DE LUXE</a> · IG: <a href="https://www.instagram.com/macaron_de_luxe/">@macaron_de_luxe</a></footer>\n' +
