@@ -3958,3 +3958,14 @@ app.get('/api/admin/ss-probe2', async (req, res) => {
   }
   res.json({ ok: true, base: BASE, results });
 });
+
+// ============================================================
+// app.listen — required for Render to detect open port
+// ============================================================
+app.listen(PORT, () => {
+  console.log('🥐 MACARON DE LUXE · Virtual Office v2');
+  console.log('   Listening on http://localhost:' + PORT);
+  console.log('   Model: ' + MODEL);
+  console.log('   Employees: ' + Object.keys(EMPLOYEES).length);
+  console.log('   Cron: VICTOR Mon 09:00 / DEX Fri 17:00 (Asia/Taipei)');
+});
