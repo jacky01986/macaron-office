@@ -50,7 +50,7 @@ async function strategySection() {
   } catch (e) { console.error('[alerts] strategy AI:', e.message); }
   return [
     '🎯 本週戰略重點',
-    '（VICTOR 從廣告 / 客戶 / 內容三個角度，給三件最關鍵的事）',
+    '（VICTOR 從客戶經營 / 內容創作 / 門店體驗三個角度，給三件最關鍵的事）',
     '— 本段需要呼叫 Claude API 生成；如果未配置 ANTHROPIC_API_KEY 會跳過',
   ].join('\n');
 }
@@ -78,7 +78,7 @@ async function reviewSection() {
   } catch (e) { console.error('[alerts] review AI:', e.message); }
   return [
     '📊 本週回顧 + 下週預告',
-    '本週成績：營業額 / 廣告 ROAS / 內容互動',
+    '本週成績：禮盒銷量 / 客戶互動 / 各門店表現',
     '下週預告：上週回顧的 actions 進入下週',
   ].join('\n');
 }
@@ -153,8 +153,7 @@ async function dailyBriefing() {
   sections.push(`☀️ VICTOR 早安簡報 — ${date} ${todayLabel()}`);
   sections.push('');
 
-  const ads = await adsSection();
-  if (ads) sections.push(ads);
+  // [REMOVED] 廣告 section — 老闆要求不顯示
 
   const cust = await customersSection();
   if (cust) sections.push(cust);
@@ -236,8 +235,8 @@ function registerCronJobs(cron) {
     return;
   }
   cron.schedule('0 9 * * *', sendBriefing, { timezone: TZ });
-  cron.schedule('*/30 * * * *', checkAdsAlerts, { timezone: TZ });
-  console.log('[alerts] cron jobs registered (daily 09:00 + ads every 30min)');
+  // [REMOVED] cron.schedule('*/30 * * * *', checkAdsAlerts, { timezone: TZ }); // 老闆要求不推廣告警示
+  console.log('[alerts] cron jobs registered (daily 09:00 only, ads alerts disabled)');
 }
 
 function loadAdmin(dataDir) {

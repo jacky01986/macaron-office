@@ -53,7 +53,8 @@ async function gatherContext({ days = 7 } = {}) {
 
 function ctxToPrompt(ctx) {
   const lines = [];
-  if (ctx.ads) lines.push('=== 廣告（最近）===\n' + JSON.stringify(ctx.ads).slice(0, 1500));
+  // [REMOVED] ads context — 老闆要求不討論廣告
+  // if (ctx.ads) lines.push('=== 廣告 ===\n' + JSON.stringify(ctx.ads).slice(0, 1500));
   if (ctx.customers) lines.push('=== 客戶分群 ===\n' + JSON.stringify(ctx.customers));
   if (ctx.customer_topics) lines.push('=== 客人最常問什麼 ===\n' + JSON.stringify(ctx.customer_topics));
   if (ctx.recent_decisions && ctx.recent_decisions.length) {
@@ -84,8 +85,8 @@ async function callClaude(systemPrompt, userPrompt, { maxTokens = 600 } = {}) {
 
 async function generateStrategy() {
   const ctx = await gatherContext({ days: 7 });
-  const sys = "你是 VICTOR — MACARON DE LUXE(精品馬卡龍與費南雪禮贈品牌,4 家門店:台南本店、新光西門 B2、新光中港 B2、新光南西 B2)的 AI 行銷總監。你的工作是看完數據後,給老闆 Jeffrey 3 件本週最關鍵的戰略行動,涵蓋廣告、客戶經營、內容三個角度。回答要直接、具體、可執行。每件不超過 3 行。用繁體中文。【絕對禁止】提到課程、報名、學員、教學、紋繡、美容、美甲、療程、老師 等字眼 — 我們是精品甜點禮贈品牌,不是學院。";
-  const user = "請給我「本週戰略重點」3 件最關鍵的事,從廣告、客戶經營、內容三個角度切入。\n\n== 數據 ==\n" + ctxToPrompt(ctx);
+  const sys = "你是 VICTOR — MACARON DE LUXE(精品馬卡龍與費南雪禮贈品牌,4 家門店:台南本店、新光西門 B2、新光中港 B2、新光南西 B2)的 AI 行銷總監。你的工作是看完數據後,給老闆 Jeffrey 3 件本週最關鍵的戰略行動,專注在【客戶經營 / 內容創作 / 門店體驗 / 品牌建設】這四個角度,不要討論廣告投放優化。回答要直接、具體、可執行。每件不超過 3 行。用繁體中文。【絕對禁止】① 提到廣告、ROAS、CPL、CTR、CPM、Pixel、廣告素材、廣告受眾、Meta 後台、Google Ads 等投放相關字眼。② 提到課程、報名、學員、教學、紋繡、美容、美甲、療程、老師 等字眼 — 我們是精品甜點禮贈品牌。";
+  const user = "請給我「本週戰略重點」3 件最關鍵的事,專注在客戶經營、內容創作、門店體驗、品牌建設這四個角度(不要討論廣告)。\n\n== 數據 ==\n" + ctxToPrompt(ctx);
   const out = await callClaude(sys, user, { maxTokens: 600 });
   if (!out) return "🎯 本週戰略重點\n(VICTOR 暫時不在線 — ANTHROPIC_API_KEY 未設或 API 失敗)";
   return "🎯 本週戰略重點(VICTOR)\n" + out;
@@ -93,7 +94,7 @@ async function generateStrategy() {
 
 async function generateMidweek() {
   const ctx = await gatherContext({ days: 3 });
-  const sys = "你是 VICTOR — MACARON DE LUXE(精品馬卡龍與費南雪禮贈品牌,4 家門店)的 AI 行銷總監。週三中週要老闆做小幅調整。看本週前 3 天數據 vs 預期,建議 1-2 件具體調整。簡短直接。用繁體中文。【絕對禁止】提到課程、報名、學員、教學、紋繡、美容、美甲、療程、老師 — 我們是精品甜點禮贈品牌。";
+  const sys = "你是 VICTOR — MACARON DE LUXE(精品馬卡龍與費南雪禮贈品牌,4 家門店)的 AI 行銷總監。週三中週要老闆做小幅調整。看本週前 3 天的客戶/內容/門店數據 vs 預期,建議 1-2 件具體調整(不討論廣告)。簡短直接。用繁體中文。【絕對禁止】① 廣告、ROAS、CPL、CTR、CPM、Meta 後台、Google Ads 等廣告字眼。② 課程、報名、學員、教學、紋繡、美容、美甲、療程、老師 — 我們是精品甜點禮贈品牌。";
   const user = "本週前 3 天表現如何?需要調整什麼?\n\n== 數據 ==\n" + ctxToPrompt(ctx);
   const out = await callClaude(sys, user, { maxTokens: 400 });
   if (!out) return "🔧 中週調整建議\n(VICTOR 暫時不在線)";
@@ -102,7 +103,7 @@ async function generateMidweek() {
 
 async function generateReview() {
   const ctx = await gatherContext({ days: 7 });
-  const sys = "你是 VICTOR — MACARON DE LUXE(精品馬卡龍與費南雪禮贈品牌,4 家門店)的 AI 行銷總監。週日要做本週回顧加下週預告。本週回顧:禮盒銷量、廣告、內容互動、各門店表現。下週預告:3 件主要任務。簡短具體,繁體中文。【絕對禁止】提到課程、報名、學員、教學、紋繡、美容、美甲、療程、老師 — 我們是精品甜點禮贈品牌。";
+  const sys = "你是 VICTOR — MACARON DE LUXE(精品馬卡龍與費南雪禮贈品牌,4 家門店)的 AI 行銷總監。週日要做本週回顧加下週預告。本週回顧:禮盒銷量、客戶互動、社群內容、各門店表現(不討論廣告)。下週預告:3 件主要任務。簡短具體,繁體中文。【絕對禁止】① 廣告、ROAS、CPL、CTR、CPM、Meta 後台、Google Ads 等廣告字眼。② 課程、報名、學員、教學、紋繡、美容、美甲、療程、老師 — 我們是精品甜點禮贈品牌。";
   const user = "請寫本週回顧(2-3 件主要成績)加下週預告(3 件主要任務)。\n\n== 數據 ==\n" + ctxToPrompt(ctx);
   const out = await callClaude(sys, user, { maxTokens: 600 });
   if (!out) return "📊 本週回顧加下週預告\n(VICTOR 暫時不在線)";
