@@ -3960,8 +3960,140 @@ app.get('/api/admin/ss-probe2', async (req, res) => {
   res.json({ ok: true, base: BASE, results });
 });
 
+
+
+// ============================================================
+// 🚀 Dashboard Endpoints — 一次回多個資料源 (Performance optimization)
+// ============================================================
+function _internalGet(req, path) {
+  const host = req.get('host');
+  const proto = req.protocol;
+  return fetch(`${proto}://${host}${path}`)
+    .then(r => r.json())
+    .catch(e => ({ ok: false, error: e.message }));
+}
+
+// /api/meta/dashboard — 廣告中心一次回應 (ROAS today + lead + line)
+app.get('/api/meta/dashboard', async (req, res) => {
+  const [roas, lead, line, probe] = await Promise.all([
+    _internalGet(req, '/api/roas/today'),
+    _internalGet(req, '/api/roas/lead'),
+    _internalGet(req, '/api/roas/line'),
+    _internalGet(req, '/api/meta/probe'),
+  ]);
+  res.json({ ok: true, roas, lead, line, meta_probe: probe, generated_at: new Date().toISOString() });
+});
+
+// /api/customers/dashboard — 客戶中心一次回應
+app.get('/api/customers/dashboard', async (req, res) => {
+  const days = req.query.days || '7';
+  const [groups, inquiries, insights, profiles] = await Promise.all([
+    _internalGet(req, '/api/customers'),
+    _internalGet(req, `/api/customers/inquiries?days=${days}`),
+    _internalGet(req, '/api/customers/insights'),
+    _internalGet(req, '/api/customers/profiles'),
+  ]);
+  res.json({ ok: true, groups, inquiries, insights, profiles, generated_at: new Date().toISOString() });
+});
+
+// /api/inbox/dashboard — 對話中心一次回應
+app.get('/api/inbox/dashboard', async (req, res) => {
+  const [recent, stats_today, inquiries, ss_probe] = await Promise.all([
+    _internalGet(req, '/api/conversion/recent'),
+    _internalGet(req, '/api/conversion/stats/today'),
+    _internalGet(req, '/api/customers/inquiries?days=7'),
+    _internalGet(req, '/api/salesmartly/probe'),
+  ]);
+  res.json({ ok: true, recent, stats_today, inquiries, salesmartly: ss_probe, generated_at: new Date().toISOString() });
+});
+
+// /api/geo/dashboard — GEO 中心一次回應 (跳過慢的 daily-briefing)
+app.get('/api/geo/dashboard', async (req, res) => {
+  const [audits, content] = await Promise.all([
+    _internalGet(req, '/api/geo/recent-audits'),
+    _internalGet(req, '/api/geo/recent-content'),
+  ]);
+  res.json({ ok: true, audits, content, note: 'daily-briefing 需單獨叫 /api/geo/daily-briefing(會跑 Claude 故慢)', generated_at: new Date().toISOString() });
+});
+
+// /api/ai-team/dashboard — AI 內容團隊一次回應
+app.get('/api/ai-team/dashboard', async (req, res) => {
+  const [months, topics, qa] = await Promise.all([
+    _internalGet(req, '/api/ai-team/months'),
+    _internalGet(req, '/api/ai-team/topics'),
+    _internalGet(req, '/api/ai-team/qa/recent'),
+  ]);
+  res.json({ ok: true, months, topics, qa, generated_at: new Date().toISOString() });
+});
+
 // ============================================================
 // app.listen — required for Render to detect open port
+
+
+
+// ============================================================
+// 🚀 Dashboard Endpoints — 一次回多個資料源 (Performance optimization)
+// ============================================================
+function _internalGet(req, path) {
+  const host = req.get('host');
+  const proto = req.protocol;
+  return fetch(`${proto}://${host}${path}`)
+    .then(r => r.json())
+    .catch(e => ({ ok: false, error: e.message }));
+}
+
+// /api/meta/dashboard — 廣告中心一次回應 (ROAS today + lead + line)
+app.get('/api/meta/dashboard', async (req, res) => {
+  const [roas, lead, line, probe] = await Promise.all([
+    _internalGet(req, '/api/roas/today'),
+    _internalGet(req, '/api/roas/lead'),
+    _internalGet(req, '/api/roas/line'),
+    _internalGet(req, '/api/meta/probe'),
+  ]);
+  res.json({ ok: true, roas, lead, line, meta_probe: probe, generated_at: new Date().toISOString() });
+});
+
+// /api/customers/dashboard — 客戶中心一次回應
+app.get('/api/customers/dashboard', async (req, res) => {
+  const days = req.query.days || '7';
+  const [groups, inquiries, insights, profiles] = await Promise.all([
+    _internalGet(req, '/api/customers'),
+    _internalGet(req, `/api/customers/inquiries?days=${days}`),
+    _internalGet(req, '/api/customers/insights'),
+    _internalGet(req, '/api/customers/profiles'),
+  ]);
+  res.json({ ok: true, groups, inquiries, insights, profiles, generated_at: new Date().toISOString() });
+});
+
+// /api/inbox/dashboard — 對話中心一次回應
+app.get('/api/inbox/dashboard', async (req, res) => {
+  const [recent, stats_today, inquiries, ss_probe] = await Promise.all([
+    _internalGet(req, '/api/conversion/recent'),
+    _internalGet(req, '/api/conversion/stats/today'),
+    _internalGet(req, '/api/customers/inquiries?days=7'),
+    _internalGet(req, '/api/salesmartly/probe'),
+  ]);
+  res.json({ ok: true, recent, stats_today, inquiries, salesmartly: ss_probe, generated_at: new Date().toISOString() });
+});
+
+// /api/geo/dashboard — GEO 中心一次回應 (跳過慢的 daily-briefing)
+app.get('/api/geo/dashboard', async (req, res) => {
+  const [audits, content] = await Promise.all([
+    _internalGet(req, '/api/geo/recent-audits'),
+    _internalGet(req, '/api/geo/recent-content'),
+  ]);
+  res.json({ ok: true, audits, content, note: 'daily-briefing 需單獨叫 /api/geo/daily-briefing(會跑 Claude 故慢)', generated_at: new Date().toISOString() });
+});
+
+// /api/ai-team/dashboard — AI 內容團隊一次回應
+app.get('/api/ai-team/dashboard', async (req, res) => {
+  const [months, topics, qa] = await Promise.all([
+    _internalGet(req, '/api/ai-team/months'),
+    _internalGet(req, '/api/ai-team/topics'),
+    _internalGet(req, '/api/ai-team/qa/recent'),
+  ]);
+  res.json({ ok: true, months, topics, qa, generated_at: new Date().toISOString() });
+});
 
 // ============================================================
 // app.listen — required for Render to detect open port
