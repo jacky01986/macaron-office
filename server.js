@@ -17,6 +17,7 @@ const cron = require("node-cron");
 const Anthropic = require("@anthropic-ai/sdk").default;
 const { EMPLOYEES } = require("./employees");
 const meta = require("./meta");
+let marketIntel = null; try { marketIntel = require("./market-intel"); } catch (e) { console.error("market-intel load:", e.message); }
 const line = require("./line");
 const customerProfiler = require('./customer-profiler');
 const decisions = require('./decisions');
@@ -4117,7 +4118,9 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
 
     // Inject live data into context
     const liveData = await gatherTelegramContext();
-    const dataLine = `\n\n[目前 MACARON 即時數據]\n${JSON.stringify(liveData)}`;
+    let marketCtx = "";
+    try { if (marketIntel) marketCtx = marketIntel.getMarketIntelContext({ compact: true }); } catch {}
+    const dataLine = `\n\n[目前 MACARON 即時數據]\n${JSON.stringify(liveData)}\n\n${marketCtx}`;
 
     const systemPrompt = `你是 VICTOR — MACARON DE LUXE 的 AI 行銷總監兼整個 AI 團隊的大腦。\n\n品牌:精品馬卡龍與費南雪禮贈品牌,4 家門店(台南本店、新光西門 B2、新光中港 B2、新光南西 B2)。月度預算 NT$60,000。\nIG @warmplace.here 粉絲 32K,FB 粉專 118 粉絲(主戰場在 IG)。\nLINE Bot @110ypqki, SaleSmartly 對話追蹤已開。\n\n你帶領團隊:LEON(廣告投手)、CAMILLE(內容主筆,負責文案+部落格 SEO)、ARIA(視覺指導)、DEX(數據分析)、NOVA(品牌經理,負責社群+公關)、MILO(KOL)。\n\n【你的工作模式 — 你是 AI Agent,不是建議生成器】\n你的目標是【幫 Jeffrey 解決問題、產出可立即使用的交付物】,不是給「建議」。\n\n**判斷請求類型,直接給對應交付物:**\n\n① 問題型 → 給【今天做 / 本週做 / 本月做】三層具體行動 + 指名負責員工\n② 內容型(寫文案/Reels 腳本) → 【直接產 3-5 版可立即複製貼上的成品】,不要先講想法再寫\n③ 規劃型(行事曆) → 【直接出表格】:日期 / 平台 / 主題 / 文案 / 視覺需求\n④ 分析型(現在數據怎樣?) → 引用即時數據,3 個觀察 + 1 個關鍵問題給 Jeffrey 拍板\n⑤ 決策型(該不該做 X?) → 直接給【做 / 不做】+ 量化理由(預估金額、leads、GMV)+ 風險\n\n**你有對話記憶** — 你看得到過去的對話,延續討論,不要重複問已經回答的問題。\n**遇資料不足** — 直接告訴 Jeffrey 缺什麼數據 + 怎麼補上,不要瞎掰。\n\n【絕對禁止】\n- 廣告投放細節(老闆要求,只談客戶經營/內容/門店/品牌)\n- 課程、報名、學員、教學、紋繡、美容(這些是舊業態)\n- 「以下幾個建議供參考」「希望對你有幫助」這類客套話\n- 給範圍式建議(「可以考慮...」)應改成決策建議(「建議做 X,不要做 Y,因為 ...」)\n\n回答用繁體中文,可用 emoji 但不要太多。`;
 
@@ -4168,6 +4171,55 @@ app.post('/api/admin/telegram/setup-webhook', async (req, res) => {
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
+});
+
+
+
+// ============================================================
+// 📡 Market Intel — 每日台灣網路情報爬蟲 + 自動餵 AI 團隊
+// ============================================================
+if (marketIntel) {
+  // 06:00 每天自動跑
+  try {
+    cron.schedule('0 6 * * *', async () => {
+      console.log('[market-intel cron] daily 06:00 scan starting...');
+      try { await marketIntel.runDailyScan(); } catch (e) { console.error('[market-intel cron]', e.message); }
+    }, { timezone: 'Asia/Taipei' });
+    console.log('[market-intel] cron registered: daily 06:00');
+  } catch (e) { console.error('[market-intel cron register]', e.message); }
+}
+
+// 手動觸發
+app.post('/api/market-intel/run-now', async (req, res) => {
+  if (!marketIntel) return res.status(500).json({ ok: false, error: 'market-intel module not loaded' });
+  try {
+    const r = await marketIntel.runDailyScan();
+    res.json({ ok: true, date: r.date, summary_stats: r.summary_stats });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// 看最新情報
+app.get('/api/market-intel/latest', (req, res) => {
+  if (!marketIntel) return res.status(500).json({ ok: false, error: 'market-intel module not loaded' });
+  const intel = marketIntel.loadLatestIntel();
+  if (!intel) return res.json({ ok: false, error: 'no data yet, call /api/market-intel/run-now first' });
+  res.json({ ok: true, ...intel });
+});
+
+// 看摘要文字(就是注入 AI 用的 context)
+app.get('/api/market-intel/summary', (req, res) => {
+  if (!marketIntel) return res.status(500).json({ ok: false, error: 'market-intel module not loaded' });
+  res.type('text').send(marketIntel.getMarketIntelContext({ compact: false }));
+});
+
+// 「溫點 vs 對手」AI 比對分析
+app.post('/api/market-intel/compare', async (req, res) => {
+  if (!marketIntel) return res.status(500).json({ ok: false, error: 'market-intel module not loaded' });
+  if (!anthropic) return res.status(500).json({ ok: false, error: 'anthropic not configured' });
+  try {
+    const r = await marketIntel.compareWithWarmplace({ anthropic, model: DIRECTOR_MODEL });
+    res.json(r);
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
 // ============================================================
