@@ -4026,6 +4026,150 @@ app.get('/api/ai-team/dashboard', async (req, res) => {
   res.json({ ok: true, months, topics, qa, generated_at: new Date().toISOString() });
 });
 
+
+
+// ============================================================
+// 🤖 Telegram AI Agent — Jeffrey 在 Telegram 上問問題,VICTOR 帶整個 AI 團隊回答
+// ============================================================
+// Persistent Telegram conversation memory — saved to disk so survives Render restarts
+const TG_DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || require('path').join(__dirname, 'data');
+function tgHistoryFile(chatId) { return require('path').join(TG_DATA_DIR, `telegram-conv-${chatId}.json`); }
+function tgLoadHistory(chatId) {
+  try { return JSON.parse(require('fs').readFileSync(tgHistoryFile(chatId), 'utf8')); } catch { return []; }
+}
+function tgSaveHistory(chatId, history) {
+  try {
+    require('fs').mkdirSync(TG_DATA_DIR, { recursive: true });
+    require('fs').writeFileSync(tgHistoryFile(chatId), JSON.stringify(history.slice(-40), null, 2));
+  } catch (e) { console.error('[TG save history]', e.message); }
+}
+function tgClearHistory(chatId) { try { require('fs').unlinkSync(tgHistoryFile(chatId)); } catch {} }
+
+async function sendTelegram(chatId, text) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return;
+  const chunks = [];
+  const SAFE = 3800;
+  for (let i = 0; i < text.length; i += SAFE) chunks.push(text.slice(i, i + SAFE));
+  for (let i = 0; i < chunks.length; i++) {
+    const body = chunks.length > 1 ? `(${i+1}/${chunks.length})\n${chunks[i]}` : chunks[i];
+    try {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: body })
+      });
+    } catch (e) { console.error('[TG send]', e.message); }
+  }
+}
+
+async function gatherTelegramContext() {
+  const base = `http://localhost:${PORT}`;
+  const out = {};
+  try {
+    const [meta, cust, ig] = await Promise.all([
+      fetch(`${base}/api/meta/probe`).then(r => r.json()).catch(() => null),
+      fetch(`${base}/api/customer-hub/dashboard`).then(r => r.json()).catch(() => null),
+      fetch(`${base}/api/conversion/stats/today`).then(r => r.json()).catch(() => null),
+    ]);
+    if (meta) out.meta = { page: meta.me_response, ad_7d: meta.ad_spend_7d };
+    if (cust) out.customers = { total: cust.groups && cust.groups.summary && cust.groups.summary.total, inquiries: cust.inquiries && cust.inquiries.total };
+    if (ig) out.conversion_today = { orders: (ig.orders && ig.orders.length) || 0, revenue: ig.revenue };
+  } catch (e) { out._err = e.message; }
+  return out;
+}
+
+app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, res) => {
+  res.json({ ok: true }); // ack immediately so Telegram doesn't retry
+  try {
+    const update = req.body;
+    const msg = update.message || update.edited_message;
+    if (!msg || !msg.text) return;
+    const chatId = String(msg.chat.id);
+    const text = msg.text.trim();
+    const adminChat = String(process.env.TELEGRAM_CHAT_ID || '');
+
+    // Restrict to admin chat
+    if (adminChat && chatId !== adminChat) {
+      await sendTelegram(chatId, '❌ 你不是 MACARON 管理員,無法使用這個 AI 助理。');
+      return;
+    }
+
+    // Commands
+    if (text === '/start' || text === '/help') {
+      await sendTelegram(chatId, '🥐 MACARON DE LUXE · VICTOR (AI 行銷總監)\n\n直接問我問題,我會帶整個 AI 團隊找答案。例如:\n\n• 「下週母親節該主打什麼?」\n• 「IG 流量都導不到門市,怎麼辦?」\n• 「企業送禮怎麼開發?」\n• 「新光西門 B2 表現比較差,有什麼建議?」\n\n指令:\n/reset — 清空對話記憶\n/data — 看現在帳號數據摘要');
+      return;
+    }
+    if (text === '/reset') {
+      tgClearHistory(chatId);
+      await sendTelegram(chatId, '✅ 對話記憶已清空。');
+      return;
+    }
+    if (text === '/data') {
+      const ctx = await gatherTelegramContext();
+      await sendTelegram(chatId, '📊 目前數據摘要\n\n' + JSON.stringify(ctx, null, 2));
+      return;
+    }
+
+    // Build conversation history (last 6 turns)
+    const history = tgLoadHistory(chatId);
+    history.push({ role: 'user', content: text });
+
+    // Inject live data into context
+    const liveData = await gatherTelegramContext();
+    const dataLine = `\n\n[目前 MACARON 即時數據]\n${JSON.stringify(liveData)}`;
+
+    const systemPrompt = `你是 VICTOR — MACARON DE LUXE 的 AI 行銷總監兼整個 AI 團隊的大腦。\n\n品牌:精品馬卡龍與費南雪禮贈品牌,4 家門店(台南本店、新光西門 B2、新光中港 B2、新光南西 B2)。月度預算 NT$60,000。\nIG @warmplace.here 粉絲 32K,FB 粉專 118 粉絲(主戰場在 IG)。\nLINE Bot @110ypqki, SaleSmartly 對話追蹤已開。\n\n你帶領團隊:LEON(廣告投手)、CAMILLE(內容主筆,負責文案+部落格 SEO)、ARIA(視覺指導)、DEX(數據分析)、NOVA(品牌經理,負責社群+公關)、MILO(KOL)。\n\n【你的工作模式 — 你是 AI Agent,不是建議生成器】\n你的目標是【幫 Jeffrey 解決問題、產出可立即使用的交付物】,不是給「建議」。\n\n**判斷請求類型,直接給對應交付物:**\n\n① 問題型 → 給【今天做 / 本週做 / 本月做】三層具體行動 + 指名負責員工\n② 內容型(寫文案/Reels 腳本) → 【直接產 3-5 版可立即複製貼上的成品】,不要先講想法再寫\n③ 規劃型(行事曆) → 【直接出表格】:日期 / 平台 / 主題 / 文案 / 視覺需求\n④ 分析型(現在數據怎樣?) → 引用即時數據,3 個觀察 + 1 個關鍵問題給 Jeffrey 拍板\n⑤ 決策型(該不該做 X?) → 直接給【做 / 不做】+ 量化理由(預估金額、leads、GMV)+ 風險\n\n**你有對話記憶** — 你看得到過去的對話,延續討論,不要重複問已經回答的問題。\n**遇資料不足** — 直接告訴 Jeffrey 缺什麼數據 + 怎麼補上,不要瞎掰。\n\n【絕對禁止】\n- 廣告投放細節(老闆要求,只談客戶經營/內容/門店/品牌)\n- 課程、報名、學員、教學、紋繡、美容(這些是舊業態)\n- 「以下幾個建議供參考」「希望對你有幫助」這類客套話\n- 給範圍式建議(「可以考慮...」)應改成決策建議(「建議做 X,不要做 Y,因為 ...」)\n\n回答用繁體中文,可用 emoji 但不要太多。`;
+
+    const c = anthropic;
+    if (!c) { await sendTelegram(chatId, '❌ ANTHROPIC_API_KEY 未設,VICTOR 不在線'); return; }
+
+    let reply = null;
+    try {
+      const resp = await c.messages.create({
+        model: DIRECTOR_MODEL,
+        max_tokens: 2000,
+        system: systemPrompt + dataLine,
+        messages: history.slice(-30),
+      });
+      const block = resp.content && resp.content[0];
+      if (block && block.type === 'text') reply = block.text.trim();
+    } catch (e) {
+      console.error('[TG AI]', e.message);
+      reply = '⚠️ AI 處理出錯: ' + e.message.slice(0, 200);
+    }
+
+    if (!reply) reply = '抱歉,VICTOR 沒有回應。';
+
+    // Save to history (truncate at 12 turns to prevent context overflow)
+    history.push({ role: 'assistant', content: reply });
+    tgSaveHistory(chatId, history);
+
+    await sendTelegram(chatId, reply);
+  } catch (err) {
+    console.error('[/api/telegram/webhook]', err);
+  }
+});
+
+// /api/telegram/setup — admin 一鍵設定 Telegram webhook
+app.post('/api/admin/telegram/setup-webhook', async (req, res) => {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return res.status(400).json({ ok: false, error: 'TELEGRAM_BOT_TOKEN not set' });
+  const host = req.get('host');
+  const webhookUrl = `https://${host}/api/telegram/webhook`;
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: webhookUrl, allowed_updates: ['message', 'edited_message'] })
+    });
+    const j = await r.json();
+    res.json({ ok: j.ok, webhook_url: webhookUrl, telegram_response: j });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // ============================================================
 // app.listen — required for Render to detect open port
 
