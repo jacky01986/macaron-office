@@ -177,27 +177,37 @@ async function dailyBriefing() {
 }
 
 async function sendBriefing() {
-  if (!ADMIN) {
-    console.warn('[alerts] ADMIN_LINE_USER_ID not set, briefing not sent');
-    return { ok: false, reason: 'ADMIN_LINE_USER_ID not set' };
-  }
-  if (!line || typeof line.pushMessage !== 'function') {
-    console.warn('[alerts] line.pushMessage not available');
-    return { ok: false, reason: 'line module not loaded' };
+  // Telegram-only: 簡報只推到 Telegram, 不發 LINE 官方帳號 (避免騷擾客戶)
+  const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+  const tgChat = process.env.TELEGRAM_CHAT_ID;
+  if (!tgToken || !tgChat) {
+    console.warn("[alerts] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set, briefing not sent");
+    return { ok: false, reason: "TELEGRAM env not set" };
   }
   try {
     const text = await dailyBriefing();
-    await line.pushMessage(ADMIN, [{ type: 'text', text: text.slice(0, 4900) }]);
-    console.log('[alerts] daily briefing sent, length=' + text.length);
+    const trimmed = text.slice(0, 4000);
+    const r = await fetch("https://api.telegram.org/bot" + tgToken + "/sendMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: tgChat, text: trimmed })
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error("Telegram sendMessage failed: " + JSON.stringify(j));
+    console.log("[alerts] daily briefing sent via Telegram, length=" + text.length);
     return { ok: true, length: text.length };
   } catch (err) {
-    console.error('[alerts] sendBriefing failed:', err.message);
+    console.error("[alerts] sendBriefing failed:", err.message);
     return { ok: false, reason: err.message };
   }
 }
 
 async function checkAdsAlerts() {
-  if (!meta || !line || !ADMIN) return;
+  // Telegram-only: 廣告警示也只推 Telegram, 不發 LINE
+  if (!meta) return;
+  const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+  const tgChat = process.env.TELEGRAM_CHAT_ID;
+  if (!tgToken || !tgChat) return;
   try {
     if (typeof meta.getAdsSnapshot !== 'function') return;
     const snap = await meta.getAdsSnapshot({ hours: 1 });
@@ -206,10 +216,14 @@ async function checkAdsAlerts() {
       alerts.push(`🔴 廣告紅燈 ROAS ${snap.roas} (花費 NT$${snap.spend})`);
     }
     if (snap.spend >= 5000 && (snap.purchases || 0) === 0) {
-      alerts.push(`🔴 燒了 NT$${snap.spend} 但 0 成交，建議暫停 underperformer`);
+      alerts.push(`🔴 燒了 NT$${snap.spend} 但 0 成交,建議暫停 underperformer`);
     }
     if (alerts.length > 0) {
-      await line.pushMessage(ADMIN, [{ type: 'text', text: alerts.join('\n\n') }]);
+      await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: tgChat, text: alerts.join('\n\n') })
+      });
     }
   } catch (e) {
     console.error('[alerts] checkAdsAlerts failed:', e.message);
@@ -226,13 +240,19 @@ function registerCronJobs(cron) {
   console.log('[alerts] cron jobs registered (daily 09:00 + ads every 30min)');
 }
 
-module.exports = {
-  dailyBriefing,
-  sendBriefing,
-  checkAdsAlerts,
-  registerCronJobs,
-  adsSection,
-  customersSection,
-  customerInsightsSection,
-  pendingDecisionsSection,
-};
+function loadAdmin(dataDir) {
+  try {
+    const file = path.join(dataDir || __dirname, 'admin.json');
+    if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {}
+  return {};
+}
+
+function registerAdminFromLine(dataDir, userId, displayName) {
+  try {
+    const file = path.join(dataDir || __dirname, 'admin.json');
+    fs.writeFileSync(file, JSON.stringify({ lineUserId: userId, userName: displayName || '', registeredAt: new Date().toISOString() }, null, 2));
+  } catch (e) { console.error('[alerts] registerAdmin failed:', e.message); }
+}
+
+module.exports = { dailyBriefing, sendBriefing, checkAdsAlerts, registerCronJobs, loadAdmin, registerAdminFromLine };

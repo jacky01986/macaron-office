@@ -127,8 +127,8 @@ async function generateContent({ platformIdx = 0, topicIdx = 0, type = 'course',
     ? '想送禮的客戶 — 強調品質、口味、包裝、客戶見證'
     : '想自己訂購禮盒的客戶 — 強調品牌故事、口味細節、送禮場景、客戶見證';
   const cta = type === 'service'
-    ? 'CTA：「現在加 LINE @843cifiy 立刻預約評估」'
-    : 'CTA：「LINE @843cifiy 諮詢商品主題內容、上課時段與優惠」';
+    ? 'CTA：「現在加 LINE @110ypqki 立刻預約評估」'
+    : 'CTA：「LINE @110ypqki 諮詢商品主題內容、門市禮盒選購與優惠」';
 
   const systemPrompt = `你是 GIA — MACARON DE LUXE 的專欄作者。寫作風格參考一線生活風格雜誌的專欄作家：第二人稱、有觀點、有節奏、有同理心。
 
@@ -162,7 +162,7 @@ async function generateContent({ platformIdx = 0, topicIdx = 0, type = 'course',
 3. 適度用表格、引言（>）、要點（-）
 4. 收尾：給讀者下一步行動
 
-禁止：價格表、商品主題內容詳細費用、上課時段與優惠`;
+禁止：價格表、商品主題內容詳細費用、門市禮盒選購與優惠`;
 
   const userPrompt = customQuery || `今天主題：${subjectName} — ${angle}（${type === 'service' ? '寫給想買禮盒的客戶' : '寫給想了解品牌的潛在客戶'}）
 
@@ -223,7 +223,7 @@ MACARON DE LUXE 業態:台灣法式精品馬卡龍與費南雪 + 高端禮贈,4 
 
 MACARON DE LUXE 業態:台灣法式精品馬卡龍與費南雪 + 高端禮贈
 地點：台灣
-LINE: @843cifiy
+LINE: @110ypqki
 
 🎯 輸出 4 部分:
 1. **業務描述** (750 字內) — SEO 關鍵字密集 + 服務範圍 + 特色
@@ -256,11 +256,11 @@ LINE: @843cifiy
     systemPrompt: `你是 YouTube Shorts 編劇。寫一支 60 秒影片腳本給 MACARON DE LUXE。
 
 🎯 Shorts 公式:
-1. **0-3 秒 Hook** — 最關鍵，要讓人不滑掉
-2. **3-15 秒 痛點** — 觀眾的問題（「禮盒口味選不到？」）
-3. **15-45 秒 內容** — 解答 / 教學 / 揭密
-4. **45-55 秒 CTA** — 加 LINE @843cifiy / 報名
-5. **55-60 秒 結尾** — 訂閱提醒
+1. **0-3 秒 Hook** — 最關鍵,要讓人不滑掉
+2. **3-15 秒 痛點** — 觀眾的問題(「禮盒口味選不到?」「送禮想送有故事的?」)
+3. **15-45 秒 內容** — 解答 / 品味分享 / 製作揭密
+4. **45-55 秒 CTA** — 加 LINE @110ypqki(溫點 Wamplace)/ 到門市挑禮盒
+5. **55-60 秒 結尾** — 追蹤 IG @warmplace.here 看更多
 
 🎬 輸出格式:
 [時間軸]
@@ -387,7 +387,7 @@ function generateSchemaOrg() {
     '@context': 'https://schema.org', '@type': 'EducationalOrganization',
     name: 'MACARON DE LUXE', alternateName: 'MdL 馬卡龍與費南雪',
     url: 'https://beauty-office.onrender.com',
-    sameAs: ['https://www.facebook.com/profile.php?id=61586936279154', 'https://www.instagram.com/ofz_beauty_academy_/', 'https://lin.ee/843cifiy'],
+    sameAs: ['https://www.facebook.com/profile.php?id=61586936279154', 'https://www.instagram.com/ofz_beauty_academy_/', 'https://line.me/R/ti/p/@110ypqki'],
     description: 'MACARON DE LUXE 是專注於法式精品馬卡龍與費南雪與高端禮贈的台南本店品牌',
     knowsAbout: ['法式精品馬卡龍與費南雪', '6 入禮盒', '12 入禮盒', '客製禮盒', '婚禮喜餅', '企業禮贈', '單顆販售', '季節限定', '法式甜點']
   };
