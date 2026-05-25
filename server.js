@@ -2056,7 +2056,8 @@ app.get('/api/attribution/articles', async (req, res) => {
       byUrl[u] = (byUrl[u] || 0) + 1;
     }
     const lr = await wp.listPosts({ per_page: 50 });
-    const posts = (lr && lr.items) || lr || [];
+    if (lr && lr.ok === false) return res.json({ ok: true, count: 0, total_leads: leads.length, articles: [], note: 'WordPress 未連接: ' + lr.error });
+    const posts = Array.isArray(lr && lr.items) ? lr.items : (Array.isArray(lr) ? lr : []);
     const results = posts.map(p => ({
       id: p.id,
       title: p.title,
@@ -3958,6 +3959,9 @@ app.get('/api/admin/ss-probe2', async (req, res) => {
   }
   res.json({ ok: true, base: BASE, results });
 });
+
+// ============================================================
+// app.listen — required for Render to detect open port
 
 // ============================================================
 // app.listen — required for Render to detect open port

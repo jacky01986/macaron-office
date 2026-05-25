@@ -1,9 +1,6 @@
 // ============================================================
-// MACARON DE LUXE · LINE Messaging API Client (T4.5 / T4.6)
+// MACARON DE LUXE · LINE Messaging API Client
 // ============================================================
-// Required env vars:
-//   LINE_CHANNEL_ACCESS_TOKEN   Long-lived channel access token
-//   LINE_CHANNEL_SECRET         For webhook signature verification
 
 const crypto = require("crypto");
 
@@ -57,7 +54,6 @@ async function lineGet(path) {
   return b;
 }
 
-// 字串→text message、物件直接 pass through
 function normalize(messages) {
   const arr = Array.isArray(messages) ? messages : [messages];
   return arr.map(m => typeof m === "string" ? { type: "text", text: m } : m);
@@ -65,24 +61,16 @@ function normalize(messages) {
 
 async function replyMessage(replyToken, messages) {
   if (!replyToken) throw new Error("replyToken required");
-  return await linePost("/message/reply", {
-    replyToken,
-    messages: normalize(messages),
-  });
+  return await linePost("/message/reply", { replyToken, messages: normalize(messages) });
 }
 
 async function pushMessage(to, messages) {
   if (!to) throw new Error("to (userId) required");
-  return await linePost("/message/push", {
-    to,
-    messages: normalize(messages),
-  });
+  return await linePost("/message/push", { to, messages: normalize(messages) });
 }
 
 async function broadcastMessage(messages) {
-  return await linePost("/message/broadcast", {
-    messages: normalize(messages),
-  });
+  return await linePost("/message/broadcast", { messages: normalize(messages) });
 }
 
 async function getUserProfile(userId) {
@@ -94,7 +82,36 @@ async function getBotStatus() {
   try { return await lineGet("/info"); } catch (e) { return null; }
 }
 
-// -------- Message builders (T4.6) --------
+// Get follower stats from LINE Insight API
+async function getFollowerStats({ days = 7 } = {}) {
+  if (!tokenOk()) return { ok: false, error: 'LINE_CHANNEL_ACCESS_TOKEN not set' };
+  function fmtDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}${m}${day}`;
+  }
+  try {
+    const now = new Date();
+    const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
+    const past = new Date(now); past.setDate(past.getDate() - days);
+    const [latest, baseline] = await Promise.all([
+      lineGet(`/insight/followers?date=${fmtDate(yesterday)}`).catch(() => null),
+      lineGet(`/insight/followers?date=${fmtDate(past)}`).catch(() => null),
+    ]);
+    const cur = (latest && latest.followers) || 0;
+    const prev = (baseline && baseline.followers) || 0;
+    return {
+      ok: true,
+      days,
+      current_followers: cur,
+      followers_n_days_ago: prev,
+      new_followers: Math.max(0, cur - prev),
+    };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
 
 function textMessage(text) {
   return { type: "text", text: String(text).slice(0, 5000) };
@@ -108,7 +125,6 @@ function imageMessage(originalContentUrl, previewImageUrl) {
   };
 }
 
-// Buttons Template（帶連結按鈕；text 有圖片時上限 60 字、無圖 160 字）
 function buttonsMessage({ text, imageUrl, title, actions, altText }) {
   const template = {
     type: "buttons",
@@ -128,7 +144,6 @@ function buttonsMessage({ text, imageUrl, title, actions, altText }) {
   };
 }
 
-// 統一建訊息陣列：text + 圖片 + 按鈕連結
 function buildMessages({ text, imageUrl, linkUrl, linkLabel }) {
   const msgs = [];
   if (text && text.trim().length > 0) msgs.push(textMessage(text));
@@ -140,7 +155,6 @@ function buildMessages({ text, imageUrl, linkUrl, linkLabel }) {
       altText: linkLabel || text || "連結",
     }));
   }
-  // LINE 單次 push/reply/broadcast 最多 5 則
   return msgs.slice(0, 5);
 }
 
@@ -152,6 +166,7 @@ module.exports = {
   broadcastMessage,
   getUserProfile,
   getBotStatus,
+  getFollowerStats,
   textMessage,
   imageMessage,
   buttonsMessage,
@@ -159,3 +174,4 @@ module.exports = {
   linePost,
   lineGet,
 };
+
