@@ -4068,6 +4068,7 @@ async function gatherTelegramContext() {
   const base = `http://localhost:${PORT}`;
   const out = {};
   try {
+    // 1) Aggregated stats
     const [meta, cust, ig] = await Promise.all([
       fetch(`${base}/api/meta/probe`).then(r => r.json()).catch(() => null),
       fetch(`${base}/api/customer-hub/dashboard`).then(r => r.json()).catch(() => null),
@@ -4077,6 +4078,92 @@ async function gatherTelegramContext() {
     if (cust) out.customers = { total: cust.groups && cust.groups.summary && cust.groups.summary.total, inquiries: cust.inquiries && cust.inquiries.total };
     if (ig) out.conversion_today = { orders: (ig.orders && ig.orders.length) || 0, revenue: ig.revenue };
   } catch (e) { out._err = e.message; }
+
+  // 2) SaleSmartly customer insights (unified Meta Messenger + IG DM + LINE)
+  try {
+    const ss = require('./salesmartly');
+    if (ss && typeof ss.getCustomerInsights === 'function') {
+      const r = await ss.getCustomerInsights({ days: 7 });
+      if (r && r.ok) {
+        out.customer_conversations_7d = {
+          conversation_count: r.conv_count || 0,
+          message_count: r.msg_count || 0,
+          top_questions: (r.topics || []).slice(0, 10),
+          summary_text: r.summary || null,
+        };
+      }
+    }
+  } catch (e) { out._salesmartly_err = e.message; }
+
+  // 3) SaleSmartly RAW recent conversations (top 5, full messages for analysis)
+  try {
+    const ss = require('./salesmartly');
+    if (ss && typeof ss.listRecentConversations === 'function') {
+      const r = await ss.listRecentConversations({ days: 7, page_size: 20 });
+      const convs = (r && r.conversations) || [];
+      const top5 = convs.slice(0, 5);
+      const detailed = [];
+      for (const c of top5) {
+        try {
+          const userId = c.chat_user_id || c.id || c.user_id;
+          if (!userId) continue;
+          const m = await ss.listMessages(userId, { page_size: 10 });
+          const msgs = (m && (m.messages || m.data)) || [];
+          detailed.push({
+            user: c.user_name || c.username || c.nickname || userId,
+            channel: c.channel || c.platform || c.source,
+            last_msg_at: c.last_message_time || c.updated_at,
+            messages: msgs.slice(-8).map(x => ({
+              from_customer: (x.from_customer ?? x.is_customer ?? x.is_from_customer) === true,
+              text: (x.text || x.content || x.message || '').slice(0, 200),
+              at: x.created_at || x.time || x.timestamp,
+            })),
+          });
+        } catch {}
+      }
+      if (detailed.length > 0) out.recent_customer_conversations = detailed;
+    }
+  } catch (e) { out._ss_conv_err = e.message; }
+
+  // 4) Meta IG/FB recent posts
+  try {
+    const m = require('./meta');
+    if (m && typeof m.getIgMedia === 'function') {
+      const ig = await m.getIgMedia({ limit: 5 });
+      out.recent_ig_posts = (ig || []).map(p => ({
+        caption: (p.caption || '').slice(0, 100),
+        like: p.like_count, comments: p.comments_count, type: p.media_type, at: p.timestamp,
+      }));
+    }
+    if (m && typeof m.getFbPagePosts === 'function') {
+      const fb = await m.getFbPagePosts({ limit: 5 });
+      out.recent_fb_posts = (fb || []).map(p => ({
+        msg: (p.message || '').slice(0, 100),
+        reactions: p.reactions && p.reactions.summary && p.reactions.summary.total_count,
+        comments: p.comments && p.comments.summary && p.comments.summary.total_count,
+        at: p.created_time,
+      }));
+    }
+  } catch (e) { out._meta_err = e.message; }
+
+  // 5) Customer segmentation
+  try {
+    const c = require('./customers');
+    if (c && typeof c.getSegmentSnapshot === 'function') {
+      out.customer_segments = await c.getSegmentSnapshot();
+    }
+  } catch (e) { out._segments_err = e.message; }
+
+  // 6) Recent + pending decisions
+  try {
+    const d = require('./decisions');
+    if (d && typeof d.getAll === 'function') {
+      const all = await d.getAll();
+      out.recent_decisions = (all.history || []).slice(-8).map(h => ({ title: h.title, decision: h.decision, at: h.decided_at }));
+      out.pending_decisions = (all.pending || []).slice(0, 5).map(h => ({ title: h.title, recommendation: h.recommendation }));
+    }
+  } catch (e) { out._decisions_err = e.message; }
+
   return out;
 }
 
@@ -4122,21 +4209,216 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     try { if (marketIntel) marketCtx = marketIntel.getMarketIntelContext({ compact: true }); } catch {}
     const dataLine = `\n\n[目前 MACARON 即時數據]\n${JSON.stringify(liveData)}\n\n${marketCtx}`;
 
-    const systemPrompt = `你是 VICTOR — 溫點 WarmPlace 的 AI 行銷總監兼整個 AI 團隊的大腦。\n\n品牌:精品馬卡龍與費南雪禮贈品牌,4 家門店(台南本店、新光西門 B2、新光中港 B2、新光南西 B2)。月度預算 NT$60,000。\nIG @warmplace.here 粉絲 32K,FB 粉專 118 粉絲(主戰場在 IG)。\nLINE Bot @110ypqki, SaleSmartly 對話追蹤已開。\n\n你帶領團隊:LEON(廣告投手)、CAMILLE(內容主筆,負責文案+部落格 SEO)、ARIA(視覺指導)、DEX(數據分析)、NOVA(品牌經理,負責社群+公關)、MILO(KOL)。\n\n【你的工作模式 — 你是 AI Agent,不是建議生成器】\n你的目標是【幫 Jeffrey 解決問題、產出可立即使用的交付物】,不是給「建議」。\n\n**判斷請求類型,直接給對應交付物:**\n\n① 問題型 → 給【今天做 / 本週做 / 本月做】三層具體行動 + 指名負責員工\n② 內容型(寫文案/Reels 腳本) → 【直接產 3-5 版可立即複製貼上的成品】,不要先講想法再寫\n③ 規劃型(行事曆) → 【直接出表格】:日期 / 平台 / 主題 / 文案 / 視覺需求\n④ 分析型(現在數據怎樣?) → 引用即時數據,3 個觀察 + 1 個關鍵問題給 Jeffrey 拍板\n⑤ 決策型(該不該做 X?) → 直接給【做 / 不做】+ 量化理由(預估金額、leads、GMV)+ 風險\n\n**你有對話記憶** — 你看得到過去的對話,延續討論,不要重複問已經回答的問題。\n**遇資料不足** — 直接告訴 Jeffrey 缺什麼數據 + 怎麼補上,不要瞎掰。\n\n【絕對禁止】\n- 廣告投放細節(老闆要求,只談客戶經營/內容/門店/品牌)\n- 課程、報名、學員、教學、紋繡、美容(這些是舊業態)\n- 「以下幾個建議供參考」「希望對你有幫助」這類客套話\n- 給範圍式建議(「可以考慮...」)應改成決策建議(「建議做 X,不要做 Y,因為 ...」)\n\n回答用繁體中文,可用 emoji 但不要太多。`;
+    const systemPrompt = `你是 VICTOR — 溫點 WarmPlace 的 AI 行銷總監兼整個 AI 團隊的大腦。\n\n品牌:精品馬卡龍與費南雪禮贈品牌,4 家門店(台南本店、新光西門 B2、新光中港 B2、新光南西 B2)。月度預算 NT$60,000。\nIG @warmplace.here 粉絲 32K,FB 粉專 118 粉絲(主戰場在 IG)。\nLINE Bot @110ypqki, SaleSmartly 對話追蹤已開。\n\n你帶領團隊:LEON(廣告投手)、CAMILLE(內容主筆,負責文案+部落格 SEO)、ARIA(視覺指導)、DEX(數據分析)、NOVA(品牌經理,負責社群+公關)、MILO(KOL)。
+
+【你能看到的資產(實時注入到 prompt 末尾的 [目前 即時數據] block)】
+1. SaleSmartly 客戶對話:Meta Messenger / IG DM / LINE 訊息統一,過去 7 天對話統計 + Top 10 客戶問題 + 最新 5 通對話的完整訊息內容
+2. Meta 廣告數據:過去 7 天花費 + IG/FB 最新 5 篇貼文表現(讚數、留言數)
+3. 客戶分群:VIP / 活躍 / 新客 / 流失風險 各幾人
+4. 決策歷史:最近 8 件 Jeffrey 拍板 + 5 件待決策
+5. 市場情報:全台馬卡龍 / 費南雪新聞 + 對手最新廣告(法朋、亞尼克、Paul、Ladurée、Pierre Hermé)
+
+當 Jeffrey 問「分析對話 / 為什麼沒成交 / 客人在問什麼 / 流失客人多少」這類問題,你**必須引用 customer_conversations_7d 或 recent_customer_conversations 裡面的真實訊息**,引出具體的句子當證據,不要說「我看不到」。\n\n【你的工作模式 — 你是 AI Agent,不是建議生成器】\n你的目標是【幫 Jeffrey 解決問題、產出可立即使用的交付物】,不是給「建議」。\n\n**判斷請求類型,直接給對應交付物:**\n\n① 問題型 → 給【今天做 / 本週做 / 本月做】三層具體行動 + 指名負責員工\n② 內容型(寫文案/Reels 腳本) → 【直接產 3-5 版可立即複製貼上的成品】,不要先講想法再寫\n③ 規劃型(行事曆) → 【直接出表格】:日期 / 平台 / 主題 / 文案 / 視覺需求\n④ 分析型(現在數據怎樣?) → 引用即時數據,3 個觀察 + 1 個關鍵問題給 Jeffrey 拍板\n⑤ 決策型(該不該做 X?) → 直接給【做 / 不做】+ 量化理由(預估金額、leads、GMV)+ 風險\n\n**你有對話記憶** — 你看得到過去的對話,延續討論,不要重複問已經回答的問題。\n**遇資料不足** — 直接告訴 Jeffrey 缺什麼數據 + 怎麼補上,不要瞎掰。\n\n【絕對禁止】\n- 廣告投放細節(老闆要求,只談客戶經營/內容/門店/品牌)\n- 課程、報名、學員、教學、紋繡、美容(這些是舊業態)\n- 「以下幾個建議供參考」「希望對你有幫助」這類客套話\n- 給範圍式建議(「可以考慮...」)應改成決策建議(「建議做 X,不要做 Y,因為 ...」)\n\n回答用繁體中文,可用 emoji 但不要太多。`;
 
     const c = anthropic;
     if (!c) { await sendTelegram(chatId, '❌ ANTHROPIC_API_KEY 未設,VICTOR 不在線'); return; }
 
+    // ─────────────────────────────────────────────────────
+    // VICTOR 工具集 — 讓他能指揮整個 AI 團隊 + 執行動作
+    // ─────────────────────────────────────────────────────
+    const VICTOR_TOOLS = [
+      {
+        name: 'delegate_to_employee',
+        description: '指派任務給 AI 團隊成員 (CAMILLE 寫文案/CAMILLE 寫部落格/ARIA 視覺方向/DEX 數據分析/NOVA 品牌策略/MILO KOL 合作). 員工會用自己的 system prompt 完整產出, 你拿到後可整合回應給 Jeffrey.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            employee: { type: 'string', enum: ['CAMILLE', 'ARIA', 'DEX', 'NOVA', 'MILO'] },
+            task: { type: 'string', description: '完整任務描述 (請包含主題/平台/長度/格式要求)' },
+            context: { type: 'string', description: '相關背景 (例如關鍵字、目標客群)' }
+          },
+          required: ['employee', 'task']
+        }
+      },
+      {
+        name: 'generate_social_draft',
+        description: '透過 auto-publish 系統產生 IG 或 FB 貼文草稿, 自動放進 queue. 不會直接發, 等 Jeffrey 在後台 approve. 用於 Jeffrey 說「產一篇/出一篇/放草稿」的時候.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            platform: { type: 'string', enum: ['ig', 'fb'] },
+            theme: { type: 'string', description: '主題/角度 (選填)' }
+          },
+          required: ['platform']
+        }
+      },
+      {
+        name: 'fetch_conversation_detail',
+        description: '抓 SaleSmartly 上某個客戶的完整對話歷史 (Meta Messenger / IG DM / LINE). 用於 Jeffrey 想看某個特定客人卡在哪.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            user_id: { type: 'string', description: 'SaleSmartly chat_user_id' },
+            limit: { type: 'integer', description: '抓多少則訊息, 預設 50' }
+          },
+          required: ['user_id']
+        }
+      },
+      {
+        name: 'run_market_intel_scan',
+        description: '立即觸發市場情報掃描 (Google News 馬卡龍/費南雪新聞 + FB Ads Library 對手廣告). 用於 Jeffrey 想立刻看最新對手動態, 不等明早 06:00 cron.',
+        input_schema: { type: 'object', properties: {} }
+      },
+      {
+        name: 'record_decision',
+        description: '把 Jeffrey 明確拍板的決策記到歷史. 例如 Jeffrey 說「我決定 X」, 你就 call 這個記下. 不要主動猜測, 必須 Jeffrey 明確說「決定/拍板/就這樣」才 call.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', description: '決策標題, 簡短一句' },
+            decision: { type: 'string', description: 'Jeffrey 的決定內容' },
+            note: { type: 'string', description: '備註 (選填)' }
+          },
+          required: ['title', 'decision']
+        }
+      },
+      {
+        name: 'query_ai_team_data',
+        description: '查詢 AI 團隊累積的特定數據 (客戶分群明細/Top 客戶問題/最近廣告數據/IG 高互動貼文). 用於 Jeffrey 想看某個特定面向的細節, 預設 context 沒給的時候.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            source: { type: 'string', enum: ['customer_segments_detail', 'top_questions', 'ig_top_posts', 'fb_top_posts', 'meta_ads_7d', 'decisions_history'] },
+            limit: { type: 'integer' }
+          },
+          required: ['source']
+        }
+      }
+    ];
+
+    // 執行單一工具
+    async function executeVictorTool(name, input) {
+      try {
+        switch (name) {
+          case 'delegate_to_employee': {
+            const empMod = (() => { try { return require('./employees'); } catch { return null; } })();
+            if (!empMod || !empMod.EMPLOYEES) return { error: 'employees module not loaded' };
+            const empKey = String(input.employee || '').toLowerCase();
+            const employee = empMod.EMPLOYEES[empKey];
+            if (!employee) return { error: 'unknown employee: ' + input.employee + '. 可用: CAMILLE, ARIA, DEX, NOVA, MILO' };
+            const empPrompt = employee.systemPrompt || ('你是 ' + employee.name);
+            const empUser = input.task + (input.context ? '\n\n背景:\n' + input.context : '');
+            const r = await c.messages.create({
+              model: DIRECTOR_MODEL, max_tokens: 2000,
+              system: empPrompt,
+              messages: [{ role: 'user', content: empUser }],
+            });
+            const block = r.content && r.content[0];
+            return { from: input.employee, output: (block && block.type === 'text') ? block.text : '(空)' };
+          }
+          case 'generate_social_draft': {
+            const ap = require('./auto-publish');
+            if (!ap || !ap.generateAndQueueDrafts) return { error: 'auto-publish not available' };
+            const r = await ap.generateAndQueueDrafts({ platforms: [input.platform] });
+            return { ok: true, drafts_created: (r && r.drafts && r.drafts.length) || 0, note: '草稿已進 queue, Jeffrey 請到 /auto-publish.html 後台 approve' };
+          }
+          case 'fetch_conversation_detail': {
+            const ss = require('./salesmartly');
+            if (!ss || !ss.listMessages) return { error: 'salesmartly not available' };
+            const r = await ss.listMessages(input.user_id, { page_size: input.limit || 50 });
+            return r;
+          }
+          case 'run_market_intel_scan': {
+            if (!marketIntel) return { error: 'market-intel not loaded' };
+            const r = await marketIntel.runDailyScan();
+            return { ok: true, date: r.date, news: r.summary_stats?.total_news, fb_ads: r.summary_stats?.total_fb_ads };
+          }
+          case 'record_decision': {
+            const d = require('./decisions');
+            if (!d || !d.addPending) return { error: 'decisions module not available' };
+            const r = await d.addPending({ title: input.title, recommendation: input.decision, source: 'victor-telegram', metadata: { note: input.note || '', decided_by: 'Jeffrey', decided_at: new Date().toISOString() } });
+            return { ok: true, decision_id: r && r.id, note: '已記入決策歷史' };
+          }
+          case 'query_ai_team_data': {
+            const base = `http://localhost:${PORT}`;
+            switch (input.source) {
+              case 'customer_segments_detail': {
+                const r = await fetch(`${base}/api/customer-hub/dashboard`).then(x => x.json()).catch(() => null);
+                return r;
+              }
+              case 'top_questions': {
+                const ss = require('./salesmartly');
+                const r = await ss.getCustomerInsights({ days: 7 });
+                return { topics: (r && r.topics) || [] };
+              }
+              case 'ig_top_posts': {
+                const m = require('./meta');
+                const ig = await m.getIgMedia({ limit: input.limit || 20 });
+                const sorted = (ig || []).sort((a, b) => (b.like_count || 0) - (a.like_count || 0)).slice(0, 10);
+                return sorted;
+              }
+              case 'fb_top_posts': {
+                const m = require('./meta');
+                const fb = await m.getFbPagePosts({ limit: input.limit || 20 });
+                return fb;
+              }
+              case 'meta_ads_7d': {
+                const m = require('./meta');
+                const ads = await m.getAdsInsights({ datePreset: 'last_7d' });
+                return ads;
+              }
+              case 'decisions_history': {
+                const d = require('./decisions');
+                const all = await d.getAll();
+                return { history: (all.history || []).slice(-20), pending: all.pending || [] };
+              }
+              default:
+                return { error: 'unknown source: ' + input.source };
+            }
+          }
+          default:
+            return { error: 'unknown tool: ' + name };
+        }
+      } catch (e) {
+        return { error: e.message, tool: name };
+      }
+    }
+
+    // Agentic loop — VICTOR 可連續 call tools 直到產出最終回覆
     let reply = null;
     try {
-      const resp = await c.messages.create({
-        model: DIRECTOR_MODEL,
-        max_tokens: 2000,
-        system: systemPrompt + dataLine,
-        messages: history.slice(-30),
-      });
-      const block = resp.content && resp.content[0];
-      if (block && block.type === 'text') reply = block.text.trim();
+      const convoMessages = history.slice(-30);
+      let final = null;
+      const maxTurns = 6;
+      for (let turn = 0; turn < maxTurns; turn++) {
+        const resp = await c.messages.create({
+          model: DIRECTOR_MODEL,
+          max_tokens: 4000,
+          system: systemPrompt + dataLine,
+          tools: VICTOR_TOOLS,
+          messages: convoMessages,
+        });
+        if (resp.stop_reason === 'tool_use') {
+          const toolBlocks = resp.content.filter(b => b.type === 'tool_use');
+          const toolResults = [];
+          for (const tb of toolBlocks) {
+            console.log('[VICTOR tool]', tb.name, JSON.stringify(tb.input).slice(0, 200));
+            const result = await executeVictorTool(tb.name, tb.input);
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: tb.id,
+              content: typeof result === 'string' ? result.slice(0, 8000) : JSON.stringify(result).slice(0, 8000),
+            });
+          }
+          convoMessages.push({ role: 'assistant', content: resp.content });
+          convoMessages.push({ role: 'user', content: toolResults });
+          continue;
+        }
+        // Final text answer
+        final = resp.content.filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+        break;
+      }
+      reply = final || '⚠️ VICTOR 工具迭代達上限未產出結論,請再問一次。';
     } catch (e) {
       console.error('[TG AI]', e.message);
       reply = '⚠️ AI 處理出錯: ' + e.message.slice(0, 200);
