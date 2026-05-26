@@ -1,5 +1,5 @@
 // ============================================================
-// MACARON DE LUXE · 市場情報系統
+// 溫點 WarmPlace · 市場情報系統
 // 每天爬全台網路馬卡龍/費南雪數據 → 注入 VICTOR + 整個 AI 團隊
 // ============================================================
 //
@@ -231,13 +231,13 @@ async function compareWithWarmplace({ anthropic, model = 'claude-opus-4-6' } = {
   if (!intel) return { ok: false, error: 'no intel data' };
 
   const sys =
-    '你是 MACARON DE LUXE(溫點 WarmPlace,IG @warmplace.here 32K 粉絲,4 家門店) 的策略分析師。' +
+    '你是 溫點 WarmPlace(IG @warmplace.here 32K 粉絲,4 家門店) 的策略分析師。' +
     '看完今天的市場情報後,給老闆 Jeffrey 3 件本週可立即執行的事。' +
     '禁止談廣告投放細節,聚焦在【內容、品牌、客戶經營、門店體驗】。簡短具體,繁體中文。';
   const user =
     '=== 今天的台灣市場情報 ===\n' +
     JSON.stringify(intel).slice(0, 8000) +
-    '\n\n=== 我們是 ===\nMACARON DE LUXE(溫點 WarmPlace)精品馬卡龍+費南雪禮贈品牌\nIG 32K / FB 118 / 4 家門店\n\n請以「溫點 vs 對手」角度,告訴我:\n1. 對手在做什麼,我們漏掉了\n2. 哪些 hook 我們可以複製\n3. 哪些角度可以反差打\n4. 3 件本週要做的事(指名員工 CAMILLE/NOVA/ARIA/...)';
+    '\n\n=== 我們是 ===\n溫點 WarmPlace精品馬卡龍+費南雪禮贈品牌\nIG 32K / FB 118 / 4 家門店\n\n請以「溫點 vs 對手」角度,告訴我:\n1. 對手在做什麼,我們漏掉了\n2. 哪些 hook 我們可以複製\n3. 哪些角度可以反差打\n4. 3 件本週要做的事(指名員工 CAMILLE/NOVA/ARIA/...)';
 
   try {
     const resp = await anthropic.messages.create({

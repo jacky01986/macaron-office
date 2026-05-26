@@ -1,5 +1,5 @@
 // ============================================================
-// MACARON DE LUXE · Virtual Office Server v2
+// 溫點 WarmPlace · Virtual Office Server v2
 // ------------------------------------------------------------
 // 1. /api/employees           — 員工清單
 // 2. /api/chat                — 一般單一員工 SSE 對話
@@ -612,7 +612,7 @@ Brief：${brief}
 要求：
 - 回傳 JSON 陣列格式：[{"style":"風格名","caption":"內容"}, ...]
 - 每個草稿的 style 標題要不同（例如：情感型、功能型、好奇心型、情境型）
-- caption 要符合 MACARON DE LUXE 品牌語調（精品、韓式、內斂、不農場標題）
+- caption 要符合 溫點 WarmPlace 品牌語調（精品、韓式、內斂、不農場標題）
 - FB 貼文 150-300 字，IG 貼文 80-150 字 + 3-5 個 hashtag
 - 直接回 JSON 陣列，不要任何前後綴或 markdown`;
 
@@ -1555,13 +1555,13 @@ cron.schedule('30 8 * * *', async () => {
     const adminId = process.env.ADMIN_LINE_USER_ID;
     const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
     if (!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) && !(adminId && lineToken)) { console.warn('[VICTOR] no notification channel configured'); return; }
-    let parts = ['🌅 MACARON DE LUXE 早安簡報 ' + new Date().toLocaleDateString('zh-TW')];
+    let parts = ['🌅 溫點 WarmPlace 早安簡報 ' + new Date().toLocaleDateString('zh-TW')];
     try {
       const r = await fetch('https://macaron-office.onrender.com/api/roas/today').then(x => x.json());
       if (r && r.ok) parts.push('\n💰 過去 7 天: 詢問 ' + r.lead_count + ' · 新好友 ' + r.new_followers + (r.ad_spend ? ' · 廣告 NT$' + r.ad_spend : ''));
     } catch {}
     parts.push('\n📝 GIA 今日 9:00 + 15:00 各發 1 篇文章到 ofzbeautyacademy.com');
-    parts.push('\n— VICTOR · MACARON DE LUXE 行銷總監');
+    parts.push('\n— VICTOR · 溫點 WarmPlace 行銷總監');
     const text = parts.join('');
     // Try Telegram first (free, no monthly limit), fall back to LINE
     const tgToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -1692,7 +1692,7 @@ async function handleLineEvent(event) {
   let draft = null;
   if (anthropic) {
     try {
-      const sysPrompt = `你是 MACARON DE LUXE 的客服助理。
+      const sysPrompt = `你是 溫點 WarmPlace 的客服助理。
 會收到客人的 LINE 訊息，請做兩件事並輸出 JSON：
 1. 意圖分類：price / pickup / storage / gifting / complaint / product / other
 2. 建議的回覆草稿（精品語調、直接切入、不囉嗦）
@@ -2007,7 +2007,7 @@ app.get('/api/voc/mine', async (req, res) => {
     if (!allMsgs.length) return res.json({ ok: true, total_sessions: list.length, customer_messages: 0, sample_keys: firstSampleKeys, message: 'Sessions found but no message content extracted' });
     const Anthropic = require('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const prompt = '以下是 MACARON DE LUXE 過去 ' + days + ' 天，SaleSmartly / Messenger 的對話紀錄（' + allMsgs.length + ' 則訊息）。每則前面標記 [CUSTOMER] 或 [UNKNOWN]。請當「顧客之聲」分析師，著重看 [CUSTOMER] 訊息（也可參考 [UNKNOWN] 推論），歸納：\n\n1. **Top 10 最常被問的問題**（用客戶原話風格）\n2. **Top 5 客戶顧慮 / 反對意見**\n3. **客戶常用的詞彙 / 說法**\n4. **意圖分類百分比**（價格 / 預約 / 客戶教育 / 售後 / 其他）\n5. **3 個立即可執行的行銷動作**\n\n用條列輸出，給 MACARON DE LUXE 行銷團隊用，直接結論不要客套。\n\n--- 訊息 ---\n' + allMsgs.map((m, i) => (i+1) + '. ' + (m.from_customer ? '[CUSTOMER]' : '[UNKNOWN]') + ' ' + m.text).join('\n');
+    const prompt = '以下是 溫點 WarmPlace 過去 ' + days + ' 天，SaleSmartly / Messenger 的對話紀錄（' + allMsgs.length + ' 則訊息）。每則前面標記 [CUSTOMER] 或 [UNKNOWN]。請當「顧客之聲」分析師，著重看 [CUSTOMER] 訊息（也可參考 [UNKNOWN] 推論），歸納：\n\n1. **Top 10 最常被問的問題**（用客戶原話風格）\n2. **Top 5 客戶顧慮 / 反對意見**\n3. **客戶常用的詞彙 / 說法**\n4. **意圖分類百分比**（價格 / 預約 / 客戶教育 / 售後 / 其他）\n5. **3 個立即可執行的行銷動作**\n\n用條列輸出，給 溫點 WarmPlace 行銷團隊用，直接結論不要客套。\n\n--- 訊息 ---\n' + allMsgs.map((m, i) => (i+1) + '. ' + (m.from_customer ? '[CUSTOMER]' : '[UNKNOWN]') + ' ' + m.text).join('\n');
     const resp = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4000,
@@ -2074,9 +2074,9 @@ app.get('/api/attribution/articles', async (req, res) => {
 app.get('/api/teachers/summary', async (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
-    // MACARON DE LUXE 4 家門店 (page_id / account_id 從環境變數讀,沒設就跳過)
+    // 溫點 WarmPlace 4 家門店 (page_id / account_id 從環境變數讀,沒設就跳過)
     const TEACHERS = JSON.parse(process.env.MACARON_STORES_JSON || JSON.stringify({
-      hq: { name: 'MACARON DE LUXE · 台南本店', page_id: '', account_id: '' },
+      hq: { name: '溫點 WarmPlace · 台南本店', page_id: '', account_id: '' },
       shinkong_ximen: { name: '新光西門 B2', page_id: '', account_id: '' },
       shinkong_zhongkang: { name: '新光中港 B2', page_id: '', account_id: '' },
       shinkong_nanxi: { name: '新光南西 B2', page_id: '', account_id: '' }
@@ -2387,7 +2387,7 @@ app.post("/api/customers/:userId/analyze", async (req, res) => {
     if (!c) return res.status(404).json({ error: "customer not found" });
 
     const history = c.messages.slice(0, 30).reverse().map(m => `[${m.intent}] ${m.text}${m.replyText ? " → 店回覆：" + m.replyText.slice(0,60) : ""}`).join("\n");
-    const systemPrompt = `你是 MACARON DE LUXE 的客人分析師。根據客人與品牌客服的 LINE 對話紀錄，推測客人畫像並給出具體行動建議。品牌主打韓系精品馬卡龍禮盒（6 入 NT$880 / 12 入 NT$1,580 / 客製禮盒 NT$1,580-2,280，婚禮 / 企業 / 自送三種場景），4 家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2。
+    const systemPrompt = `你是 溫點 WarmPlace 的客人分析師。根據客人與品牌客服的 LINE 對話紀錄，推測客人畫像並給出具體行動建議。品牌主打韓系精品馬卡龍禮盒（6 入 NT$880 / 12 入 NT$1,580 / 客製禮盒 NT$1,580-2,280，婚禮 / 企業 / 自送三種場景），4 家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2。
 
 回覆 JSON：
 {
@@ -2449,7 +2449,7 @@ app.post("/api/customers/segment-broadcast", async (req, res) => {
     });
 
     const emp = EMPLOYEES["nova"];
-    const systemPrompt = (emp?.systemPrompt || "你是 NOVA，MACARON DE LUXE 的社群小編。") + `\n\n本次任務：針對 ${segMeta.label} 這組客人（${group.length} 人，特色：${segMeta.desc}）寫 3 個 LINE 廣播草稿。每個風格不同。`;
+    const systemPrompt = (emp?.systemPrompt || "你是 NOVA，溫點 WarmPlace 的社群小編。") + `\n\n本次任務：針對 ${segMeta.label} 這組客人（${group.length} 人，特色：${segMeta.desc}）寫 3 個 LINE 廣播草稿。每個風格不同。`;
     const userPrompt = `客人組別：${segMeta.label}（${group.length} 人）\n這組客人常見意圖：${JSON.stringify(sampleIntents)}\n常見標籤：${sampleTags.join("、") || "（尚未分析）"}\n\n本次 brief：${brief || "（無特別主題，請自己發揮）"}\n\n請輸出 JSON 陣列，3 個元素，每個是 { "style": "版本名", "text": "訊息內容" }。只回 JSON。`;
 
     const msg = await anthropic.messages.create({
@@ -2567,7 +2567,7 @@ app.post("/api/alerts/test-event", async (req, res) => {
 
 app.get("/healthz", (req, res) => res.json({ ok: true, model: MODEL, employees: Object.keys(EMPLOYEES).length }));
 
-// W1: MACARON DE LUXE conversion + AI content team
+// W1: 溫點 WarmPlace conversion + AI content team
 app.post('/api/conversion/line', async (req, res) => {
   if (!lineConv) return res.status(500).json({ ok: false, error: 'line-conversion not loaded' });
   try { res.json(await lineConv.recordConversion(req.body || {})); }
@@ -2829,7 +2829,7 @@ app.get('/api/geo/auto-publish-log', (req, res) => {
 });
 
 // ============================================================
-// MACARON DE LUXE /blog — self-hosted blog (full GEO control)
+// 溫點 WarmPlace /blog — self-hosted blog (full GEO control)
 // ============================================================
 app.get('/blog', (req, res) => {
   if (!blog) return res.status(500).send('blog module not loaded');
@@ -2885,7 +2885,7 @@ app.get('/api/wordpress/posts', async (req, res) => {
 
 app.post('/api/admin/create-privacy-policy', async (req, res) => {
   if (!wp || !wp.publishPost) return res.status(500).json({ ok: false, error: 'wp module missing' });
-  const md = '## 隱私權政策\n\nMACARON DE LUXE（以下簡稱「我們」）尊重您的個人隱私，並依《個人資料保護法》及相關法規處理您所提供的資料。\n\n## 一、我們蒐集哪些資訊\n\n當您透過我們的網站、Facebook 粉絲專頁、Instagram、Messenger 或 LINE 與我們聯繫時，我們可能蒐集以下資訊：\n\n- 您的姓名、聯絡電話、電子信箱\n- 您與我們的對話內容\n- 您的瀏覽行為（透過 Meta Pixel 與 Cookie）\n- 您的地理位置（用於判斷服務區域）\n\n## 二、我們如何使用您的資訊\n\n- 提供諮詢、預訂、商品介紹及服務\n- 改善網站體驗與行銷投放精準度\n- 寄送您主動訂閱的活動資訊\n- 配合法律或主管機關要求\n\n## 三、第三方資料分享\n\n我們會與下列服務商共享必要資訊：\n\n- Meta（Facebook / Instagram）：透過 Pixel 與 Conversions API 進行廣告效益追蹤\n- SaleSmartly：客服訊息整合與管理\n- Google：網站分析\n\n我們不會將您的資訊販售給第三方。\n\n## 四、Cookie 與追蹤技術\n\n本網站使用 Cookie 與類似技術記錄您的瀏覽行為，您可隨時透過瀏覽器設定關閉 Cookie。\n\n## 五、您的權利\n\n您可隨時：\n\n- 查詢、閱覽您的個人資料\n- 要求修正或補充\n- 要求停止蒐集、處理或利用\n- 要求刪除\n\n請透過 Messenger 與我們聯繫提出請求。\n\n## 六、資料保留期限\n\n客戶資料會保留至客戶要求刪除為止，或於我們業務需求結束後 5 年內銷毀。\n\n## 七、政策更新\n\n本政策可能不定期修訂，最新版本將公告於本頁。\n\n## 八、聯絡方式\n\n如有任何隱私權相關疑問，歡迎透過 Facebook 粉絲專頁 MACARON DE LUXE 與我們聯繫。\n\n---\n\n最後更新日期：' + new Date().toISOString().slice(0, 10);
+  const md = '## 隱私權政策\n\n溫點 WarmPlace（以下簡稱「我們」）尊重您的個人隱私，並依《個人資料保護法》及相關法規處理您所提供的資料。\n\n## 一、我們蒐集哪些資訊\n\n當您透過我們的網站、Facebook 粉絲專頁、Instagram、Messenger 或 LINE 與我們聯繫時，我們可能蒐集以下資訊：\n\n- 您的姓名、聯絡電話、電子信箱\n- 您與我們的對話內容\n- 您的瀏覽行為（透過 Meta Pixel 與 Cookie）\n- 您的地理位置（用於判斷服務區域）\n\n## 二、我們如何使用您的資訊\n\n- 提供諮詢、預訂、商品介紹及服務\n- 改善網站體驗與行銷投放精準度\n- 寄送您主動訂閱的活動資訊\n- 配合法律或主管機關要求\n\n## 三、第三方資料分享\n\n我們會與下列服務商共享必要資訊：\n\n- Meta（Facebook / Instagram）：透過 Pixel 與 Conversions API 進行廣告效益追蹤\n- SaleSmartly：客服訊息整合與管理\n- Google：網站分析\n\n我們不會將您的資訊販售給第三方。\n\n## 四、Cookie 與追蹤技術\n\n本網站使用 Cookie 與類似技術記錄您的瀏覽行為，您可隨時透過瀏覽器設定關閉 Cookie。\n\n## 五、您的權利\n\n您可隨時：\n\n- 查詢、閱覽您的個人資料\n- 要求修正或補充\n- 要求停止蒐集、處理或利用\n- 要求刪除\n\n請透過 Messenger 與我們聯繫提出請求。\n\n## 六、資料保留期限\n\n客戶資料會保留至客戶要求刪除為止，或於我們業務需求結束後 5 年內銷毀。\n\n## 七、政策更新\n\n本政策可能不定期修訂，最新版本將公告於本頁。\n\n## 八、聯絡方式\n\n如有任何隱私權相關疑問，歡迎透過 Facebook 粉絲專頁 溫點 WarmPlace 與我們聯繫。\n\n---\n\n最後更新日期：' + new Date().toISOString().slice(0, 10);
   try {
     const r = await wp.publishPost({ title: '隱私權政策 Privacy Policy', contentMarkdown: md, status: 'publish' });
     res.json({ ok: true, link: r.link, id: r.id });
@@ -3286,12 +3286,12 @@ app.post('/api/admin/test-victor-briefing', async (req, res) => {
     const adminId = process.env.ADMIN_LINE_USER_ID;
     const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
     if (!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) && !(adminId && lineToken)) return res.json({ ok: false, error: 'no notification channel: set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID OR ADMIN_LINE_USER_ID + LINE_CHANNEL_ACCESS_TOKEN' });
-    let parts = ['🌅 MACARON DE LUXE 早安簡報（測試）' + new Date().toLocaleString('zh-TW')];
+    let parts = ['🌅 溫點 WarmPlace 早安簡報（測試）' + new Date().toLocaleString('zh-TW')];
     try {
       const r = await fetch('https://macaron-office.onrender.com/api/roas/today').then(x => x.json());
       if (r && r.ok) parts.push('\n💰 過去 7 天: 詢問 ' + r.lead_count + ' · 新好友 ' + r.new_followers);
     } catch {}
-    parts.push('\n— VICTOR · MACARON DE LUXE 行銷總監');
+    parts.push('\n— VICTOR · 溫點 WarmPlace 行銷總監');
     const text = parts.join('');
     // Try Telegram first (free, no monthly limit), fall back to LINE
     const tgToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -3381,7 +3381,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
     
     // Quick commands
     if (text === '/start' || text === '/help') {
-      await tgSend(chatId, '🤖 MACARON DE LUXE AI 團隊遙控\n\n直接打字下指令：\n• 「VICTOR 今天廣告怎樣」 → 行銷總監回\n• 「GIA 寫一篇 12 入禮盒」 → 立刻產文章\n• 「CAMILLE 發 FB」 → 立刻發 MACARON pages\n• 「NORA 上週 ROAS」 → 數據分析\n• 「YUKI 客戶輪廓」 → 客戶洞察\n• 「RIO 禮贈策略」 → 銷售顧問\n• 「MIKA 寫文案」 → 創意\n\n快捷指令：\n/today — 今日數據\n/post — CAMILLE 立刻發 FB\n/article — GIA 立刻發長文\n/status — 系統狀態');
+      await tgSend(chatId, '🤖 溫點 WarmPlace AI 團隊遙控\n\n直接打字下指令：\n• 「VICTOR 今天廣告怎樣」 → 行銷總監回\n• 「GIA 寫一篇 12 入禮盒」 → 立刻產文章\n• 「CAMILLE 發 FB」 → 立刻發 MACARON pages\n• 「NORA 上週 ROAS」 → 數據分析\n• 「YUKI 客戶輪廓」 → 客戶洞察\n• 「RIO 禮贈策略」 → 銷售顧問\n• 「MIKA 寫文案」 → 創意\n\n快捷指令：\n/today — 今日數據\n/post — CAMILLE 立刻發 FB\n/article — GIA 立刻發長文\n/status — 系統狀態');
       return;
     }
     // Per-teacher /today {amanda|paisley|sinda|lilly|ofz}
@@ -3562,7 +3562,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
     if (text === '/today' || text === '今日') {
       try {
         const r = await fetch('https://macaron-office.onrender.com/api/roas/today').then(x => x.json());
-        await tgSend(chatId, '📊 今日 MACARON DE LUXE\n\n💰 過去 7 天:\n• 詢問 ' + (r.lead_count||0) + '\n• 新好友 ' + (r.new_followers||0) + '\n• 廣告 NT$' + (r.ad_spend||0) + '\n• 曝光 ' + (r.impressions||0));
+        await tgSend(chatId, '📊 今日 溫點 WarmPlace\n\n💰 過去 7 天:\n• 詢問 ' + (r.lead_count||0) + '\n• 新好友 ' + (r.new_followers||0) + '\n• 廣告 NT$' + (r.ad_spend||0) + '\n• 曝光 ' + (r.impressions||0));
       } catch (e) { await tgSend(chatId, '❌ ' + e.message); }
       return;
     }
@@ -3595,21 +3595,21 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
       return;
     }
     if (text === '/status') {
-      await tgSend(chatId, '🟢 MACARON DE LUXE AI 系統狀態\n• Render: 正常\n• GIA cron: 9:00 + 15:00\n• CAMILLE cron: 10:00\n• VICTOR Telegram 早報: 8:30\n• 連通: WordPress ✅ FB ✅ Telegram ✅');
+      await tgSend(chatId, '🟢 溫點 WarmPlace AI 系統狀態\n• Render: 正常\n• GIA cron: 9:00 + 15:00\n• CAMILLE cron: 10:00\n• VICTOR Telegram 早報: 8:30\n• 連通: WordPress ✅ FB ✅ Telegram ✅');
       return;
     }
     
     // Detect employee prefix
     const employees = {
-      'VICTOR': '你是 VICTOR — MACARON DE LUXE 的 AI 行銷總監。提供具體可執行的建議，控制在 200 字內。',
-      'GIA': '你是 GIA — MACARON DE LUXE 的 GEO 主理人，專長是讓 ChatGPT/Claude/Perplexity 推薦 MACARON DE LUXE。',
-      'CAMILLE': '你是 CAMILLE — MACARON DE LUXE 的 FB/IG 社群行銷專員。',
-      'NORA': '你是 NORA — MACARON DE LUXE 的數據分析師，擅長解讀廣告 ROAS、客戶轉換漏斗。',
-      'YUKI': '你是 YUKI — MACARON DE LUXE 的客戶洞察分析師，分析客戶詢問內容找模式。',
-      'RIO': '你是 RIO — MACARON DE LUXE 的銷售顧問，專責企業禮贈與婚禮禮盒。',
-      'MIKA': '你是 MIKA — MACARON DE LUXE 的內容創意，寫文案、想活動、設計優惠。',
-      'LEXI': '你是 LEXI — MACARON DE LUXE 的銷售跟單，追蹤每個 lead 從詢問到成交。',
-      'SCOUT': '你是 SCOUT — MACARON DE LUXE 的市場情報員，掃描韓系甜點與精品禮盒競品。',
+      'VICTOR': '你是 VICTOR — 溫點 WarmPlace 的 AI 行銷總監。提供具體可執行的建議，控制在 200 字內。',
+      'GIA': '你是 GIA — 溫點 WarmPlace 的 GEO 主理人，專長是讓 ChatGPT/Claude/Perplexity 推薦 溫點 WarmPlace。',
+      'CAMILLE': '你是 CAMILLE — 溫點 WarmPlace 的 FB/IG 社群行銷專員。',
+      'NORA': '你是 NORA — 溫點 WarmPlace 的數據分析師，擅長解讀廣告 ROAS、客戶轉換漏斗。',
+      'YUKI': '你是 YUKI — 溫點 WarmPlace 的客戶洞察分析師，分析客戶詢問內容找模式。',
+      'RIO': '你是 RIO — 溫點 WarmPlace 的銷售顧問，專責企業禮贈與婚禮禮盒。',
+      'MIKA': '你是 MIKA — 溫點 WarmPlace 的內容創意，寫文案、想活動、設計優惠。',
+      'LEXI': '你是 LEXI — 溫點 WarmPlace 的銷售跟單，追蹤每個 lead 從詢問到成交。',
+      'SCOUT': '你是 SCOUT — 溫點 WarmPlace 的市場情報員，掃描韓系甜點與精品禮盒競品。',
     };
     let employee = 'VICTOR';
     let userMsg = text;
@@ -3630,7 +3630,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
       let context = '';
       try {
         const r = await fetch('https://macaron-office.onrender.com/api/roas/today').then(x => x.json());
-        if (r.ok) context = '\n\n當前 MACARON DE LUXE 數據（過去 7 天）：詢問 ' + r.lead_count + ' · 新好友 ' + r.new_followers + ' · 廣告 NT$' + r.ad_spend;
+        if (r.ok) context = '\n\n當前 溫點 WarmPlace 數據（過去 7 天）：詢問 ' + r.lead_count + ' · 新好友 ' + r.new_followers + ' · 廣告 NT$' + r.ad_spend;
       } catch {}
       const sys = employees[employee] + context + '\n\n業態：台灣韓系精品馬卡龍 + 高端禮贈品牌，主力商品：6 入禮盒 NT$880、12 入 NT$1,580、客製禮盒、單顆零售；4 家門店：台南本店 / 新光西門 B2 / 新光中港 B2 / 新光南西 B2。回覆要簡潔、可行動、用繁體中文。';
       const resp = await c.messages.create({
@@ -4098,7 +4098,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
 
     // Commands
     if (text === '/start' || text === '/help') {
-      await sendTelegram(chatId, '🥐 MACARON DE LUXE · VICTOR (AI 行銷總監)\n\n直接問我問題,我會帶整個 AI 團隊找答案。例如:\n\n• 「下週母親節該主打什麼?」\n• 「IG 流量都導不到門市,怎麼辦?」\n• 「企業送禮怎麼開發?」\n• 「新光西門 B2 表現比較差,有什麼建議?」\n\n指令:\n/reset — 清空對話記憶\n/data — 看現在帳號數據摘要');
+      await sendTelegram(chatId, '🥐 溫點 WarmPlace · VICTOR (AI 行銷總監)\n\n直接問我問題,我會帶整個 AI 團隊找答案。例如:\n\n• 「下週母親節該主打什麼?」\n• 「IG 流量都導不到門市,怎麼辦?」\n• 「企業送禮怎麼開發?」\n• 「新光西門 B2 表現比較差,有什麼建議?」\n\n指令:\n/reset — 清空對話記憶\n/data — 看現在帳號數據摘要');
       return;
     }
     if (text === '/reset') {
@@ -4122,7 +4122,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     try { if (marketIntel) marketCtx = marketIntel.getMarketIntelContext({ compact: true }); } catch {}
     const dataLine = `\n\n[目前 MACARON 即時數據]\n${JSON.stringify(liveData)}\n\n${marketCtx}`;
 
-    const systemPrompt = `你是 VICTOR — MACARON DE LUXE 的 AI 行銷總監兼整個 AI 團隊的大腦。\n\n品牌:精品馬卡龍與費南雪禮贈品牌,4 家門店(台南本店、新光西門 B2、新光中港 B2、新光南西 B2)。月度預算 NT$60,000。\nIG @warmplace.here 粉絲 32K,FB 粉專 118 粉絲(主戰場在 IG)。\nLINE Bot @110ypqki, SaleSmartly 對話追蹤已開。\n\n你帶領團隊:LEON(廣告投手)、CAMILLE(內容主筆,負責文案+部落格 SEO)、ARIA(視覺指導)、DEX(數據分析)、NOVA(品牌經理,負責社群+公關)、MILO(KOL)。\n\n【你的工作模式 — 你是 AI Agent,不是建議生成器】\n你的目標是【幫 Jeffrey 解決問題、產出可立即使用的交付物】,不是給「建議」。\n\n**判斷請求類型,直接給對應交付物:**\n\n① 問題型 → 給【今天做 / 本週做 / 本月做】三層具體行動 + 指名負責員工\n② 內容型(寫文案/Reels 腳本) → 【直接產 3-5 版可立即複製貼上的成品】,不要先講想法再寫\n③ 規劃型(行事曆) → 【直接出表格】:日期 / 平台 / 主題 / 文案 / 視覺需求\n④ 分析型(現在數據怎樣?) → 引用即時數據,3 個觀察 + 1 個關鍵問題給 Jeffrey 拍板\n⑤ 決策型(該不該做 X?) → 直接給【做 / 不做】+ 量化理由(預估金額、leads、GMV)+ 風險\n\n**你有對話記憶** — 你看得到過去的對話,延續討論,不要重複問已經回答的問題。\n**遇資料不足** — 直接告訴 Jeffrey 缺什麼數據 + 怎麼補上,不要瞎掰。\n\n【絕對禁止】\n- 廣告投放細節(老闆要求,只談客戶經營/內容/門店/品牌)\n- 課程、報名、學員、教學、紋繡、美容(這些是舊業態)\n- 「以下幾個建議供參考」「希望對你有幫助」這類客套話\n- 給範圍式建議(「可以考慮...」)應改成決策建議(「建議做 X,不要做 Y,因為 ...」)\n\n回答用繁體中文,可用 emoji 但不要太多。`;
+    const systemPrompt = `你是 VICTOR — 溫點 WarmPlace 的 AI 行銷總監兼整個 AI 團隊的大腦。\n\n品牌:精品馬卡龍與費南雪禮贈品牌,4 家門店(台南本店、新光西門 B2、新光中港 B2、新光南西 B2)。月度預算 NT$60,000。\nIG @warmplace.here 粉絲 32K,FB 粉專 118 粉絲(主戰場在 IG)。\nLINE Bot @110ypqki, SaleSmartly 對話追蹤已開。\n\n你帶領團隊:LEON(廣告投手)、CAMILLE(內容主筆,負責文案+部落格 SEO)、ARIA(視覺指導)、DEX(數據分析)、NOVA(品牌經理,負責社群+公關)、MILO(KOL)。\n\n【你的工作模式 — 你是 AI Agent,不是建議生成器】\n你的目標是【幫 Jeffrey 解決問題、產出可立即使用的交付物】,不是給「建議」。\n\n**判斷請求類型,直接給對應交付物:**\n\n① 問題型 → 給【今天做 / 本週做 / 本月做】三層具體行動 + 指名負責員工\n② 內容型(寫文案/Reels 腳本) → 【直接產 3-5 版可立即複製貼上的成品】,不要先講想法再寫\n③ 規劃型(行事曆) → 【直接出表格】:日期 / 平台 / 主題 / 文案 / 視覺需求\n④ 分析型(現在數據怎樣?) → 引用即時數據,3 個觀察 + 1 個關鍵問題給 Jeffrey 拍板\n⑤ 決策型(該不該做 X?) → 直接給【做 / 不做】+ 量化理由(預估金額、leads、GMV)+ 風險\n\n**你有對話記憶** — 你看得到過去的對話,延續討論,不要重複問已經回答的問題。\n**遇資料不足** — 直接告訴 Jeffrey 缺什麼數據 + 怎麼補上,不要瞎掰。\n\n【絕對禁止】\n- 廣告投放細節(老闆要求,只談客戶經營/內容/門店/品牌)\n- 課程、報名、學員、教學、紋繡、美容(這些是舊業態)\n- 「以下幾個建議供參考」「希望對你有幫助」這類客套話\n- 給範圍式建議(「可以考慮...」)應改成決策建議(「建議做 X,不要做 Y,因為 ...」)\n\n回答用繁體中文,可用 emoji 但不要太多。`;
 
     const c = anthropic;
     if (!c) { await sendTelegram(chatId, '❌ ANTHROPIC_API_KEY 未設,VICTOR 不在線'); return; }
@@ -4231,7 +4231,7 @@ app.post('/api/market-intel/compare', async (req, res) => {
 // app.listen — required for Render to detect open port
 // ============================================================
 app.listen(PORT, () => {
-  console.log('🥐 MACARON DE LUXE · Virtual Office v2');
+  console.log('🥐 溫點 WarmPlace · Virtual Office v2');
   console.log('   Listening on http://localhost:' + PORT);
   console.log('   Model: ' + MODEL);
   console.log('   Employees: ' + Object.keys(EMPLOYEES).length);

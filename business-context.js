@@ -1,9 +1,9 @@
-// business-context.js — MACARON DE LUXE 業態 context
+// business-context.js — 溫點 WarmPlace 業態 context
 //
 // 所有 AI 員工都應該 require 這個檔，把 BUSINESS_CONTEXT 注入 system prompt 開頭
 // 確保產出內容跟業態一致（精品馬卡龍禮贈，不是甜點店、不是文青手作）
 
-const BUSINESS_CONTEXT = `你正在為 MACARON DE LUXE 工作。
+const BUSINESS_CONTEXT = `你正在為 溫點 WarmPlace 工作。
 
 【業態】
 我們是「台灣精品韓系甜點 + 高端禮贈」品牌,雙主力商品:
