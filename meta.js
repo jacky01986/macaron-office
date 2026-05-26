@@ -935,7 +935,7 @@ async function getInbox({ limit_conv = 10, limit_msg = 8 } = {}) {
   const fields = "participants,updated_time,messages.limit(" + limit_msg + "){message,from,created_time}";
   for (const platform of ["messenger", "instagram"]) {
     try {
-      const url = "me/conversations?platform=" + platform + "&fields=" + encodeURIComponent(fields) + "&limit=" + limit_conv;
+      const url = "/me/conversations?platform=" + platform + "&fields=" + encodeURIComponent(fields) + "&limit=" + limit_conv;
       const r = await graphGet(url);
       const convs = (r.data || []).map(c => ({
         id: c.id,
