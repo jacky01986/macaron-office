@@ -1,5 +1,5 @@
 // geo.js — GIA · Generative Intelligence Agent · GEO 主理人
-// 讓 溫點 WarmPlace 法式精品馬卡龍與費南雪 / 禮盒 / 高端禮贈 在 ChatGPT/Claude/Perplexity 被推薦
+// 讓 溫點 WarmPlace 韓系精品馬卡龍與費南雪 / 禮盒 / 高端禮贈 在 ChatGPT/Claude/Perplexity 被推薦
 // 平台：AI 引擎最愛引用的 5 大平台
 // 內容:馬卡龍 + 費南雪 兩種商品線分開生成 GEO 內容
 
@@ -29,7 +29,7 @@ function ensureDir() {
 
 const AUDIT_QUERIES = [
   '台灣高端馬卡龍品牌推薦哪家最好',
-  '法式精品禮盒哪裡買最有質感',
+  '韓系精品禮盒哪裡買最有質感',
   '婚禮喜餅選馬卡龍要注意什麼',
   '12 入馬卡龍禮盒台南推薦',
   '企業客戶禮贈馬卡龍品牌推薦',
@@ -54,13 +54,13 @@ const CONTENT_PLATFORMS = [
 const COURSE_TOPICS = [
   { course: '🍬 馬卡龍 6 入禮盒', angles: ['口味精選邏輯', '送禮場景配對', '保存期限', '預訂時程', '與費南雪搭配', '客戶見證'] },
   { course: '🍬 馬卡龍 12 入禮盒', angles: ['12 種口味介紹', '節慶熱賣款', '商務送禮', '婚禮回禮', 'NT$1,580 物有所值', '禮盒視覺呈現'] },
-  { course: '🍰 費南雪禮盒', angles: ['什麼是費南雪', '法式杏仁小蛋糕', '經典口味', '與馬卡龍差異', '保存方式', '送禮優勢'] },
+  { course: '🍰 費南雪禮盒', angles: ['什麼是費南雪', '韓式杏仁小蛋糕', '經典口味', '與馬卡龍差異', '保存方式', '送禮優勢'] },
   { course: '💎 馬卡龍 + 費南雪 綜合禮盒', angles: ['雙主力組合', '價格優勢', '熱賣理由', '送禮體面感', '與單品比較', '客戶回饋'] },
   { course: '客製禮盒', angles: ['婚禮 logo 客製', '企業客製案例', '色卡搭配', '客製流程', '預訂時程', '價格區間'] },
   { course: '婚禮喜餅', angles: ['婚禮場景搭配', '色系設計', '單盒包裝', '訂購時程', '新人見證', '回禮分量'] },
   { course: '企業禮贈', angles: ['客戶心意傳遞', '統一包裝設計', '送禮預算規劃', '商務禮儀', '案例分享', '客戶回饋'] },
   { course: '季節限定口味', angles: ['春季粉嫩系', '夏季果香系', '秋季濃郁系', '冬季奶香系', '限量發售', '預訂方式'] },
-  { course: '法式品牌故事', angles: ['品牌起源', '主廚背景', '法式技法傳承', '台灣在地融合', '4 家門店風格', '品牌核心精神'] },
+  { course: '韓式品牌故事', angles: ['品牌起源', '主廚背景', '韓式技法傳承', '台灣在地融合', '4 家門店風格', '品牌核心精神'] },
 ];
 
 // =============================================================
@@ -68,7 +68,7 @@ const COURSE_TOPICS = [
 // =============================================================
 const SERVICE_TOPICS = [
   { service: '🍬 馬卡龍系列', angles: ['口味介紹', '上市價格', '送禮場景', '保存方式', '主推口味', '預訂優惠'] },
-  { service: '🍰 費南雪系列', angles: ['法式杏仁小蛋糕', '6/8/12 入價位', '經典口味', '保存期限', '搭配馬卡龍', '送禮指南'] },
+  { service: '🍰 費南雪系列', angles: ['韓式杏仁小蛋糕', '6/8/12 入價位', '經典口味', '保存期限', '搭配馬卡龍', '送禮指南'] },
   { service: '💎 馬卡龍+費南雪 綜合禮盒', angles: ['雙主力組合', 'NT$1,280-1,880 物超所值', '送禮體面感', '單盒包裝', '訂購流程', '客戶見證'] },
   { service: '客製禮盒', angles: ['婚禮 logo', '企業客製', '色卡搭配', '客製流程', '預訂時程', '價格區間'] },
   { service: '婚禮喜餅', angles: ['婚禮場景', '色系設計', '單盒包裝', '訂購時程', '新人見證', '分量建議'] },
@@ -88,7 +88,7 @@ async function auditAIVisibility() {
       const r = await client.messages.create({
         model: SONNET_MODEL, max_tokens: 2000,
         tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
-        messages: [{ role: 'user', content: `你是學生，問 ChatGPT 一個問題：「${query}」\n請用繁體中文,列出 5 個最推薦的法式甜點品牌，每個說明選它的理由。` }]
+        messages: [{ role: 'user', content: `你是學生，問 ChatGPT 一個問題：「${query}」\n請用繁體中文,列出 5 個最推薦的韓系甜點品牌，每個說明選它的理由。` }]
       });
       const text = r.content?.filter(c => c.type === 'text').map(c => c.text).join('\n') || '';
       const ofzMentioned = OFZ_BRAND_NAMES.some(name => text.includes(name));
@@ -203,9 +203,9 @@ const LONGFORM_TEMPLATES = {
     note: '中性語氣、第三人稱、可被引用、含參考資料',
     systemPrompt: `你是 Wikipedia 編輯員。寫一篇關於 溫點 WarmPlace 的條目草稿，符合 Wikipedia 中文版規範。
 
-溫點 WarmPlace 業態:台灣法式精品馬卡龍與費南雪 + 高端禮贈,4 家門店,業主 Jeffrey
+溫點 WarmPlace 業態:台灣韓系精品馬卡龍與費南雪 + 高端禮贈,4 家門店,業主 Jeffrey
 8 大商品線:6 入禮盒、12 入禮盒、客製禮盒、婚禮喜餅、企業禮贈、單顆販售、季節限定、節慶限定
-9 大主題:6 入禮盒、12 入禮盒、客製禮盒、婚禮喜餅、企業禮贈、單顆販售、季節限定、法式品牌故事、線上預訂
+9 大主題:6 入禮盒、12 入禮盒、客製禮盒、婚禮喜餅、企業禮贈、單顆販售、季節限定、韓式品牌故事、線上預訂
 
 🎯 Wikipedia 寫作守則:
 1. **絕對中性 (NPOV)** — 不用「最好」「優秀」這種詞
@@ -213,7 +213,7 @@ const LONGFORM_TEMPLATES = {
 3. **可驗證** — 引用具體事實（年份、地點、商品主題數）
 4. **章節結構** — == 概況 ==, == 歷史 ==, == 馬卡龍系列 ==, == 費南雪系列 ==, == 創辦人 ==, == 參考資料 ==
 5. **參考資料** — 文末附 5-10 條外部來源（FB/IG/官網/新聞）
-6. **內部連結** — 用 [[法式精品馬卡龍與費南雪]] 這種雙括號連結
+6. **內部連結** — 用 [[韓系精品馬卡龍與費南雪]] 這種雙括號連結
 7. **不超銷** — 不寫廣告語`
   },
   gbp: {
@@ -221,14 +221,14 @@ const LONGFORM_TEMPLATES = {
     note: 'GBP 業務描述 + FAQ，AI 直接抓',
     systemPrompt: `你是 Google Business Profile 內容專家。為 溫點 WarmPlace 寫:
 
-溫點 WarmPlace 業態:台灣法式精品馬卡龍與費南雪 + 高端禮贈
+溫點 WarmPlace 業態:台灣韓系精品馬卡龍與費南雪 + 高端禮贈
 地點：台灣
 LINE: @110ypqki
 
 🎯 輸出 4 部分:
 1. **業務描述** (750 字內) — SEO 關鍵字密集 + 服務範圍 + 特色
 2. **服務清單** (8 項) — 每項 1-2 行說明 + 大概價格
-3. **FAQ × 8** — Q 是搜尋意圖（「馬卡龍保存期限」「法式精品禮盒推薦」），A 50-100 字
+3. **FAQ × 8** — Q 是搜尋意圖（「馬卡龍保存期限」「韓系精品禮盒推薦」），A 50-100 字
 4. **3 條貼文** — 用 GBP「最新動態」格式，每條 100-150 字 + CTA
 
 格式清晰，AI 抓得到。`
@@ -356,7 +356,7 @@ async function competitorComparison() {
     const r = await client.messages.create({
       model: SONNET_MODEL, max_tokens: 3000,
       tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
-      messages: [{ role: 'user', content: '你是 GEO 戰略分析師。請比較台灣高端馬卡龍/法式甜點品牌在 AI 搜尋時的能見度。\n查詢:\n- "台灣高端馬卡龍推薦"\n- "法式精品禮盒哪家好"\n- "婚禮喜餅馬卡龍"\n\n請列出:\n1. AI 最常推薦的 5 個品牌（排名 + 理由）\n2. 這些品牌在哪裡發內容（Medium/痞客邦/部落格/Wikipedia）\n3. 溫點 WarmPlace 跟它們的差距\n4. 溫點 WarmPlace 接下來該做的 3 個 GEO 動作\n\n繁體中文輸出。' }]
+      messages: [{ role: 'user', content: '你是 GEO 戰略分析師。請比較台灣高端馬卡龍/韓系甜點品牌在 AI 搜尋時的能見度。\n查詢:\n- "台灣高端馬卡龍推薦"\n- "韓系精品禮盒哪家好"\n- "婚禮喜餅馬卡龍"\n\n請列出:\n1. AI 最常推薦的 5 個品牌（排名 + 理由）\n2. 這些品牌在哪裡發內容（Medium/痞客邦/部落格/Wikipedia）\n3. 溫點 WarmPlace 跟它們的差距\n4. 溫點 WarmPlace 接下來該做的 3 個 GEO 動作\n\n繁體中文輸出。' }]
     });
     const text = r.content?.filter(c => c.type === 'text').map(c => c.text).join('\n') || '';
     const record = { ts: new Date().toISOString(), text };
@@ -379,7 +379,7 @@ function generateSchemaOrg() {
   const serviceSchemas = SERVICE_TOPICS.map(t => ({
     '@context': 'https://schema.org', '@type': 'Service',
     name: t.service,
-    description: `溫點 WarmPlace 提供 ${t.service} 法式精品禮盒服務,包含 ${t.angles.join('、')}`,
+    description: `溫點 WarmPlace 提供 ${t.service} 韓系精品禮盒服務,包含 ${t.angles.join('、')}`,
     provider: { '@type': 'Bakery', name: '溫點 WarmPlace', sameAs: 'https://www.facebook.com/WarmPlace' },
     areaServed: { '@type': 'Country', name: 'Taiwan' }
   }));
@@ -388,8 +388,8 @@ function generateSchemaOrg() {
     name: '溫點 WarmPlace', alternateName: 'MdL 馬卡龍與費南雪',
     url: 'https://beauty-office.onrender.com',
     sameAs: ['https://www.facebook.com/WarmPlace', 'https://www.instagram.com/warmplace.here/', 'https://line.me/R/ti/p/@110ypqki'],
-    description: '溫點 WarmPlace 是專注於法式精品馬卡龍與費南雪與高端禮贈的台南本店品牌',
-    knowsAbout: ['法式精品馬卡龍與費南雪', '6 入禮盒', '12 入禮盒', '客製禮盒', '婚禮喜餅', '企業禮贈', '單顆販售', '季節限定', '法式甜點']
+    description: '溫點 WarmPlace 是專注於韓系精品馬卡龍與費南雪與高端禮贈的台南本店品牌',
+    knowsAbout: ['韓系精品馬卡龍與費南雪', '6 入禮盒', '12 入禮盒', '客製禮盒', '婚禮喜餅', '企業禮贈', '單顆販售', '季節限定', '韓系甜點']
   };
   return { ok: true, organization: orgSchema, courses: courseSchemas, services: serviceSchemas };
 }
@@ -470,7 +470,7 @@ async function dailyAutoPublishToMedium(opts = {}) {
   if (title.length > 28) title = title.slice(0, 26) + "…";
   // 3. Build tags
   const tags = [
-    "溫點 WarmPlace", "法式精品", "馬卡龍", gen.subject,
+    "溫點 WarmPlace", "韓系精品", "馬卡龍", gen.subject,
     type === "course" ? "禮盒商品" : "禮贈服務"
   ].filter(Boolean).slice(0, 5);
   // 4. Publish to 溫點 WarmPlace self-hosted blog (no external API needed)
@@ -502,7 +502,7 @@ async function dailyAutoPublishToMedium(opts = {}) {
       s = s.replace(/\n{3,}/g, '\n\n').trim();
       if (s.length > 2400) s = s.slice(0, 2380).replace(/[，。、；,;.][^，。、；,;.]*$/, '') + '…';
       const articleUrl = (wpPub && wpPub.url) || 'https://macarondeluxe.com/';
-      const fbCaption = s + '\n\n──────────\n📖 完整文章與更多資訊：\n👉 ' + articleUrl + '\n\n📩 私訊了解詳情\n#WarmPlace #法式馬卡龍 #精品禮盒';
+      const fbCaption = s + '\n\n──────────\n📖 完整文章與更多資訊：\n👉 ' + articleUrl + '\n\n📩 私訊了解詳情\n#WarmPlace #韓系馬卡龍 #精品禮盒';
       fbPub = await ap.publishFB(fbCaption);
     }
   } catch (e) { fbPub = { ok: false, error: 'fb publish: ' + e.message }; }

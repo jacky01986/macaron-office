@@ -7,7 +7,7 @@ try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 const SNAPSHOT_FILE = path.join(DATA_DIR, 'competitor_snapshot.json');
 const HISTORY_FILE = path.join(DATA_DIR, 'competitor_history.jsonl');
 
-const KEYWORDS = ['馬卡龍', '費南雪', 'financier', '法朋', '亞尼克', 'Paul', 'Ladurée', 'Pierre Hermé', '法式甜點', '法式禮盒', '法式精品'];
+const KEYWORDS = ['馬卡龍', '費南雪', 'financier', '法朋', '亞尼克', 'Paul', 'Ladurée', 'Pierre Hermé', '韓系甜點', '韓系禮盒', '韓系精品'];
 
 function appendHistory(e) { try { fs.appendFileSync(HISTORY_FILE, JSON.stringify(e) + '\n'); } catch {} }
 
@@ -150,8 +150,8 @@ async function analyzeWithAI() {
   const resp = await client.messages.create({
     model: 'claude-sonnet-4-5',
     max_tokens: 1500,
-    system: '你是 MACARON DE LUXE 的 AI 廣告投手 LEON。分析以下競品廣告（含法朋、亞尼克、Paul、Ladurée、Pierre Hermé 等法式甜點 / 禮盒品牌），找出共同模式：(1) 熱門訴求點 (2) 價格與禮盒策略 (3) CTA 模式 (4) 字數/語氣 (5) 我們可以偷學的 3 個技巧。輸出繁中、條列、簡潔。',
-    messages: [{ role: 'user', content: '請分析以下台灣法式甜點 / 馬卡龍 / 高端禮盒業界正在跑的廣告：\n\n' + adsText }]
+    system: '你是 MACARON DE LUXE 的 AI 廣告投手 LEON。分析以下競品廣告（含法朋、亞尼克、Paul、Ladurée、Pierre Hermé 等韓系甜點 / 禮盒品牌），找出共同模式：(1) 熱門訴求點 (2) 價格與禮盒策略 (3) CTA 模式 (4) 字數/語氣 (5) 我們可以偷學的 3 個技巧。輸出繁中、條列、簡潔。',
+    messages: [{ role: 'user', content: '請分析以下台灣韓系甜點 / 馬卡龍 / 高端禮盒業界正在跑的廣告：\n\n' + adsText }]
   });
   return resp.content[0].text.trim();
 }

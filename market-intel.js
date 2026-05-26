@@ -4,7 +4,7 @@
 // ============================================================
 //
 // 來源:
-//   1. Google News RSS (馬卡龍 / 費南雪 / 法式甜點)
+//   1. Google News RSS (馬卡龍 / 費南雪 / 韓系甜點)
 //   2. FB Ads Library (對手在跑什麼廣告)
 //   3. 對手品牌動態 (法朋、亞尼克、Paul、Ladurée、Pierre Hermé)
 //
@@ -23,7 +23,7 @@ const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'dat
 const NEWS_KEYWORDS = [
   '馬卡龍',
   '費南雪',
-  '法式甜點 禮盒',
+  '韓系甜點 禮盒',
   '婚禮 小物 甜點',
   '企業 送禮',
 ];

@@ -612,7 +612,7 @@ Brief：${brief}
 要求：
 - 回傳 JSON 陣列格式：[{"style":"風格名","caption":"內容"}, ...]
 - 每個草稿的 style 標題要不同（例如：情感型、功能型、好奇心型、情境型）
-- caption 要符合 MACARON DE LUXE 品牌語調（精品、法式、內斂、不農場標題）
+- caption 要符合 MACARON DE LUXE 品牌語調（精品、韓式、內斂、不農場標題）
 - FB 貼文 150-300 字，IG 貼文 80-150 字 + 3-5 個 hashtag
 - 直接回 JSON 陣列，不要任何前後綴或 markdown`;
 
@@ -1344,7 +1344,7 @@ app.post('/api/image-gen/test', express.json(), async (req, res) => {
   try {
     const r = await imageGen.generateImage({
       caption: req.body.caption || '',
-      brief: req.body.brief || '法式精品馬卡龍 12 入禮盒',
+      brief: req.body.brief || '韓系精品馬卡龍 12 入禮盒',
       platform: req.body.platform || 'IG',
       slug: req.body.slug || 'test'
     });
@@ -2387,7 +2387,7 @@ app.post("/api/customers/:userId/analyze", async (req, res) => {
     if (!c) return res.status(404).json({ error: "customer not found" });
 
     const history = c.messages.slice(0, 30).reverse().map(m => `[${m.intent}] ${m.text}${m.replyText ? " → 店回覆：" + m.replyText.slice(0,60) : ""}`).join("\n");
-    const systemPrompt = `你是 MACARON DE LUXE 的客人分析師。根據客人與品牌客服的 LINE 對話紀錄，推測客人畫像並給出具體行動建議。品牌主打法式精品馬卡龍禮盒（6 入 NT$880 / 12 入 NT$1,580 / 客製禮盒 NT$1,580-2,280，婚禮 / 企業 / 自送三種場景），4 家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2。
+    const systemPrompt = `你是 MACARON DE LUXE 的客人分析師。根據客人與品牌客服的 LINE 對話紀錄，推測客人畫像並給出具體行動建議。品牌主打韓系精品馬卡龍禮盒（6 入 NT$880 / 12 入 NT$1,580 / 客製禮盒 NT$1,580-2,280，婚禮 / 企業 / 自送三種場景），4 家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2。
 
 回覆 JSON：
 {
@@ -3609,7 +3609,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
       'RIO': '你是 RIO — MACARON DE LUXE 的銷售顧問，專責企業禮贈與婚禮禮盒。',
       'MIKA': '你是 MIKA — MACARON DE LUXE 的內容創意，寫文案、想活動、設計優惠。',
       'LEXI': '你是 LEXI — MACARON DE LUXE 的銷售跟單，追蹤每個 lead 從詢問到成交。',
-      'SCOUT': '你是 SCOUT — MACARON DE LUXE 的市場情報員，掃描法式甜點與精品禮盒競品。',
+      'SCOUT': '你是 SCOUT — MACARON DE LUXE 的市場情報員，掃描韓系甜點與精品禮盒競品。',
     };
     let employee = 'VICTOR';
     let userMsg = text;
@@ -3632,7 +3632,7 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
         const r = await fetch('https://macaron-office.onrender.com/api/roas/today').then(x => x.json());
         if (r.ok) context = '\n\n當前 MACARON DE LUXE 數據（過去 7 天）：詢問 ' + r.lead_count + ' · 新好友 ' + r.new_followers + ' · 廣告 NT$' + r.ad_spend;
       } catch {}
-      const sys = employees[employee] + context + '\n\n業態：台灣法式精品馬卡龍 + 高端禮贈品牌，主力商品：6 入禮盒 NT$880、12 入 NT$1,580、客製禮盒、單顆零售；4 家門店：台南本店 / 新光西門 B2 / 新光中港 B2 / 新光南西 B2。回覆要簡潔、可行動、用繁體中文。';
+      const sys = employees[employee] + context + '\n\n業態：台灣韓系精品馬卡龍 + 高端禮贈品牌，主力商品：6 入禮盒 NT$880、12 入 NT$1,580、客製禮盒、單顆零售；4 家門店：台南本店 / 新光西門 B2 / 新光中港 B2 / 新光南西 B2。回覆要簡潔、可行動、用繁體中文。';
       const resp = await c.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 1500,
