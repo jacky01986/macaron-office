@@ -922,6 +922,40 @@ async function getTokenStatus() {
   return out;
 }
 
+// ============================================================
+// getInbox — 直接從 Meta Graph 讀 FB Messenger + IG DM 對話 + 訊息內容
+// 需要 page_access_token 有 pages_messaging + instagram_manage_messages 權限
+// ============================================================
+async function getInbox({ limit_conv = 10, limit_msg = 8 } = {}) {
+  const out = { fb: [], ig: [], errors: [] };
+  if (!process.env.META_ACCESS_TOKEN) {
+    out.errors.push("META_ACCESS_TOKEN not set");
+    return out;
+  }
+  const fields = "participants,updated_time,messages.limit(" + limit_msg + "){message,from,created_time}";
+  for (const platform of ["messenger", "instagram"]) {
+    try {
+      const url = "me/conversations?platform=" + platform + "&fields=" + encodeURIComponent(fields) + "&limit=" + limit_conv;
+      const r = await graphGet(url);
+      const convs = (r.data || []).map(c => ({
+        id: c.id,
+        participants: (c.participants && c.participants.data) || [],
+        updated_time: c.updated_time,
+        messages: ((c.messages && c.messages.data) || []).slice(0, limit_msg).reverse().map(m => ({
+          text: (m.message || "").slice(0, 300),
+          from: m.from && m.from.name,
+          from_is_us: m.from && m.from.name && /溫點|warmplace|WarmPlace/i.test(m.from.name),
+          at: m.created_time,
+        })),
+      }));
+      out[platform === "messenger" ? "fb" : "ig"] = convs;
+    } catch (e) {
+      out.errors.push(platform + ": " + e.message);
+    }
+  }
+  return out;
+}
+
 module.exports = {
   refreshUserToken,
   getLongLivedPageToken,
@@ -951,6 +985,7 @@ module.exports = {
   publishFbPost,
   publishFbPhoto,
   publishIgImagePost,
+  getInbox,
   buildLiveDataBlock,
   buildCoachDataBlock,
 };

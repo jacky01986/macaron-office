@@ -243,6 +243,18 @@ app.get("/api/meta/status", async (req, res) => {
   }
 });
 
+// Direct Meta inbox reader — FB Messenger + IG DM conversations (bypass SaleSmartly)
+app.get("/api/meta/inbox", async (req, res) => {
+  try {
+    const m = require("./meta");
+    if (!m.getInbox) return res.status(500).json({ ok: false, error: "meta.getInbox not loaded" });
+    const limit_conv = parseInt(req.query.limit || "10", 10);
+    const limit_msg = parseInt(req.query.msg_limit || "8", 10);
+    const r = await m.getInbox({ limit_conv, limit_msg });
+    res.json({ ok: true, ...r });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
 // /api/meta/assets — 列出 user 所有 FB Pages / IG Business / Ad Accounts（for switcher）
 app.get("/api/salesmartly/webhook/recent", (req, res) => { res.json({ count: __webhookHits.length, hits: __webhookHits.slice(-20) }); });
 
@@ -4153,6 +4165,22 @@ async function gatherTelegramContext() {
       out.customer_segments = await c.getSegmentSnapshot();
     }
   } catch (e) { out._segments_err = e.message; }
+
+  // 7) Meta direct inbox (FB Messenger + IG DM raw conversations + messages)
+  try {
+    const m = require('./meta');
+    if (m && typeof m.getInbox === 'function') {
+      const ib = await m.getInbox({ limit_conv: 5, limit_msg: 6 });
+      const summarize = (convs) => (convs || []).map(c => ({
+        with: (c.participants[0] && c.participants[0].name) || (c.participants[0] && c.participants[0].id) || 'unknown',
+        last_at: c.updated_time,
+        messages: c.messages.map(x => ({ from: x.from_is_us ? '我們' : '客人', text: x.text.slice(0, 150), at: x.at })),
+      }));
+      out.meta_inbox_fb = summarize(ib.fb);
+      out.meta_inbox_ig = summarize(ib.ig);
+      if (ib.errors && ib.errors.length) out.meta_inbox_errors = ib.errors;
+    }
+  } catch (e) { out._meta_inbox_err = e.message; }
 
   // 6) Recent + pending decisions
   try {
