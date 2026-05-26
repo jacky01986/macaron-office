@@ -1,4 +1,4 @@
-// ai-team-content.js — MACARON DE LUXE AI 內容團隊(NORA + YUKI 第一波)
+// ai-team-content.js — 溫點 WarmPlace AI 內容團隊(NORA + YUKI 第一波)
 //
 // 第一年訂閱內容用 AI 團隊產出，老闆只要每月拍 1 小時片 + 半小時 Q&A 直播
 //
@@ -87,7 +87,7 @@ async function callClaude(model, systemPrompt, userPrompt, maxTokens = 3000) {
       let extra = '';
       if (svc) extra += '\n\n' + svc;
       if (crs) extra += '\n\n' + crs;
-      if (extra) systemPrompt = (systemPrompt || '') + '\n\n[MACARON DE LUXE 真實客人畫像快照 — 你寫的內容必須針對這些客人在問的問題、興趣的商品設計]:' + extra;
+      if (extra) systemPrompt = (systemPrompt || '') + '\n\n[溫點 WarmPlace 真實客人畫像快照 — 你寫的內容必須針對這些客人在問的問題、興趣的商品設計]:' + extra;
     }
   } catch (e) {}
 
@@ -152,10 +152,10 @@ async function noraPlanNextMonth(targetMonth) {
 
   const sys = `${BUSINESS_CONTEXT}${scout ? '\n\n' + scout.getContextForOtherAgents() : ''}
 
-你是 NORA — MACARON DE LUXE 訂閱內容主編。
+你是 NORA — 溫點 WarmPlace 訂閱內容主編。
 你的任務是規劃 ${monthKey} 月的內容主題(給已經買過第一次禮盒的客戶,讓他們回購)。
 
-MACARON DE LUXE 的客戶結構：
+溫點 WarmPlace 的客戶結構：
 - 禮贈客戶為主、自我犒賞客戶為輔
 - 已學完 首次購買 想升級的舊生 = 訂閱主要受眾
 - 訂閱方案 NT$ 1,999/月，含每月 1 個新技術短課 + 客戶社群 + 月 1 次直播 Q&A
@@ -239,7 +239,7 @@ async function yukiWriteLesson(targetKey) {
   const plan = monthEntry.plan;
   const sys = `${BUSINESS_CONTEXT}${scout ? '\n\n' + scout.getContextForOtherAgents() : ''}
 
-你是 YUKI — MACARON DE LUXE 的內容文章撰寫師。
+你是 YUKI — 溫點 WarmPlace 的內容文章撰寫師。
 你的任務是把 NORA 規劃的主題轉成完整內容文章，給老闆照念拍片。
 
 要求：
@@ -318,7 +318,7 @@ async function rioWriteShootingScript(monthKey) {
     return { ok: false, reason: 'no plan or lesson for ' + key + '. 先請 NORA 規劃或 YUKI 寫腳本' };
   }
   const lessons = monthData.lessons || monthData.raw || monthData.plan;
-  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 RIO，MACARON DE LUXE 的影片製作助理。專長：把商品介紹文轉成可拍攝的影片腳本，包含每段時長、鏡位、運鏡、字幕重點、shot list、道具清單。攝影師看了就能直接拍。';
+  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 RIO，溫點 WarmPlace 的影片製作助理。專長：把商品介紹文轉成可拍攝的影片腳本，包含每段時長、鏡位、運鏡、字幕重點、shot list、道具清單。攝影師看了就能直接拍。';
   const userReq = '依下列商品內容逐字稿，產每課拍攝腳本：\n1. 開場（前 10 秒抓眼球）\n2. 主體分段（時長 / 鏡位 / 運鏡 / 字幕重點）\n3. 結尾 CTA\n4. shot list 必需鏡頭清單\n5. 道具清單\n\n商品內容資料：\n' + JSON.stringify(lessons, null, 2);
   const text = await callClaude(YUKI_MODEL, sys, userReq, 4500);
   if (!text || typeof text !== 'string') return { ok: false, reason: 'no response' };
@@ -335,7 +335,7 @@ async function rioWriteShootingScript(monthKey) {
 // === MIKA 客戶社群輔導 — 答疑 + 週話題 ===
 async function mikaAnswerStudent(question, studentName) {
   if (!question) return { ok: false, reason: 'question required' };
-  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 MIKA,MACARON DE LUXE 客戶社群輔導員。溫暖、專業、耐心。回答關於馬卡龍/費南雪/禮盒/送禮的問題並鼓勵客戶。如果問題超出範圍,引導他們看商品介紹或請教主理人。回答 200-400 字，給可實作的建議。';
+  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 MIKA,溫點 WarmPlace 客戶社群輔導員。溫暖、專業、耐心。回答關於馬卡龍/費南雪/禮盒/送禮的問題並鼓勵客戶。如果問題超出範圍,引導他們看商品介紹或請教主理人。回答 200-400 字，給可實作的建議。';
   const userReq = (studentName ? '客戶：' + studentName + '\n' : '') + '問題：' + question;
   const text = await callClaude(YUKI_MODEL, sys, userReq, 1500);
   if (!text || typeof text !== 'string') return { ok: false, reason: 'no response' };
@@ -354,7 +354,7 @@ async function mikaAnswerStudent(question, studentName) {
 }
 
 async function mikaWeeklyTopic() {
-  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 MIKA，MACARON DE LUXE 客戶社群輔導。每週寫一個能引爆討論的話題，給客戶社群（FB 社團 / LINE 群）。要實用、有爭議、能讓客戶分享自己作品。';
+  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 MIKA，溫點 WarmPlace 客戶社群輔導。每週寫一個能引爆討論的話題，給客戶社群（FB 社團 / LINE 群）。要實用、有爭議、能讓客戶分享自己作品。';
   const userReq = '寫本週客戶社群話題（200-300 字），含：\n1. 一句話勾起好奇\n2. 為什麼這個話題重要（背景）\n3. 引導留言的 3-5 個具體問題';
   const text = await callClaude(YUKI_MODEL, sys, userReq, 1500);
   if (!text || typeof text !== 'string') return { ok: false, reason: 'no response' };

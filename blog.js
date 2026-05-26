@@ -1,4 +1,4 @@
-// blog.js — MACARON DE LUXE self-hosted blog (full GEO control, no external API dependency)
+// blog.js — 溫點 WarmPlace self-hosted blog (full GEO control, no external API dependency)
 const fs = require('fs');
 const path = require('path');
 
@@ -93,8 +93,8 @@ function renderPostPage(post) {
     headline: post.title,
     datePublished: post.ts,
     dateModified: post.ts,
-    author: { '@type': 'Organization', name: 'MACARON DE LUXE' },
-    publisher: { '@type': 'Organization', name: 'MACARON DE LUXE', url: SITE_URL },
+    author: { '@type': 'Organization', name: '溫點 WarmPlace' },
+    publisher: { '@type': 'Organization', name: '溫點 WarmPlace', url: SITE_URL },
     keywords: (post.tags || []).join(', '),
     inLanguage: 'zh-TW',
     url: post.url,
@@ -104,25 +104,25 @@ function renderPostPage(post) {
   const tagsHtml = (post.tags && post.tags.length) ? '<p style="margin-top:20px">' + post.tags.map(function(t){return '<span class="tag">' + escapeHtml(t) + '</span>';}).join('') + '</p>' : '';
   return '<!DOCTYPE html>\n<html lang="zh-Hant"><head>\n' +
     '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">\n' +
-    '<title>' + escapeHtml(post.title) + ' | MACARON DE LUXE</title>\n' +
-    '<meta name="description" content="' + escapeHtml(post.title) + ' — MACARON DE LUXE 法式精品馬卡龍與費南雪 / 禮贈禮盒">\n' +
+    '<title>' + escapeHtml(post.title) + ' | 溫點 WarmPlace</title>\n' +
+    '<meta name="description" content="' + escapeHtml(post.title) + ' — 溫點 WarmPlace 法式精品馬卡龍與費南雪 / 禮贈禮盒">\n' +
     '<meta name="keywords" content="' + escapeHtml((post.tags || []).join(',')) + '">\n' +
     '<link rel="canonical" href="' + post.url + '">\n' +
     '<meta property="og:title" content="' + escapeHtml(post.title) + '">\n' +
     '<meta property="og:type" content="article">\n' +
     '<meta property="og:url" content="' + post.url + '">\n' +
-    '<meta property="og:site_name" content="MACARON DE LUXE">\n' +
+    '<meta property="og:site_name" content="溫點 WarmPlace">\n' +
     '<script type="application/ld+json">' + JSON.stringify(articleSchema) + '</script>\n' +
     '<style>:root{--burgundy:#8E3D4B;--gold:#A37849;--ivory:#F8F3EB}body{font-family:"Microsoft JhengHei",sans-serif;max-width:780px;margin:0 auto;padding:30px 20px;background:var(--ivory);color:#2E1E14;line-height:1.8}header{margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid var(--burgundy)}header a{color:var(--burgundy);text-decoration:none;font-weight:bold}h1{color:var(--burgundy);font-size:32px;margin:0 0 10px 0}h2{color:var(--burgundy);font-size:22px;margin:30px 0 12px 0;border-left:4px solid var(--gold);padding-left:10px}h3{color:var(--gold);font-size:18px;margin:24px 0 10px 0}.meta{color:var(--gold);font-size:14px;margin-bottom:20px}.tag{display:inline-block;background:#EDDDC1;color:var(--burgundy);padding:2px 10px;border-radius:12px;font-size:12px;margin-right:6px}strong{color:var(--burgundy)}ul{padding-left:20px}li{margin:6px 0}.cta{margin-top:40px;padding:20px;background:#FDF7EE;border-left:4px solid var(--gold);border-radius:6px}.cta a{color:var(--burgundy);font-weight:bold;text-decoration:none}footer{margin-top:50px;padding-top:20px;border-top:1px solid #EDDDC1;font-size:13px;color:var(--gold);text-align:center}</style>\n' +
     '</head><body>\n' +
-    '<header><a href="/blog">← MACARON DE LUXE 部落格</a></header>\n' +
+    '<header><a href="/blog">← 溫點 WarmPlace 部落格</a></header>\n' +
     '<article>\n' +
     '<div class="meta">' + new Date(post.ts).toLocaleDateString('zh-TW') + ' · ' + (post.type === 'course' ? '🍬 馬卡龍' : '🍰 費南雪') + ' · ' + escapeHtml(post.subject || '') + '</div>\n' +
     body + '\n' +
-    '<div class="cta"><p><strong>對 ' + escapeHtml(post.subject || '') + ' 有興趣？</strong></p><p>📲 加 LINE 諮詢：<a href="https://line.me/R/ti/p/@110ypqki" target="_blank">@110ypqki</a></p><p>🌐 MACARON DE LUXE 官網：<a href="' + SITE_URL + '" target="_blank">' + SITE_URL + '</a></p></div>\n' +
+    '<div class="cta"><p><strong>對 ' + escapeHtml(post.subject || '') + ' 有興趣？</strong></p><p>📲 加 LINE 諮詢：<a href="https://line.me/R/ti/p/@110ypqki" target="_blank">@110ypqki</a></p><p>🌐 溫點 WarmPlace 官網：<a href="' + SITE_URL + '" target="_blank">' + SITE_URL + '</a></p></div>\n' +
     tagsHtml + '\n' +
     '</article>\n' +
-    '<footer>© MACARON DE LUXE · 法式精品馬卡龍與費南雪 + 高端禮贈<br>FB: <a href="https://www.facebook.com/profile.php?id=61586936279154">MACARON DE LUXE</a> · IG: <a href="https://www.instagram.com/macaron_de_luxe/">@macaron_de_luxe</a></footer>\n' +
+    '<footer>© 溫點 WarmPlace · 法式精品馬卡龍與費南雪 + 高端禮贈<br>FB: <a href="https://www.facebook.com/WarmPlace">溫點 WarmPlace</a> · IG: <a href="https://www.instagram.com/warmplace.here/">@warmplace.here</a></footer>\n' +
     '</body></html>';
 }
 
@@ -134,18 +134,18 @@ function renderIndexPage() {
   const orgSchema = {
     '@context': 'https://schema.org',
     '@type': 'Blog',
-    name: 'MACARON DE LUXE 部落格',
+    name: '溫點 WarmPlace 部落格',
     url: SITE_URL + '/blog',
-    publisher: { '@type': 'Organization', name: 'MACARON DE LUXE' },
+    publisher: { '@type': 'Organization', name: '溫點 WarmPlace' },
   };
   return '<!DOCTYPE html><html lang="zh-Hant"><head>' +
     '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
-    '<title>MACARON DE LUXE 部落格 | 法式馬卡龍與禮贈靈感</title>' +
-    '<meta name="description" content="MACARON DE LUXE 部落格 — 馬卡龍口味、禮盒選搭、婚禮企業禮贈、品牌故事">' +
+    '<title>溫點 WarmPlace 部落格 | 法式馬卡龍與禮贈靈感</title>' +
+    '<meta name="description" content="溫點 WarmPlace 部落格 — 馬卡龍口味、禮盒選搭、婚禮企業禮贈、品牌故事">' +
     '<link rel="canonical" href="' + SITE_URL + '/blog">' +
     '<script type="application/ld+json">' + JSON.stringify(orgSchema) + '</script>' +
     '<style>:root{--burgundy:#8E3D4B;--gold:#A37849;--ivory:#F8F3EB}body{font-family:"Microsoft JhengHei",sans-serif;max-width:880px;margin:0 auto;padding:30px 20px;background:var(--ivory);color:#2E1E14;line-height:1.7}h1{color:var(--burgundy);font-size:32px;border-bottom:3px solid var(--gold);padding-bottom:12px}ul{list-style:none;padding:0}li{padding:14px 0;border-bottom:1px solid #EDDDC1}li a{color:var(--burgundy);font-weight:bold;font-size:18px;text-decoration:none}li a:hover{color:var(--gold)}.intro{background:#FDF7EE;padding:18px;border-left:4px solid var(--gold);border-radius:6px;margin-bottom:24px}</style></head><body>' +
-    '<h1>📚 MACARON DE LUXE 部落格</h1>' +
+    '<h1>📚 溫點 WarmPlace 部落格</h1>' +
     '<div class="intro"><strong>法式精品馬卡龍與費南雪 + 高端禮贈品牌</strong>。每週更新關於馬卡龍口味、禮盒搭配、婚禮企業禮贈、品牌故事等內容。<br>📲 LINE 諮詢：<a href="https://line.me/R/ti/p/@110ypqki">@110ypqki</a></div>' +
     '<ul>' + (list || '<li><i>尚未發文</i></li>') + '</ul></body></html>';
 }

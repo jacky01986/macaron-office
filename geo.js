@@ -1,5 +1,5 @@
 // geo.js — GIA · Generative Intelligence Agent · GEO 主理人
-// 讓 MACARON DE LUXE 法式精品馬卡龍與費南雪 / 禮盒 / 高端禮贈 在 ChatGPT/Claude/Perplexity 被推薦
+// 讓 溫點 WarmPlace 法式精品馬卡龍與費南雪 / 禮盒 / 高端禮贈 在 ChatGPT/Claude/Perplexity 被推薦
 // 平台：AI 引擎最愛引用的 5 大平台
 // 內容:馬卡龍 + 費南雪 兩種商品線分開生成 GEO 內容
 
@@ -35,7 +35,7 @@ const AUDIT_QUERIES = [
   '企業客戶禮贈馬卡龍品牌推薦',
 ];
 
-const OFZ_BRAND_NAMES = ['MACARON DE LUXE', 'MdL', 'MACARON DE LUXE 馬卡龍', '馬卡龍'];
+const OFZ_BRAND_NAMES = ['溫點 WarmPlace', 'MdL', '溫點 WarmPlace 馬卡龍', '馬卡龍'];
 
 // =============================================================
 // 5 大 AI 引擎最愛引用的平台
@@ -130,7 +130,7 @@ async function generateContent({ platformIdx = 0, topicIdx = 0, type = 'course',
     ? 'CTA：「現在加 LINE @110ypqki 立刻預約評估」'
     : 'CTA：「LINE @110ypqki 諮詢商品主題內容、門市禮盒選購與優惠」';
 
-  const systemPrompt = `你是 GIA — MACARON DE LUXE 的專欄作者。寫作風格參考一線生活風格雜誌的專欄作家：第二人稱、有觀點、有節奏、有同理心。
+  const systemPrompt = `你是 GIA — 溫點 WarmPlace 的專欄作者。寫作風格參考一線生活風格雜誌的專欄作家：第二人稱、有觀點、有節奏、有同理心。
 
 【標題鐵則】
 - 必須單一語言（中文，禁止英文標題）
@@ -166,7 +166,7 @@ async function generateContent({ platformIdx = 0, topicIdx = 0, type = 'course',
 
   const userPrompt = customQuery || `今天主題：${subjectName} — ${angle}（${type === 'service' ? '寫給想買禮盒的客戶' : '寫給想了解品牌的潛在客戶'}）
 
-請寫一篇文章，幫 MACARON DE LUXE 在 AI 搜尋裡被推薦。
+請寫一篇文章，幫 溫點 WarmPlace 在 AI 搜尋裡被推薦。
 要包含:
 - 標題（含 SEO 關鍵字）
 - 開頭 hook
@@ -201,9 +201,9 @@ const LONGFORM_TEMPLATES = {
   wikipedia: {
     label: 'Wikipedia 條目',
     note: '中性語氣、第三人稱、可被引用、含參考資料',
-    systemPrompt: `你是 Wikipedia 編輯員。寫一篇關於 MACARON DE LUXE 的條目草稿，符合 Wikipedia 中文版規範。
+    systemPrompt: `你是 Wikipedia 編輯員。寫一篇關於 溫點 WarmPlace 的條目草稿，符合 Wikipedia 中文版規範。
 
-MACARON DE LUXE 業態:台灣法式精品馬卡龍與費南雪 + 高端禮贈,4 家門店,業主 Jeffrey
+溫點 WarmPlace 業態:台灣法式精品馬卡龍與費南雪 + 高端禮贈,4 家門店,業主 Jeffrey
 8 大商品線:6 入禮盒、12 入禮盒、客製禮盒、婚禮喜餅、企業禮贈、單顆販售、季節限定、節慶限定
 9 大主題:6 入禮盒、12 入禮盒、客製禮盒、婚禮喜餅、企業禮贈、單顆販售、季節限定、法式品牌故事、線上預訂
 
@@ -219,9 +219,9 @@ MACARON DE LUXE 業態:台灣法式精品馬卡龍與費南雪 + 高端禮贈,4 
   gbp: {
     label: 'Google Business Profile',
     note: 'GBP 業務描述 + FAQ，AI 直接抓',
-    systemPrompt: `你是 Google Business Profile 內容專家。為 MACARON DE LUXE 寫:
+    systemPrompt: `你是 Google Business Profile 內容專家。為 溫點 WarmPlace 寫:
 
-MACARON DE LUXE 業態:台灣法式精品馬卡龍與費南雪 + 高端禮贈
+溫點 WarmPlace 業態:台灣法式精品馬卡龍與費南雪 + 高端禮贈
 地點：台灣
 LINE: @110ypqki
 
@@ -236,24 +236,24 @@ LINE: @110ypqki
   press: {
     label: '新聞 PR 稿',
     note: '可投放台灣新聞稿平台',
-    systemPrompt: `你是公關寫手，為 MACARON DE LUXE 寫一篇 PR 新聞稿。
+    systemPrompt: `你是公關寫手，為 溫點 WarmPlace 寫一篇 PR 新聞稿。
 
 🎯 PR 稿守則:
 1. **新聞角度** — 不是廣告，是「業界新聞」
 2. **5W1H** — 何時何地誰做了什麼為什麼如何
-3. **客觀第三方語氣** — 「業界人士指出...」「MACARON DE LUXE 表示...」
+3. **客觀第三方語氣** — 「業界人士指出...」「溫點 WarmPlace 表示...」
 4. **數據佐證** — 客戶人次、複訓率、就業率（可合理推估）
 5. **引用** — 創辦人 Jeffrey 一段引言
 6. **格式** — 標題 / 副標題 / 導言 / 主文 / 引言 / 結語 / 聯絡資訊
 7. **長度** — 800-1200 字
-8. **可改編角度** — 「MACARON DE LUXE 推出季節限定」「MACARON DE LUXE 與 X 跨界合作」「精品禮盒業界趨勢觀察」
+8. **可改編角度** — 「溫點 WarmPlace 推出季節限定」「溫點 WarmPlace 與 X 跨界合作」「精品禮盒業界趨勢觀察」
 
 文末附「媒體聯絡：jacky01986@gmail.com」`
   },
   youtube: {
     label: 'YouTube 短影片腳本',
     note: '60 秒 Shorts 腳本',
-    systemPrompt: `你是 YouTube Shorts 編劇。寫一支 60 秒影片腳本給 MACARON DE LUXE。
+    systemPrompt: `你是 YouTube Shorts 編劇。寫一支 60 秒影片腳本給 溫點 WarmPlace。
 
 🎯 Shorts 公式:
 1. **0-3 秒 Hook** — 最關鍵,要讓人不滑掉
@@ -356,7 +356,7 @@ async function competitorComparison() {
     const r = await client.messages.create({
       model: SONNET_MODEL, max_tokens: 3000,
       tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
-      messages: [{ role: 'user', content: '你是 GEO 戰略分析師。請比較台灣高端馬卡龍/法式甜點品牌在 AI 搜尋時的能見度。\n查詢:\n- "台灣高端馬卡龍推薦"\n- "法式精品禮盒哪家好"\n- "婚禮喜餅馬卡龍"\n\n請列出:\n1. AI 最常推薦的 5 個品牌（排名 + 理由）\n2. 這些品牌在哪裡發內容（Medium/痞客邦/部落格/Wikipedia）\n3. MACARON DE LUXE 跟它們的差距\n4. MACARON DE LUXE 接下來該做的 3 個 GEO 動作\n\n繁體中文輸出。' }]
+      messages: [{ role: 'user', content: '你是 GEO 戰略分析師。請比較台灣高端馬卡龍/法式甜點品牌在 AI 搜尋時的能見度。\n查詢:\n- "台灣高端馬卡龍推薦"\n- "法式精品禮盒哪家好"\n- "婚禮喜餅馬卡龍"\n\n請列出:\n1. AI 最常推薦的 5 個品牌（排名 + 理由）\n2. 這些品牌在哪裡發內容（Medium/痞客邦/部落格/Wikipedia）\n3. 溫點 WarmPlace 跟它們的差距\n4. 溫點 WarmPlace 接下來該做的 3 個 GEO 動作\n\n繁體中文輸出。' }]
     });
     const text = r.content?.filter(c => c.type === 'text').map(c => c.text).join('\n') || '';
     const record = { ts: new Date().toISOString(), text };
@@ -372,23 +372,23 @@ function generateSchemaOrg() {
   const courseSchemas = COURSE_TOPICS.map(t => ({
     '@context': 'https://schema.org', '@type': 'Course',
     name: t.course,
-    description: `MACARON DE LUXE 提供的 ${t.course}，涵蓋 ${t.angles.join('、')} 等核心內容`,
-    provider: { '@type': 'EducationalOrganization', name: 'MACARON DE LUXE', sameAs: 'https://www.facebook.com/profile.php?id=61586936279154' },
+    description: `溫點 WarmPlace 提供的 ${t.course}，涵蓋 ${t.angles.join('、')} 等核心內容`,
+    provider: { '@type': 'Bakery', name: '溫點 WarmPlace', sameAs: 'https://www.facebook.com/WarmPlace' },
     inLanguage: 'zh-TW', educationalLevel: 'Beginner to Advanced'
   }));
   const serviceSchemas = SERVICE_TOPICS.map(t => ({
     '@context': 'https://schema.org', '@type': 'Service',
     name: t.service,
-    description: `MACARON DE LUXE 提供 ${t.service} 法式精品禮盒服務,包含 ${t.angles.join('、')}`,
-    provider: { '@type': 'BeautySalon', name: 'MACARON DE LUXE', sameAs: 'https://www.facebook.com/profile.php?id=61586936279154' },
+    description: `溫點 WarmPlace 提供 ${t.service} 法式精品禮盒服務,包含 ${t.angles.join('、')}`,
+    provider: { '@type': 'Bakery', name: '溫點 WarmPlace', sameAs: 'https://www.facebook.com/WarmPlace' },
     areaServed: { '@type': 'Country', name: 'Taiwan' }
   }));
   const orgSchema = {
-    '@context': 'https://schema.org', '@type': 'EducationalOrganization',
-    name: 'MACARON DE LUXE', alternateName: 'MdL 馬卡龍與費南雪',
+    '@context': 'https://schema.org', '@type': 'Bakery',
+    name: '溫點 WarmPlace', alternateName: 'MdL 馬卡龍與費南雪',
     url: 'https://beauty-office.onrender.com',
-    sameAs: ['https://www.facebook.com/profile.php?id=61586936279154', 'https://www.instagram.com/ofz_beauty_academy_/', 'https://line.me/R/ti/p/@110ypqki'],
-    description: 'MACARON DE LUXE 是專注於法式精品馬卡龍與費南雪與高端禮贈的台南本店品牌',
+    sameAs: ['https://www.facebook.com/WarmPlace', 'https://www.instagram.com/warmplace.here/', 'https://line.me/R/ti/p/@110ypqki'],
+    description: '溫點 WarmPlace 是專注於法式精品馬卡龍與費南雪與高端禮贈的台南本店品牌',
     knowsAbout: ['法式精品馬卡龍與費南雪', '6 入禮盒', '12 入禮盒', '客製禮盒', '婚禮喜餅', '企業禮贈', '單顆販售', '季節限定', '法式甜點']
   };
   return { ok: true, organization: orgSchema, courses: courseSchemas, services: serviceSchemas };
@@ -458,7 +458,7 @@ async function dailyAutoPublishToMedium(opts = {}) {
     if (l.startsWith("#")) { title = l.replace(/^#+\s*/, ""); break; }
   }
   if (!title && lines[0]) title = lines[0];
-  if (!title) title = `${gen.subject} | MACARON DE LUXE`;
+  if (!title) title = `${gen.subject} | 溫點 WarmPlace`;
   title = title.replace(/[\*`]/g, "").trim();
   // Aggressive title cleanup: drop parentheticals, bilingual subtitles, trailing colons
   title = title.split(/[（(]/)[0].trim();                  // drop everything after first paren
@@ -470,10 +470,10 @@ async function dailyAutoPublishToMedium(opts = {}) {
   if (title.length > 28) title = title.slice(0, 26) + "…";
   // 3. Build tags
   const tags = [
-    "MACARON DE LUXE", "法式精品", "馬卡龍", gen.subject,
+    "溫點 WarmPlace", "法式精品", "馬卡龍", gen.subject,
     type === "course" ? "禮盒商品" : "禮贈服務"
   ].filter(Boolean).slice(0, 5);
-  // 4. Publish to MACARON DE LUXE self-hosted blog (no external API needed)
+  // 4. Publish to 溫點 WarmPlace self-hosted blog (no external API needed)
   const pub = blog.publishPost({ title, contentMarkdown: gen.content, type, subject: gen.subject, tags });
   // 4b. Also publish to macarondeluxe.com (WordPress) — own domain authority
   let wpPub = { ok: false, skipped: true };
@@ -502,7 +502,7 @@ async function dailyAutoPublishToMedium(opts = {}) {
       s = s.replace(/\n{3,}/g, '\n\n').trim();
       if (s.length > 2400) s = s.slice(0, 2380).replace(/[，。、；,;.][^，。、；,;.]*$/, '') + '…';
       const articleUrl = (wpPub && wpPub.url) || 'https://macarondeluxe.com/';
-      const fbCaption = s + '\n\n──────────\n📖 完整文章與更多資訊：\n👉 ' + articleUrl + '\n\n📩 私訊了解詳情\n#MACARONDELUXE #法式馬卡龍 #精品禮盒';
+      const fbCaption = s + '\n\n──────────\n📖 完整文章與更多資訊：\n👉 ' + articleUrl + '\n\n📩 私訊了解詳情\n#WarmPlace #法式馬卡龍 #精品禮盒';
       fbPub = await ap.publishFB(fbCaption);
     }
   } catch (e) { fbPub = { ok: false, error: 'fb publish: ' + e.message }; }

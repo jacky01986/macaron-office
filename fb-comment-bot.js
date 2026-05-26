@@ -4,7 +4,7 @@
 const REPLY_TEXT = process.env.FB_COMMENT_AUTO_REPLY || '感謝您留言 🥐 為了給您最完整的服務,煩請私訊我們,專人為您介紹禮盒選項。';
 const HIDE_OR_DELETE = process.env.FB_COMMENT_ACTION || 'hide'; // 'hide' 或 'delete'
 
-// 取 Page Access Token（MACARON DE LUXE 粉專各自的）
+// 取 Page Access Token（溫點 WarmPlace 粉專各自的）
 async function getPageToken(pageId) {
   const userToken = process.env.META_ACCESS_TOKEN;
   if (!userToken) throw new Error('META_ACCESS_TOKEN missing');
@@ -81,7 +81,7 @@ async function handleCommentEvent(entry) {
   return results;
 }
 
-// 訂閱 webhook — 一鍵讓所有 MACARON DE LUXE pages 開始送 comment events 給我們
+// 訂閱 webhook — 一鍵讓所有 溫點 WarmPlace pages 開始送 comment events 給我們
 async function subscribeAllOfzPages() {
   const userToken = process.env.META_ACCESS_TOKEN;
   if (!userToken) throw new Error('META_ACCESS_TOKEN missing');

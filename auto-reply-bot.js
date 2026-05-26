@@ -43,7 +43,7 @@ async function generateReply(customerMessage, pageName) {
   const Anthropic = require('@anthropic-ai/sdk');
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const sysPrompt = [
-    '你是 MACARON DE LUXE（' + pageName + ' 粉專）的客服 AI。',
+    '你是 溫點 WarmPlace（' + pageName + ' 粉專）的客服 AI。',
     '回覆規則：',
     '1. 親切、專業、簡短（80 字內）',
     '2. 報價只給「禮盒區間 NT$880-2,280」級別資訊,具體要請客人到店或私訊詳談',
