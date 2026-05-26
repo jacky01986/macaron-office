@@ -4195,6 +4195,13 @@ async function gatherTelegramContext() {
   return out;
 }
 
+app.get('/api/admin/peek-context', async (req, res) => {
+  try {
+    const ctx = await gatherTelegramContext();
+    res.json({ ok: true, ctx, ctx_size_bytes: JSON.stringify(ctx).length });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message, stack: e.stack && e.stack.slice(0,500) }); }
+});
+
 app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, res) => {
   res.json({ ok: true }); // ack immediately so Telegram doesn't retry
   try {
@@ -4216,7 +4223,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
       await sendTelegram(chatId, '🥐 溫點 WarmPlace · VICTOR (AI 行銷總監)\n\n直接問我問題,我會帶整個 AI 團隊找答案。例如:\n\n• 「下週母親節該主打什麼?」\n• 「IG 流量都導不到門市,怎麼辦?」\n• 「企業送禮怎麼開發?」\n• 「新光西門 B2 表現比較差,有什麼建議?」\n\n指令:\n/reset — 清空對話記憶\n/data — 看現在帳號數據摘要');
       return;
     }
-    if (text === '/reset') {
+    if (text === '/reset' || text === '/rest' || text === '/clear' || text === '清除記憶' || text === '清空') {
       tgClearHistory(chatId);
       await sendTelegram(chatId, '✅ 對話記憶已清空。');
       return;
@@ -4237,7 +4244,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     try { if (marketIntel) marketCtx = marketIntel.getMarketIntelContext({ compact: true }); } catch {}
     const dataLine = `\n\n[目前 MACARON 即時數據]\n${JSON.stringify(liveData)}\n\n${marketCtx}`;
 
-    const systemPrompt = `你是 VICTOR — 溫點 WarmPlace 的 AI 行銷總監兼整個 AI 團隊的大腦。\n\n品牌:精品馬卡龍與費南雪禮贈品牌,4 家門店(台南本店、新光西門 B2、新光中港 B2、新光南西 B2)。月度預算 NT$60,000。\nIG @warmplace.here 粉絲 32K,FB 粉專 118 粉絲(主戰場在 IG)。\nLINE Bot @110ypqki, SaleSmartly 對話追蹤已開。\n\n你帶領團隊:LEON(廣告投手)、CAMILLE(內容主筆,負責文案+部落格 SEO)、ARIA(視覺指導)、DEX(數據分析)、NOVA(品牌經理,負責社群+公關)、MILO(KOL)。
+    const systemPrompt = `今天日期: ${new Date().toLocaleDateString('zh-TW', {timeZone:'Asia/Taipei', year:'numeric', month:'long', day:'numeric', weekday:'long'})} (台北時區)。\n\n你是 VICTOR — 溫點 WarmPlace 的 AI 行銷總監兼整個 AI 團隊的大腦。\n\n品牌:精品馬卡龍與費南雪禮贈品牌,4 家門店(台南本店、新光西門 B2、新光中港 B2、新光南西 B2)。月度預算 NT$60,000。\nIG @warmplace.here 粉絲 32K,FB 粉專 118 粉絲(主戰場在 IG)。\nLINE Bot @110ypqki, SaleSmartly 對話追蹤已開。\n\n你帶領團隊:LEON(廣告投手)、CAMILLE(內容主筆,負責文案+部落格 SEO)、ARIA(視覺指導)、DEX(數據分析)、NOVA(品牌經理,負責社群+公關)、MILO(KOL)。
 
 【你能看到的資產(實時注入到 prompt 末尾的 [目前 即時數據] block)】
 1. SaleSmartly 客戶對話:Meta Messenger / IG DM / LINE 訊息統一,過去 7 天對話統計 + Top 10 客戶問題 + 最新 5 通對話的完整訊息內容
@@ -4246,7 +4253,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
 4. 決策歷史:最近 8 件 Jeffrey 拍板 + 5 件待決策
 5. 市場情報:全台馬卡龍 / 費南雪新聞 + 對手最新廣告(法朋、亞尼克、Paul、Ladurée、Pierre Hermé)
 
-當 Jeffrey 問「分析對話 / 為什麼沒成交 / 客人在問什麼 / 流失客人多少」這類問題,你**必須引用 customer_conversations_7d 或 recent_customer_conversations 裡面的真實訊息**,引出具體的句子當證據,不要說「我看不到」。\n\n【你的工作模式 — 你是 AI Agent,不是建議生成器】\n你的目標是【幫 Jeffrey 解決問題、產出可立即使用的交付物】,不是給「建議」。\n\n**判斷請求類型,直接給對應交付物:**\n\n① 問題型 → 給【今天做 / 本週做 / 本月做】三層具體行動 + 指名負責員工\n② 內容型(寫文案/Reels 腳本) → 【直接產 3-5 版可立即複製貼上的成品】,不要先講想法再寫\n③ 規劃型(行事曆) → 【直接出表格】:日期 / 平台 / 主題 / 文案 / 視覺需求\n④ 分析型(現在數據怎樣?) → 引用即時數據,3 個觀察 + 1 個關鍵問題給 Jeffrey 拍板\n⑤ 決策型(該不該做 X?) → 直接給【做 / 不做】+ 量化理由(預估金額、leads、GMV)+ 風險\n\n**你有對話記憶** — 你看得到過去的對話,延續討論,不要重複問已經回答的問題。\n**遇資料不足** — 直接告訴 Jeffrey 缺什麼數據 + 怎麼補上,不要瞎掰。\n\n【絕對禁止】\n- 廣告投放細節(老闆要求,只談客戶經營/內容/門店/品牌)\n- 課程、報名、學員、教學、紋繡、美容(這些是舊業態)\n- 「以下幾個建議供參考」「希望對你有幫助」這類客套話\n- 給範圍式建議(「可以考慮...」)應改成決策建議(「建議做 X,不要做 Y,因為 ...」)\n\n回答用繁體中文,可用 emoji 但不要太多。`;
+當 Jeffrey 問「分析對話 / 為什麼沒成交 / 客人在問什麼 / 流失客人多少」這類問題,**第一優先看 meta_inbox_fb 跟 meta_inbox_ig 兩個欄位** (從 Meta Graph API 直接讀回的 FB Messenger + IG DM 真實對話, 不是 placeholder)。引用具體客戶名 + 客戶說的原句當證據。**絕對禁止說「我無法存取 Meta 對話」「請把對話貼給我」這類話 — 你已經能讀到了**。如果 meta_inbox_fb 是空陣列, 才能說「目前沒有客戶對話可分析」。\n\n【你的工作模式 — 你是 AI Agent,不是建議生成器】\n你的目標是【幫 Jeffrey 解決問題、產出可立即使用的交付物】,不是給「建議」。\n\n**判斷請求類型,直接給對應交付物:**\n\n① 問題型 → 給【今天做 / 本週做 / 本月做】三層具體行動 + 指名負責員工\n② 內容型(寫文案/Reels 腳本) → 【直接產 3-5 版可立即複製貼上的成品】,不要先講想法再寫\n③ 規劃型(行事曆) → 【直接出表格】:日期 / 平台 / 主題 / 文案 / 視覺需求\n④ 分析型(現在數據怎樣?) → 引用即時數據,3 個觀察 + 1 個關鍵問題給 Jeffrey 拍板\n⑤ 決策型(該不該做 X?) → 直接給【做 / 不做】+ 量化理由(預估金額、leads、GMV)+ 風險\n\n**你有對話記憶** — 你看得到過去的對話,延續討論,不要重複問已經回答的問題。\n**遇資料不足** — 直接告訴 Jeffrey 缺什麼數據 + 怎麼補上,不要瞎掰。\n\n【絕對禁止】\n- 廣告投放細節(老闆要求,只談客戶經營/內容/門店/品牌)\n- 課程、報名、學員、教學、紋繡、美容(這些是舊業態)\n- 「以下幾個建議供參考」「希望對你有幫助」這類客套話\n- 給範圍式建議(「可以考慮...」)應改成決策建議(「建議做 X,不要做 Y,因為 ...」)\n\n回答用繁體中文,可用 emoji 但不要太多。`;
 
     const c = anthropic;
     if (!c) { await sendTelegram(chatId, '❌ ANTHROPIC_API_KEY 未設,VICTOR 不在線'); return; }
@@ -4311,6 +4318,18 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
         }
       },
       {
+        name: 'web_search',
+        description: '搜索網路即時資訊 (用 Google News 後台). 用於 Jeffrey 問新聞、節慶、流行話題、競品最近動態這類即時資訊. 自動帶馬卡龍 / 費南雪 / 韓系甜點 相關背景做篩選.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            query: { type: 'string', description: '搜尋關鍵字 (繁體中文)' },
+            max_results: { type: 'integer', description: '回傳幾條, 預設 10' }
+          },
+          required: ['query']
+        }
+      },
+      {
         name: 'query_ai_team_data',
         description: '查詢 AI 團隊累積的特定數據 (客戶分群明細/Top 客戶問題/最近廣告數據/IG 高互動貼文). 用於 Jeffrey 想看某個特定面向的細節, 預設 context 沒給的時候.',
         input_schema: {
@@ -4366,6 +4385,28 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
             if (!d || !d.addPending) return { error: 'decisions module not available' };
             const r = await d.addPending({ title: input.title, recommendation: input.decision, source: 'victor-telegram', metadata: { note: input.note || '', decided_by: 'Jeffrey', decided_at: new Date().toISOString() } });
             return { ok: true, decision_id: r && r.id, note: '已記入決策歷史' };
+          }
+          case 'web_search': {
+            try {
+              const q = input.query || '';
+              const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+              const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+              if (!r.ok) return { error: 'Google News HTTP ' + r.status };
+              const xml = await r.text();
+              const items = [];
+              const re = /<item>([\s\S]*?)<\/item>/g;
+              let m;
+              while ((m = re.exec(xml)) !== null) {
+                const block = m[1];
+                const t = block.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
+                const l = block.match(/<link>([\s\S]*?)<\/link>/);
+                const d = block.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+                const s = block.match(/<source[^>]*>([\s\S]*?)<\/source>/);
+                if (t) items.push({ title: t[1].trim(), link: l && l[1] && l[1].trim(), pubDate: d && d[1] && d[1].trim(), source: s && s[1] && s[1].trim() });
+                if (items.length >= (input.max_results || 10)) break;
+              }
+              return { query: q, count: items.length, items };
+            } catch (e) { return { error: e.message }; }
           }
           case 'query_ai_team_data': {
             const base = `http://localhost:${PORT}`;
