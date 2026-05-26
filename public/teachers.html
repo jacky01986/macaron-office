@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<title>👩 門店戰報 · MACARON DE LUXE</title>
+<title>👩 門店戰報 · 溫點 WarmPlace</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   :root {
@@ -74,7 +74,7 @@
 </head>
 <body>
 <div class="nav">
-  <span class="brand">MACARON DE LUXE</span>
+  <span class="brand">溫點 WarmPlace</span>
   <a href="/" class="home">← 主辦公室</a>
   <a href="/customers.html">👥 客戶</a>
   <a href="/optimize.html">⚙️ 廣告優化</a>
@@ -149,7 +149,7 @@ async function load() {
 
 function render() {
   if (Object.keys(DATA || {}).length === 0) {
-    document.getElementById('content').innerHTML = '<div class="error-box">尚未設定任何門店 / 分店。<br><br>請在 Render 環境變數設定 <code>TEACHERS_CONFIG</code>，例如：<pre>[\n  { "key": "main", "name": "MACARON DE LUXE", "page_id": "你的FB粉專ID", "match": "" },\n  { "key": "antoine", "name": "Antoine 主廚", "page_id": "另一個粉專ID", "match": "antoine" }\n]</pre>match 用 regex 比對 campaign 名稱（不分大小寫），留空代表 fallback 預設。</div>';
+    document.getElementById('content').innerHTML = '<div class="error-box">尚未設定任何門店 / 分店。<br><br>請在 Render 環境變數設定 <code>TEACHERS_CONFIG</code>，例如：<pre>[\n  { "key": "main", "name": "溫點 WarmPlace", "page_id": "你的FB粉專ID", "match": "" },\n  { "key": "antoine", "name": "Antoine 主廚", "page_id": "另一個粉專ID", "match": "antoine" }\n]</pre>match 用 regex 比對 campaign 名稱（不分大小寫），留空代表 fallback 預設。</div>';
     return;
   }
   if (CURRENT === 'compare') return renderCompare();

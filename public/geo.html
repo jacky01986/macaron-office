@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GIA · GEO 主理人 — MACARON DE LUXE</title>
+<title>GIA · GEO 主理人 — 溫點 WarmPlace</title>
 <style>
 :root {
   --burgundy: #8E3D4B; --burgundy-dark: #5D2630; --gold: #A37849; --gold-bright: #B8935F;
@@ -41,7 +41,7 @@ nav-back { display: inline-block; color: var(--gold); text-decoration: none; mar
 <header>
 <div>
 <h1>🌐 GIA · GEO 主理人</h1>
-<div class="subtitle">Generative Intelligence Agent · 讓 AI 推薦 MACARON DE LUXE 馬卡龍與費南雪</div>
+<div class="subtitle">Generative Intelligence Agent · 讓 AI 推薦 溫點 WarmPlace 馬卡龍與費南雪</div>
 </div>
 <div class="row">
 <button class="btn btn-gold" onclick="runDailyBriefing()">📊 跑今日 GEO 簡報</button>
@@ -113,7 +113,7 @@ nav-back { display: inline-block; color: var(--gold); text-decoration: none; mar
 <label>標題:</label>
 <input id="md-title" type="text" placeholder="文章標題" style="width: 360px;">
 <label>標籤:</label>
-<input id="md-tags" type="text" placeholder="MACARON DE LUXE,法式馬卡龍,精品禮盒" style="width: 200px;">
+<input id="md-tags" type="text" placeholder="溫點 WarmPlace,法式馬卡龍,精品禮盒" style="width: 200px;">
 <label>狀態:</label>
 <select id="md-status">
 <option value="draft">draft（草稿，建議先用）</option>
@@ -289,7 +289,7 @@ function copyLongFormToMedium() {
   const title = titleLine.replace(/^#+\s*/, '').trim();
   document.getElementById('md-title').value = title;
   document.getElementById('md-content').value = __lastLongForm.content;
-  document.getElementById('md-tags').value = 'MACARON DE LUXE,' + (__lastLongForm.subject || '馬卡龍');
+  document.getElementById('md-tags').value = '溫點 WarmPlace,' + (__lastLongForm.subject || '馬卡龍');
 }
 
 async function publishMedium() {
