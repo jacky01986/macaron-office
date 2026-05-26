@@ -1,5 +1,5 @@
 // ============================================================
-// MACARON DE LUXE · LINE Messaging API Client
+// 溫點 WarmPlace · LINE Messaging API Client
 // ============================================================
 
 const crypto = require("crypto");

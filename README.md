@@ -1,4 +1,4 @@
-# 🥐 MACARON DE LUXE · 虛擬辦公室
+# 🥐 溫點 WarmPlace · 虛擬辦公室
 
 台灣法式精品甜點品牌(🍬 馬卡龍 + 🍰 費南雪 雙主力)的 AI 行銷團隊。9 位 AI 員工（VICTOR 行銷總監 + 8 位專員）全部接真實 Claude API。
 

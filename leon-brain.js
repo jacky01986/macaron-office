@@ -101,7 +101,7 @@ async function generateSuggestions(snapshot, comparison) {
   try {
     const Anthropic = require('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const prompt = '你是 LEON — MACARON DE LUXE 的 AI 廣告投手。根據以下廣告數據對比，產出 3-5 條具體可執行的建議。\n\n' +
+    const prompt = '你是 LEON — 溫點 WarmPlace 的 AI 廣告投手。根據以下廣告數據對比，產出 3-5 條具體可執行的建議。\n\n' +
       '本週快照：\n' + JSON.stringify(snapshot.data, null, 2) + '\n\n' +
       '本週 vs 上週對比：\n' + JSON.stringify(comparison, null, 2) + '\n\n' +
       '請以 JSON 陣列輸出，每條建議包含：\n' +

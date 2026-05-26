@@ -1,7 +1,7 @@
 {
   "name": "macaron-de-luxe-virtual-office",
   "version": "1.0.0",
-  "description": "MACARON DE LUXE virtual AI office — four AI employees powered by Claude",
+  "description": "溫點 WarmPlace virtual AI office — four AI employees powered by Claude",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -1,5 +1,5 @@
 // ============================================================
-// MACARON DE LUXE · Meta Graph API Client (read-only, Stage 2)
+// 溫點 WarmPlace · Meta Graph API Client (read-only, Stage 2)
 // --------------------------------------------------------------
 // Wraps Graph API v21.0 endpoints for:
 //   • Facebook Page posts / insights
@@ -756,7 +756,7 @@ async function searchAdsLibrary({ searchTerms, country = "TW", limit = 25, adTyp
   };
 }
 
-// 內建競品名單（MACARON DE LUXE / 溫點適用）
+// 內建競品名單（溫點 WarmPlace / 溫點適用）
 const DEFAULT_COMPETITORS = [
   { name: "法朋", slug: "lefait", category: "高端" },
   { name: "Ladurée", slug: "laduree", category: "國際精品" },

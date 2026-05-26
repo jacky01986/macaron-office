@@ -1,5 +1,5 @@
 // ============================================================
-// MACARON DE LUXE · Google Ads API Client (T5)
+// 溫點 WarmPlace · Google Ads API Client (T5)
 // ============================================================
 // 所需 env vars:
 //   GOOGLE_ADS_DEVELOPER_TOKEN   (MCC API Center 拿的 token)

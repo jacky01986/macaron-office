@@ -1,11 +1,11 @@
-// customer-profiler.js — AI 客戶畫像系統 (MACARON DE LUXE 版)
+// customer-profiler.js — AI 客戶畫像系統 (溫點 WarmPlace 版)
 //
 // 流程：每一條客戶訊息進來（LINE webhook / SaleSmartly webhook） →
 //      呼叫 Claude Haiku 自動分析 (約 0.5-1 秒) →
 //      累積成 customer_profiles.json 的客戶畫像 →
 //      後續這位客戶再來，AI 員工（VICTOR / LEON / NOVA）就能看到他的歷史意圖、喜好、購買階段
 //
-// 業態：MACARON DE LUXE 台灣精品馬卡龍品牌
+// 業態：溫點 WarmPlace 台灣精品馬卡龍品牌
 //   - 主力商品：禮盒 NT$480–2,280（6 入 NT$880 / 12 入 NT$1,580 是核心）
 //   - 4 家門店 + 線上訂購
 //   - TA：25–40 歲女性、職業 OL、送禮需求
@@ -59,9 +59,9 @@ async function analyzeMessage({ msg, channel, prevProfile }) {
 
   const ctx = prevProfile ? `\n\n[該客人之前的畫像]\n類型：${prevProfile.latest?.customer_type || '未知'}\n上次意圖：${prevProfile.latest?.intent || ''}\n上次興趣品項：${(prevProfile.latest?.products_interested || []).join('、') || '—'}` : '';
 
-  const prompt = `你是 MACARON DE LUXE 的 CRM 分析師。請分析一個客人傳進來的訊息，輸出 JSON。
+  const prompt = `你是 溫點 WarmPlace 的 CRM 分析師。請分析一個客人傳進來的訊息，輸出 JSON。
 
-MACARON DE LUXE 業態：
+溫點 WarmPlace 業態：
 - 台灣精品馬卡龍品牌，定位法式高端禮贈
 - 商品：禮盒 NT$480–2,280（6 入 NT$880 / 12 入 NT$1,580 是核心）
 - 4 家門店（台北中山 / 台中 / 高雄 等）+ 線上宅配

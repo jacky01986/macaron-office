@@ -7,7 +7,7 @@ try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 const SEEN_FILE = path.join(DATA_DIR, 'capi_sync_seen.json');
 const SYNC_LOG = path.join(DATA_DIR, 'capi_sync_log.jsonl');
 
-// SaleSmartly channel_id -> MACARON DE LUXE FB page_id mapping
+// SaleSmartly channel_id -> 溫點 WarmPlace FB page_id mapping
 // 從環境變數讀,格式: CHANNEL_TO_PAGE_JSON='{"<channel_id>":"<page_id>",...}'
 // 一個 FB 粉專 = 一個 channel_id = 一個 page_id (在 Messenger 場景兩者相同)
 let CHANNEL_TO_PAGE = {};

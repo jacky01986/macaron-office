@@ -1,5 +1,5 @@
 // meta-capi.js — Meta Conversions API client（Lead + Purchase）
-// MACARON DE LUXE · 把每個客戶詢問當作 Lead 事件回送 Meta
+// 溫點 WarmPlace · 把每個客戶詢問當作 Lead 事件回送 Meta
 // FB 演算法會學「這種人會詢問」→ 自動找更多類似的人 → 廣告越投越精準
 //
 // 必要環境變數：

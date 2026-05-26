@@ -186,7 +186,7 @@ async function generateSuggestions(empKey, snapshot, comparison) {
   try {
     const Anthropic = require('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const prompt = '你是 ' + emp.name + ' ' + emp.emoji + ' — MACARON DE LUXE 的 ' + emp.role + '。\n' +
+    const prompt = '你是 ' + emp.name + ' ' + emp.emoji + ' — 溫點 WarmPlace 的 ' + emp.role + '。\n' +
       '你的關注領域：' + emp.focusAreas + '\n\n' +
       '【本週數據】\n' + JSON.stringify(snapshot.data, null, 2) + '\n\n' +
       '【vs 上週】\n' + JSON.stringify(comparison, null, 2) + '\n\n' +
