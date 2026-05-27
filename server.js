@@ -4282,6 +4282,8 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     try {
       // ARCHITECTURAL FIX: inject Meta inbox as user/assistant priming
       // (Claude Opus is paranoid about system-injected PII but trusts user-provided ground data)
+      // sanitize: strip lone surrogates that can break Anthropic JSON
+      function safe(s) { return String(s || '').replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, ''); }
       const inboxPriming = [];
       const fb = (liveData && liveData.meta_inbox_fb) || [];
       const ig = (liveData && liveData.meta_inbox_ig) || [];
@@ -4295,7 +4297,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
             blocks.push('\n對話 ' + (i+1) + ': 客戶「' + (c.with || '匿名') + '」');
             (c.messages || []).slice(-8).forEach(m => {
               const who = m.from === '我們' ? '我們回覆' : '客人';
-              blocks.push('  [' + who + '] ' + (m.text || '').replace(/\n/g, ' ').slice(0, 200));
+              blocks.push('  [' + who + '] ' + safe((m.text || '').replace(/\n/g, ' ').slice(0, 200)));
             });
           });
         };
@@ -4304,7 +4306,9 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
         inboxPriming.push({ role: 'user', content: blocks.join('\n') });
         inboxPriming.push({ role: 'assistant', content: '收到。我已經讀完這份真實對話資料,包含 ' + (fb.length + ig.length) + ' 通客戶對話。接下來你問我的任何問題,我會直接引用具體客戶名 + 訊息原句作為證據,不會再說「請貼對話給我」。' });
       }
-      const convoMessages = [...inboxPriming, ...history.slice(-30)];
+      // sanitize ALL history content for Anthropic
+      const safeHistory = history.slice(-30).map(h => ({ role: h.role, content: typeof h.content === 'string' ? safe(h.content) : h.content }));
+      const convoMessages = [...inboxPriming, ...safeHistory];
       let final = null;
       const maxTurns = 6;
       for (let turn = 0; turn < maxTurns; turn++) {
