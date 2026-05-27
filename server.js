@@ -3039,6 +3039,47 @@ app.get('/api/geo/recent-content', (req, res) => {
 });
 
 // GET /api/salesmartly/probe — diagnostic: env presence + raw listRecentConversations call
+app.get('/api/salesmartly/debug-messages', async (req, res) => {
+  try {
+    const ss = require('./salesmartly');
+    // Step 1: list conversations
+    const list = await ss.listRecentConversations({ days: 30, page_size: 5 });
+    const convs = (list.data && list.data.list) || list.data || list.list || list.conversations || [];
+    if (convs.length === 0) {
+      return res.json({ ok: true, step: 'no conversations', list_response_keys: Object.keys(list), list_sample: JSON.stringify(list).slice(0, 800) });
+    }
+    // Step 2: for first 3 conversations, try to fetch messages
+    const trace = [];
+    for (const conv of convs.slice(0, 3)) {
+      const uid = conv.chat_user_id || conv.user_id || conv.contact_id || conv.id || conv.session_id;
+      try {
+        const mr = await ss.listMessages(uid, { page_size: 10 });
+        // Capture ALL fields of message response
+        const msgs = (mr.data && mr.data.list) || mr.data || mr.list || mr.items || mr.messages || [];
+        const firstMsg = msgs[0] || null;
+        trace.push({
+          conv_user: conv.title || conv.user_name || uid,
+          uid_used: uid,
+          msg_count: msgs.length,
+          response_top_keys: Object.keys(mr),
+          response_data_keys: mr.data ? Object.keys(mr.data) : 'no data key',
+          first_msg_keys: firstMsg ? Object.keys(firstMsg) : 'no first msg',
+          first_msg_sample: firstMsg ? JSON.stringify(firstMsg).slice(0, 500) : null,
+          all_msg_text_attempts: msgs.slice(0, 3).map(m => ({
+            content: m.content, text: m.text, message: m.message, body: m.body, msg: m.msg, msg_content: m.msg_content,
+            direction: m.direction, from_type: m.from_type, sender_type: m.sender_type, message_direction: m.message_direction, from_user_type: m.from_user_type,
+          })),
+        });
+      } catch (e) {
+        trace.push({ uid_used: uid, err: e.message.slice(0, 300) });
+      }
+    }
+    res.json({ ok: true, conv_count: convs.length, conv_first_keys: Object.keys(convs[0]), traces: trace });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 app.get('/api/salesmartly/probe', async (req, res) => {
   const env_check = {
     has_token: !!process.env.SALESMARTLY_TOKEN,
