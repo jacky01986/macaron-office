@@ -151,3 +151,69 @@ input:focus, textarea:focus, select:focus {
 .tabbar { background: var(--dark-2) !important; border-bottom: 1px solid var(--burgundy-dark) !important; }
 .tabbar button { background: transparent !important; color: var(--muted) !important; border: 0 !important; }
 .tabbar button.active { color: var(--gold-bright) !important; border-bottom: 3px solid var(--gold) !important; }
+
+/* ============================================================
+ * v2.1 — 防文字被白底吃掉 (修截圖反映的問題)
+ * ============================================================ */
+
+/* 強制覆蓋所有 inline 白/米/奶 背景 */
+[style*="background: white"],
+[style*="background:white"],
+[style*="background: #fff"],
+[style*="background:#fff"],
+[style*="background: #FFF"],
+[style*="background:#FFF"],
+[style*="background: #FAF"],
+[style*="background:#FAF"],
+[style*="background: #FFF8"],
+[style*="background:#FFF8"],
+[style*="background: #FFF4"],
+[style*="background:#FFF4"],
+[style*="background: #f9f5"],
+[style*="background:#f9f5"],
+[style*="background-color: white"],
+[style*="background-color:white"],
+[style*="background-color: #fff"],
+[style*="background-color:#fff"] {
+  background: var(--dark-2) !important;
+  color: var(--ivory) !important;
+}
+
+/* 常見容器類名一律深色 */
+.lesson-section, .team-card, .month-row, .month-row:hover,
+.config-card, .data-card, .info-card, .stat-card, .metric-card,
+.box, .well, .tile, .item, .entry, .row,
+[class*="card"], [class*="panel"], [class*="box"],
+[class*="section"]:not(.macaron-topnav):not(.tabbar) {
+  background: var(--dark-2) !important;
+  color: var(--ivory) !important;
+  border-color: var(--burgundy-dark) !important;
+}
+
+/* 內部 children 文字也用 ivory */
+.card *, .panel *, .lesson-section *, .team-card *,
+[class*="card"] *, [class*="panel"] * {
+  color: inherit;
+}
+
+/* badge / pill / status 顏色保留 — 不覆蓋 */
+.badge, .pill, .tag, .chip, .b-planned, .b-ready, .b-done,
+.status, .label-success, .label-warning, .label-danger {
+  /* 保留原色 */
+}
+.b-planned { background: var(--burgundy-dark) !important; color: var(--gold-bright) !important; }
+.b-ready { background: var(--green) !important; color: white !important; }
+.b-done { background: var(--gold) !important; color: var(--dark) !important; }
+
+/* 修主標題 / 副標題 灰色變太淺問題 */
+.subtitle, .sub, .desc, .description, .hint, .help {
+  color: var(--gold) !important;
+  opacity: 0.85;
+}
+
+/* 修 footer-nav 白底 */
+.footer-nav, footer, .footer {
+  background: var(--dark-2) !important;
+  color: var(--ivory) !important;
+  border-color: var(--burgundy-dark) !important;
+}
