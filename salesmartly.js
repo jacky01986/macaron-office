@@ -149,14 +149,16 @@ async function listMessages(chat_user_id, { page = 1, page_size = 50 } = {}) {
 }
 
 const BUCKETS = {
-  'price': { rx: /價錢|學費|多少錢|費用|報價|價格/, label: '價格 / 學費' },
-  'content': { rx: /商品|禮盒|內容|口味|介紹/, label: '商品內容' },
-  'time': { rx: /時間|什麼時候|開課|何時/, label: '上課時間' },
-  'pay': { rx: /怎麼報名|付款|匯款|刷卡|分期/, label: '報名 / 付款' },
-  'cert': { rx: /證照|證書|執照|結業/, label: '證照 / 結業' },
-  'refund': { rx: /退費|取消|退款/, label: '退費 / 取消' },
-  'teacher': { rx: /老師|師資|誰教/, label: '師資 / 老師' },
-  'place': { rx: /地點|教室|地址|哪裡/, label: '地點 / 教室' },
+  'price': { rx: /價錢|多少錢|費用|報價|價格|多錢/, label: '價格' },
+  'content': { rx: /禮盒|口味|內容|介紹|限定/, label: '禮盒 / 口味' },
+  'order': { rx: /訂購|怎麼買|可以買|想要|要訂/, label: '訂購方式' },
+  'pickup': { rx: /取貨|自取|宅配|寄送|配送|門市/, label: '取貨 / 配送' },
+  'custom': { rx: /客製|客制|專屬|專門|刻字|印字/, label: '客製化' },
+  'wedding': { rx: /喜餅|婚禮|新人|結婚|小物/, label: '婚禮 / 喜餅' },
+  'corp': { rx: /企業|公司|送禮|採購|大量|批發|團購/, label: '企業 / 大量' },
+  'allergy': { rx: /過敏|麩質|蛋|奶|素食|無糖/, label: '過敏原 / 素食' },
+  'expire': { rx: /保存|期限|保鮮|可以放|放多久/, label: '保存期限' },
+  'store': { rx: /店面|分店|地點|地址|哪裡|台南|台北|台中/, label: '店面位置' },
 };
 
 function extractTopQuestions(messages) {
@@ -191,8 +193,12 @@ async function getCustomerInsights({ days = 7 } = {}) {
         const mr = await listMessages(uid, { page_size: 30 });
         const ms = (mr.data && mr.data.list) || mr.data || mr.list || mr.items || [];
         const inb = ms.filter(m => {
-          const d = m.direction || m.from_type || m.sender_type || m.message_direction;
-          return d === 'in' || d === 'visitor' || d === 'customer' || d === 1 || d === '1';
+          // SaleSmartly: is_reply=true means OUR reply, is_reply=false means CUSTOMER msg
+          if (m.is_reply === false || m.is_reply === 0) return true;
+          if (m.is_reply === true || m.is_reply === 1) return false;
+          // fallback: sender_type
+          const d = m.sender_type || m.direction || m.from_type;
+          return d === 'visitor' || d === 'customer' || d === 'user' || d === 'in';
         });
         allMsgs.push(...inb);
       } catch {}
@@ -302,5 +308,18 @@ async function getCustomerProfiles({ days = 90, page_size = 200 } = {}) {
   };
 }
 
-module.exports = { signParams, apiCall, listRecentConversations, listMessages, extractTopQuestions, getCustomerInsights, formatBriefingSection, probeAll,   getCustomerProfiles,
+// Normalize messages to consistent {from_customer, text, at}
+async function listMessagesNormalized(chat_user_id, opts) {
+  const r = await listMessages(chat_user_id, opts);
+  const ms = (r.data && r.data.list) || r.list || [];
+  return ms.map(m => ({
+    from_customer: (m.is_reply === false || m.is_reply === 0),
+    text: m.text || m.content || m.message || '',
+    at: m.send_time || m.created_at || m.time,
+    msg_type: m.msg_type,
+    sender_type: m.sender_type,
+  }));
+}
+
+module.exports = { signParams, apiCall, listRecentConversations, listMessages, listMessagesNormalized, extractTopQuestions, getCustomerInsights, formatBriefingSection, probeAll,   getCustomerProfiles,
 };

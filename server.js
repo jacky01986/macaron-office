@@ -3871,26 +3871,29 @@ async function gatherTelegramContext() {
     const ss = require('./salesmartly');
     if (ss && typeof ss.listRecentConversations === 'function') {
       const r = await ss.listRecentConversations({ days: 7, page_size: 20 });
-      const convs = (r && r.conversations) || [];
+      // SaleSmartly v2 response: r.data.list (not r.conversations)
+      const convs = (r && r.data && r.data.list) || r.list || r.conversations || [];
       const top5 = convs.slice(0, 5);
       const detailed = [];
       for (const c of top5) {
         try {
-          const userId = c.chat_user_id || c.id || c.user_id;
+          const userId = c.chat_user_id || c.session_id || c.user_id;
           if (!userId) continue;
-          const m = await ss.listMessages(userId, { page_size: 10 });
-          const msgs = (m && (m.messages || m.data)) || [];
+          // Use new normalized helper
+          const msgs = ss.listMessagesNormalized
+            ? await ss.listMessagesNormalized(userId, { page_size: 10 })
+            : [];
           detailed.push({
-            user: c.user_name || c.username || c.nickname || userId,
-            channel: c.channel || c.platform || c.source,
-            last_msg_at: c.last_message_time || c.updated_at,
+            user: c.title || c.user_name || c.username || userId,
+            channel: c.channel || c.channel_id || c.source,
+            last_msg_at: c.end_time || c.start_time || c.updated_time,
             messages: msgs.slice(-8).map(x => ({
-              from_customer: (x.from_customer ?? x.is_customer ?? x.is_from_customer) === true,
-              text: (x.text || x.content || x.message || '').slice(0, 200),
-              at: x.created_at || x.time || x.timestamp,
+              from_customer: x.from_customer,
+              text: (x.text || '').slice(0, 200),
+              at: x.at,
             })),
           });
-        } catch {}
+        } catch (e) { console.error('[ss recent_conv]', e.message); }
       }
       if (detailed.length > 0) out.recent_customer_conversations = detailed;
     }
