@@ -192,14 +192,7 @@ async function getCustomerInsights({ days = 7 } = {}) {
       try {
         const mr = await listMessages(uid, { page_size: 30 });
         const ms = (mr.data && mr.data.list) || mr.data || mr.list || mr.items || [];
-        const inb = ms.filter(m => {
-          // SaleSmartly: is_reply=true means OUR reply, is_reply=false means CUSTOMER msg
-          if (m.is_reply === false || m.is_reply === 0) return true;
-          if (m.is_reply === true || m.is_reply === 1) return false;
-          // fallback: sender_type
-          const d = m.sender_type || m.direction || m.from_type;
-          return d === 'visitor' || d === 'customer' || d === 'user' || d === 'in';
-        });
+        const inb = ms.filter(m => m.sender_type === 1);
         allMsgs.push(...inb);
       } catch {}
     }
@@ -312,13 +305,14 @@ async function getCustomerProfiles({ days = 90, page_size = 200 } = {}) {
 async function listMessagesNormalized(chat_user_id, opts) {
   const r = await listMessages(chat_user_id, opts);
   const ms = (r.data && r.data.list) || r.list || [];
+  // SaleSmartly empirical: sender_type 1 = visitor/customer, sender_type 2 = agent/system reply
   return ms.map(m => ({
-    from_customer: (m.is_reply === false || m.is_reply === 0),
-    text: m.text || m.content || m.message || '',
+    from_customer: m.sender_type === 1,
+    text: (m.text || m.content || m.message || '').toString(),
     at: m.send_time || m.created_at || m.time,
     msg_type: m.msg_type,
     sender_type: m.sender_type,
-  }));
+  })).filter(m => m.text && m.text.length > 0 && !m.text.startsWith('{"channel_info"'));
 }
 
 module.exports = { signParams, apiCall, listRecentConversations, listMessages, listMessagesNormalized, extractTopQuestions, getCustomerInsights, formatBriefingSection, probeAll,   getCustomerProfiles,
