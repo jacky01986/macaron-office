@@ -4234,6 +4234,55 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
       return;
     }
 
+    // /meta — Direct dump of Meta inbox (FB Messenger + IG DM) WITHOUT Claude
+    if (text === '/meta' || text === '/inbox' || text === '/fb' || text === '/ig') {
+      try {
+        const m = require('./meta');
+        const ib = await m.getInbox({ limit_conv: 8, limit_msg: 10 });
+        const lines = ['📨 Meta 對話 (直接從 Graph API 讀, 沒過 AI):\n'];
+        ['fb', 'ig'].forEach(p => {
+          const platform = p === 'fb' ? '📨 FB Messenger' : '📷 IG DM';
+          const convs = ib[p] || [];
+          lines.push('\n' + platform + ': ' + convs.length + ' 通對話');
+          convs.forEach((c, i) => {
+            const who = (c.participants || []).find(x => x.id !== process.env.META_FB_PAGE_ID && x.name !== '溫點WarmPlace');
+            lines.push('\n--- 對話 ' + (i+1) + ' (' + (who && who.name || '匿名') + ', 更新於 ' + (c.updated_time || '').slice(0,16) + ') ---');
+            (c.messages || []).slice(-10).forEach(msg => {
+              const role = msg.from_is_us ? '我們' : '客人';
+              lines.push('[' + role + '] ' + (msg.text || '').replace(/\n/g, ' ').slice(0, 150));
+            });
+          });
+        });
+        if (ib.errors && ib.errors.length) {
+          lines.push('\n⚠️ 錯誤: ' + ib.errors.join('; '));
+        }
+        const result = lines.join('\n');
+        // Telegram has 4096 char limit per message, split if needed
+        for (let i = 0; i < result.length; i += 3500) {
+          await sendTelegram(chatId, result.slice(i, i+3500));
+        }
+      } catch (e) {
+        await sendTelegram(chatId, '⚠️ /meta error: ' + e.message);
+      }
+      return;
+    }
+
+    // /diag — DEBUG: report whether inboxPriming is being built correctly
+    if (text === '/diag') {
+      try {
+        const liveData = await gatherTelegramContext();
+        const fbCount = (liveData.meta_inbox_fb || []).length;
+        const igCount = (liveData.meta_inbox_ig || []).length;
+        const fbHasMsgs = (liveData.meta_inbox_fb || []).some(c => c.messages && c.messages.length > 0);
+        const sampleFb = liveData.meta_inbox_fb && liveData.meta_inbox_fb[0];
+        const sample = sampleFb ? JSON.stringify({with:sampleFb.with, firstMsg: (sampleFb.messages||[])[0]}) : 'none';
+        await sendTelegram(chatId, '🔧 DIAG:\n- meta_inbox_fb count: ' + fbCount + '\n- meta_inbox_ig count: ' + igCount + '\n- fb has actual msgs: ' + fbHasMsgs + '\n- sample: ' + sample.slice(0,500) + '\n- errs: ' + JSON.stringify(liveData.meta_inbox_errors||'none').slice(0,300));
+      } catch (e) {
+        await sendTelegram(chatId, '⚠️ /diag error: ' + e.message);
+      }
+      return;
+    }
+
     // /peek-prompt — DEBUG: dump the actual dataLine being injected into Claude
     if (text === '/peek-prompt' || text === '/peek' || text === '/debug') {
       try {
