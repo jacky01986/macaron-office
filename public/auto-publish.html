@@ -309,7 +309,7 @@ async function loadGallery() {
     const images = data.images || [];
     const area = document.getElementById('galleryArea');
     if (!images.length) {
-      area.innerHTML = `<div class="empty" style="grid-column:1/-1;"><div class="icon">🎨</div>還沒生過圖。設好 OPENAI_API_KEY 後就會自動產圖。</div>`;
+      area.innerHTML = `<div class="empty" style="grid-column:1/-1;"><div class="icon">🎨</div>還沒生過圖。開啟 AI 自動生圖後,新草稿會自動配圖。</div>`;
       return;
     }
     area.innerHTML = images.map(img =>

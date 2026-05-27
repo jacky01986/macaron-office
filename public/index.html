@@ -786,7 +786,7 @@ async function loadMetaStatus() {
     const res = await fetch('/api/meta/status');
     const s = await res.json();
     if (!s.tokenSet) {
-      el.innerHTML = '<div>🔴 Meta Token 未設定</div><div style="font-size:10px;opacity:0.7;margin-top:4px;">請在 Render 設定 META_ACCESS_TOKEN</div>';
+      el.innerHTML = '<div>🔴 Meta 未連線</div><div style="font-size:10px;opacity:0.7;margin-top:4px;">請聯絡管理員</div>';
       return;
     }
     const lines = [];
