@@ -3065,9 +3065,13 @@ app.get('/api/salesmartly/debug-messages', async (req, res) => {
           response_data_keys: mr.data ? Object.keys(mr.data) : 'no data key',
           first_msg_keys: firstMsg ? Object.keys(firstMsg) : 'no first msg',
           first_msg_sample: firstMsg ? JSON.stringify(firstMsg).slice(0, 500) : null,
-          all_msg_text_attempts: msgs.slice(0, 3).map(m => ({
-            content: m.content, text: m.text, message: m.message, body: m.body, msg: m.msg, msg_content: m.msg_content,
-            direction: m.direction, from_type: m.from_type, sender_type: m.sender_type, message_direction: m.message_direction, from_user_type: m.from_user_type,
+          all_msg_text_attempts: msgs.slice(0, 5).map(m => ({
+            text_preview: (m.text||m.content||'').slice(0,40),
+            is_reply: m.is_reply,
+            sender_type: m.sender_type,
+            sender: m.sender,
+            reader: m.reader,
+            msg_type: m.msg_type,
           })),
         });
       } catch (e) {
