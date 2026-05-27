@@ -1,93 +1,153 @@
 /* ============================================================
- * 溫點 WarmPlace · 統一設計系統 (Shared Design System)
- * Phase 1: Brand tokens + common components
- * 引用方式: <link rel="stylesheet" href="/macaron-shared.css">
+ * 溫點 WarmPlace · 統一品牌主題 (v2)
+ * 對齊主控台 (index.html) 的 burgundy + gold + dark 配色
+ * 任何頁面 link 進來都會自動套上品牌色, 解決顏色跳來跳去
  * ============================================================ */
 
 :root {
-  /* —— 色彩系統 (品牌主色: 溫點咖啡 + 韓系米奶) —— */
-  --brand-primary: #6B4226;       /* 主品牌色 — 深咖啡 */
-  --brand-secondary: #8B5A33;     /* 副品牌色 — 中咖啡 */
-  --brand-light: #A37849;         /* 強調色 — 淺咖啡金 */
-  --brand-accent: #10b981;        /* CTA 綠 */
-  --brand-warning: #f59e0b;       /* 警告橘 */
-  --brand-danger: #ef4444;        /* 警示紅 */
+  --burgundy: #6D2E46;
+  --burgundy-dark: #4A1D2E;
+  --burgundy-light: #8B3A4E;
+  --gold: #B08D57;
+  --gold-bright: #D4AF7A;
+  --ivory: #FCF6F5;
+  --dark: #1C1213;
+  --dark-2: #2A1C1D;
+  --dark-3: #362527;
+  --muted: #8B7278;
+  --green: #7FB069;
+  --amber: #E8B54B;
+  --red: #D6594F;
 
-  /* —— 背景 —— */
-  --bg-cream: #FAF7F2;            /* 主背景 — 韓系米奶 */
-  --bg-card: #FFFFFF;             /* 卡片底 */
-  --bg-section: #F5F1EA;          /* 區塊底 */
+  /* 通用 token */
+  --brand: var(--burgundy);
+  --bg: var(--dark);
+  --ink: var(--ivory);
+  --line: var(--burgundy-dark);
 
-  /* —— 文字 —— */
-  --ink-strong: #2C1B0F;          /* 強調文字 */
-  --ink: #4A3525;                 /* 內文 */
-  --ink-muted: #8B7355;           /* 弱化文字 */
-  --line: #E8E0D4;                /* 分隔線 */
-
-  /* —— 字型 —— */
   --font-sans: -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
   --font-serif: "Noto Serif TC", "Georgia", serif;
 
-  /* —— 圓角 / 陰影 —— */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
-  --shadow-soft: 0 2px 8px rgba(107,66,38,0.08);
-  --shadow-card: 0 4px 16px rgba(107,66,38,0.12);
-
-  /* —— 間距 —— */
-  --gap-xs: 4px;
-  --gap-sm: 8px;
-  --gap-md: 16px;
-  --gap-lg: 24px;
-  --gap-xl: 40px;
+  --shadow-soft: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-card: 0 6px 20px rgba(0,0,0,0.4);
 }
 
-/* —— Common Button —— */
-.mac-btn {
-  display: inline-flex; align-items: center; gap: var(--gap-xs);
-  padding: 8px 16px; border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  background: var(--brand-primary); color: white;
-  font-family: var(--font-sans); font-size: 14px; font-weight: 600;
-  cursor: pointer; transition: all 0.15s ease;
+/* 強制夜色主題 — 用 !important 蓋掉各頁原本的色 */
+html, body {
+  background: var(--dark) !important;
+  color: var(--ivory) !important;
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3, h4, h5 { color: var(--gold-bright) !important; }
+.subtitle, .sub, .desc { color: var(--muted) !important; }
+a { color: var(--gold); }
+a:hover { color: var(--gold-bright); }
+hr { border-color: var(--burgundy-dark); }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--dark-2); }
+::-webkit-scrollbar-thumb { background: var(--burgundy); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--burgundy-light); }
+
+/* Cards / panels 通用 */
+.card, .panel, .section, .config-card, .container > div {
+  background: var(--dark-2) !important;
+  color: var(--ivory) !important;
+  border-color: var(--burgundy-dark) !important;
+}
+
+/* 表格 */
+table { color: var(--ivory) !important; }
+thead, th { background: var(--dark-2) !important; color: var(--gold-bright) !important; }
+tr, td { border-color: var(--burgundy-dark) !important; }
+
+/* 按鈕 — 蓋掉各頁的 .btn .button */
+button, .btn, .button, input[type="submit"], input[type="button"] {
+  background: var(--burgundy) !important;
+  color: var(--ivory) !important;
+  border: 1px solid var(--gold) !important;
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+button:hover, .btn:hover, .button:hover {
+  background: var(--gold) !important;
+  color: var(--dark) !important;
+}
+.btn.primary, button.primary { background: var(--gold) !important; color: var(--dark) !important; }
+.btn.ghost, button.ghost { background: transparent !important; color: var(--gold) !important; }
+.btn.danger { background: var(--red) !important; color: white !important; border-color: var(--red) !important; }
+
+/* Input */
+input[type=text], input[type=number], input[type=email], textarea, select {
+  background: var(--dark-3) !important;
+  color: var(--ivory) !important;
+  border: 1px solid var(--burgundy-dark) !important;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-family: var(--font-sans);
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--gold) !important;
+}
+
+/* macaron-topnav — 用品牌色 */
+.macaron-topnav {
+  background: linear-gradient(135deg, var(--burgundy-dark), var(--burgundy)) !important;
+  padding: 8px 16px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow-x: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-soft);
+}
+.macaron-topnav strong { color: var(--gold-bright) !important; font-size: 14px; margin-right: 8px; flex-shrink: 0; }
+.macaron-topnav a {
+  padding: 6px 12px;
+  border-radius: 6px;
   text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  background: var(--dark-2) !important;
+  color: var(--ivory) !important;
+  border: 1px solid var(--burgundy-light);
+  transition: all 0.15s;
 }
-.mac-btn:hover { background: var(--brand-secondary); transform: translateY(-1px); box-shadow: var(--shadow-soft); }
-.mac-btn.primary { background: var(--brand-accent); }
-.mac-btn.primary:hover { background: #059669; }
-.mac-btn.ghost { background: transparent; color: var(--brand-primary); border-color: var(--brand-primary); }
-.mac-btn.ghost:hover { background: var(--brand-primary); color: white; }
-.mac-btn.danger { background: var(--brand-danger); }
+.macaron-topnav a:hover { background: var(--burgundy) !important; color: var(--gold-bright) !important; }
+.macaron-topnav a.active { background: var(--gold) !important; color: var(--dark) !important; border-color: var(--gold-bright); }
+.macaron-topnav.in-iframe { display: none !important; }
 
-/* —— Card —— */
-.mac-card {
-  background: var(--bg-card); border-radius: var(--radius-md);
-  padding: var(--gap-lg); box-shadow: var(--shadow-soft);
-  border: 1px solid var(--line);
+/* Badge / pill */
+.badge, .pill, .tag, .chip {
+  background: var(--burgundy) !important;
+  color: var(--ivory) !important;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  display: inline-block;
+}
+.badge.success, .pill.success { background: var(--green) !important; }
+.badge.warning, .pill.warning { background: var(--amber) !important; color: var(--dark) !important; }
+.badge.danger, .pill.danger { background: var(--red) !important; }
+
+/* Empty / loading state */
+.empty, .loading, .placeholder {
+  color: var(--muted) !important;
+  background: var(--dark-2) !important;
+  text-align: center;
+  padding: 32px;
 }
 
-/* —— Section title —— */
-.mac-section-title {
-  font-family: var(--font-serif); font-size: 18px;
-  color: var(--brand-primary); margin: var(--gap-lg) 0 var(--gap-md);
-  padding-bottom: var(--gap-sm); border-bottom: 2px solid var(--brand-light);
-}
-
-/* —— Badge —— */
-.mac-badge {
-  display: inline-block; padding: 2px 8px; border-radius: 999px;
-  font-size: 11px; font-weight: 600;
-  background: var(--brand-light); color: white;
-}
-.mac-badge.success { background: var(--brand-accent); }
-.mac-badge.warning { background: var(--brand-warning); }
-.mac-badge.danger { background: var(--brand-danger); }
-
-/* —— Input —— */
-.mac-input {
-  padding: 8px 12px; border-radius: var(--radius-sm);
-  border: 1px solid var(--line); background: var(--bg-cream);
-  font-family: var(--font-sans); font-size: 14px;
-}
-.mac-input:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px rgba(107,66,38,0.1); }
+/* tabbar (hub pages) */
+.tabbar { background: var(--dark-2) !important; border-bottom: 1px solid var(--burgundy-dark) !important; }
+.tabbar button { background: transparent !important; color: var(--muted) !important; border: 0 !important; }
+.tabbar button.active { color: var(--gold-bright) !important; border-bottom: 3px solid var(--gold) !important; }

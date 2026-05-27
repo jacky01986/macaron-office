@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<title>👩 門店戰報 · 溫點 WarmPlace</title>
+<title>🏪 門店戰報 · 溫點 WarmPlace</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   :root {
@@ -71,6 +71,7 @@
   .error-box { background:#3a1a1a; color:#ffb4b4; border:1px solid #5a2a2a; padding:14px; border-radius:8px; margin:10px 0; font-size:13px; }
   .error-box pre { background:#000; padding:10px; border-radius:6px; color:#7CB342; overflow-x:auto; }
 </style>
+<link rel="stylesheet" href="/macaron-shared.css">
 </head>
 <body>
 <style>
@@ -108,15 +109,9 @@
   <a href="/teachers.html" class="active">🏪 門店戰報</a>
 </div>
 
-<div class="nav">
-  <span class="brand">溫點 WarmPlace</span><a href="/customers.html">👥 客戶</a>
-  <a href="/optimize.html">⚙️ 廣告優化</a>
-  <a href="/google.html">🔍 Google</a>
-  <a href="/competitor.html">🕵️ 競品</a>
-  <a href="/teachers.html" class="active">👩 老�戰報</a>
-</div>
+
 <div class="container">
-  <h1>👩 門店戰報</h1>
+  <h1>🏪 門店戰報</h1>
   <div class="subtitle">每位門店 / 分店的廣告成效、詢問品質與顧客之聲 · 即時數據</div>
   <div class="controls">
     <label>區間：</label>
@@ -192,7 +187,7 @@ function render() {
 function renderCompare() {
   const teachers = Object.entries(DATA);
   let table = '<div class="section">';
-  table += '<h3>📊 全部老� / 分店對比表</h3>';
+  table += '<h3>📊 全部門店 / 分店對比表</h3>';
   table += '<table class="compare-table"><thead><tr><th>名稱</th><th>詢問數</th><th>廣告花費</th><th>CPL</th><th>CTR</th><th>曝光</th><th>狀態</th></tr></thead><tbody>';
   for (const [k, t] of teachers) {
     table += '<tr style="cursor:pointer" onclick="selectTab(\''+k+'\')">';
