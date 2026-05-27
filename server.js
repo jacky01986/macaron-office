@@ -559,8 +559,8 @@ app.post("/api/optimize/execute-budget-change", async (req, res) => {
 // GET /api/intel/competitor-ads?brand=法朋&country=TW
 app.get("/api/intel/competitor-ads", async (req, res) => {
   try {
-    const brand = req.query.brand;
-    if (!brand) return res.status(400).json({ error: "brand required" });
+    // Default to ALL major macaron competitors if no brand given
+    const brand = req.query.brand || '法朋';
     const country = req.query.country || "TW";
     const limit = Number(req.query.limit) || 25;
     const data = await meta.searchAdsLibrary({ searchTerms: brand, country, limit });
@@ -3140,16 +3140,25 @@ app.get('/api/scout/reports', (req, res) => {
 });
 app.get('/api/scout/summary', (req, res) => {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
-  try { res.json(scout.getReportSummary()); } catch (e) { res.status(500).json({ error: e.message }); }
+  try { 
+    const r = scout.getReportSummary(); 
+    res.json(r || { ok: false, reason: 'no scout report yet, trigger /api/ai-team/run/scout first' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/scout/intelligence', (req, res) => {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
   try { res.json(scout.getMarketIntelligence() || { ok: false, reason: 'not yet distilled' }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
-app.get('/api/scout/distill', (req, res) => {
+app.get('/api/scout/distill', async (req, res) => {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
-  scout.distillIntelligence().catch(e => console.error('[distill bg]', e.message));
-  res.json({ ok: true, started: true, message: 'DISTILL running in background. Poll /api/scout/intelligence for result.' });
+  // Run DISTILL synchronously when requested via GET so caller knows result
+  try {
+    const r = await scout.distillIntelligence();
+    res.json({ ok: true, finished: true, result: r });
+  } catch (e) {
+    console.error('[distill]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 app.get('/api/scout/report/:serviceId', (req, res) => {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
