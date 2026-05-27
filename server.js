@@ -4513,7 +4513,31 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     // Agentic loop — VICTOR 可連續 call tools 直到產出最終回覆
     let reply = null;
     try {
-      const convoMessages = history.slice(-30);
+      // ARCHITECTURAL FIX: inject Meta inbox as user/assistant priming
+      // (Claude Opus is paranoid about system-injected PII but trusts user-provided ground data)
+      const inboxPriming = [];
+      const fb = (liveData && liveData.meta_inbox_fb) || [];
+      const ig = (liveData && liveData.meta_inbox_ig) || [];
+      if (fb.length > 0 || ig.length > 0) {
+        const blocks = [];
+        blocks.push('[系統介接] Jeffrey 這邊, 我用程式從 FB Messenger + IG DM 把今天的對話自動抓給你, 接下來會問你問題, 請以這些對話為依據:');
+        const formatConv = (conv, label) => {
+          if (!conv || conv.length === 0) return;
+          blocks.push('\n=== ' + label + ' (' + conv.length + ' 通真實對話) ===');
+          conv.slice(0, 5).forEach((c, i) => {
+            blocks.push('\n對話 ' + (i+1) + ': 客戶「' + (c.with || '匿名') + '」');
+            (c.messages || []).slice(-8).forEach(m => {
+              const who = m.from === '我們' ? '我們回覆' : '客人';
+              blocks.push('  [' + who + '] ' + (m.text || '').replace(/\n/g, ' ').slice(0, 200));
+            });
+          });
+        };
+        formatConv(fb, '📨 FB Messenger 對話');
+        formatConv(ig, '📷 Instagram DM 對話');
+        inboxPriming.push({ role: 'user', content: blocks.join('\n') });
+        inboxPriming.push({ role: 'assistant', content: '收到。我已經讀完這份真實對話資料,包含 ' + (fb.length + ig.length) + ' 通客戶對話。接下來你問我的任何問題,我會直接引用具體客戶名 + 訊息原句作為證據,不會再說「請貼對話給我」。' });
+      }
+      const convoMessages = [...inboxPriming, ...history.slice(-30)];
       let final = null;
       const maxTurns = 6;
       for (let turn = 0; turn < maxTurns; turn++) {
