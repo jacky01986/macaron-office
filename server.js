@@ -3928,13 +3928,35 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     if (!msg || !msg.text) return;
     const chatId = String(msg.chat.id);
     const text = msg.text.trim();
-    const adminChat = String(process.env.TELEGRAM_CHAT_ID || '');
+    // ============ B4: Multi-user permission tier ============
+    // Env vars:
+    //   TELEGRAM_CHAT_ID — primary admin (full access)
+    //   TELEGRAM_ADMIN_IDS — comma-separated additional admins (full)
+    //   TELEGRAM_VIEWER_IDS — comma-separated viewers (read-only: /data /meta /diag /peek)
+    const primaryAdmin = String(process.env.TELEGRAM_CHAT_ID || '');
+    const adminIds = (process.env.TELEGRAM_ADMIN_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
+    const viewerIds = (process.env.TELEGRAM_VIEWER_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
+    const allAdmins = new Set([primaryAdmin, ...adminIds].filter(Boolean));
+    const allViewers = new Set(viewerIds);
 
-    // Restrict to admin chat
-    if (adminChat && chatId !== adminChat) {
-      await sendTelegram(chatId, '❌ 你不是 MACARON 管理員,無法使用這個 AI 助理。');
+    const isAdmin = allAdmins.has(chatId);
+    const isViewer = allViewers.has(chatId);
+
+    if (!isAdmin && !isViewer) {
+      await sendTelegram(chatId, '❌ 你尚未獲得 溫點 WarmPlace AI 團隊權限。請聯絡管理員 (chat_id: ' + chatId + ')。');
       return;
     }
+
+    // Viewers can only use read-only commands
+    const READ_ONLY_CMDS = ['/start', '/help', '/data', '/meta', '/inbox', '/fb', '/ig', '/diag', '/peek', '/peek-prompt'];
+    if (isViewer && !isAdmin) {
+      const isReadOnly = READ_ONLY_CMDS.some(c => text === c || text.startsWith(c + ' '));
+      if (!isReadOnly) {
+        await sendTelegram(chatId, '🔒 你目前是「檢視」權限,只能用: /data /meta /diag /peek\n如需 AI 對話或寫入動作請聯絡管理員升級。');
+        return;
+      }
+    }
+    // ============ End B4 ============
 
     // Commands
     if (text === '/start' || text === '/help') {
