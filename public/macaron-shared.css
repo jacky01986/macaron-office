@@ -1,0 +1,93 @@
+/* ============================================================
+ * 溫點 WarmPlace · 統一設計系統 (Shared Design System)
+ * Phase 1: Brand tokens + common components
+ * 引用方式: <link rel="stylesheet" href="/macaron-shared.css">
+ * ============================================================ */
+
+:root {
+  /* —— 色彩系統 (品牌主色: 溫點咖啡 + 韓系米奶) —— */
+  --brand-primary: #6B4226;       /* 主品牌色 — 深咖啡 */
+  --brand-secondary: #8B5A33;     /* 副品牌色 — 中咖啡 */
+  --brand-light: #A37849;         /* 強調色 — 淺咖啡金 */
+  --brand-accent: #10b981;        /* CTA 綠 */
+  --brand-warning: #f59e0b;       /* 警告橘 */
+  --brand-danger: #ef4444;        /* 警示紅 */
+
+  /* —— 背景 —— */
+  --bg-cream: #FAF7F2;            /* 主背景 — 韓系米奶 */
+  --bg-card: #FFFFFF;             /* 卡片底 */
+  --bg-section: #F5F1EA;          /* 區塊底 */
+
+  /* —— 文字 —— */
+  --ink-strong: #2C1B0F;          /* 強調文字 */
+  --ink: #4A3525;                 /* 內文 */
+  --ink-muted: #8B7355;           /* 弱化文字 */
+  --line: #E8E0D4;                /* 分隔線 */
+
+  /* —— 字型 —— */
+  --font-sans: -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  --font-serif: "Noto Serif TC", "Georgia", serif;
+
+  /* —— 圓角 / 陰影 —— */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-soft: 0 2px 8px rgba(107,66,38,0.08);
+  --shadow-card: 0 4px 16px rgba(107,66,38,0.12);
+
+  /* —— 間距 —— */
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 16px;
+  --gap-lg: 24px;
+  --gap-xl: 40px;
+}
+
+/* —— Common Button —— */
+.mac-btn {
+  display: inline-flex; align-items: center; gap: var(--gap-xs);
+  padding: 8px 16px; border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: var(--brand-primary); color: white;
+  font-family: var(--font-sans); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s ease;
+  text-decoration: none;
+}
+.mac-btn:hover { background: var(--brand-secondary); transform: translateY(-1px); box-shadow: var(--shadow-soft); }
+.mac-btn.primary { background: var(--brand-accent); }
+.mac-btn.primary:hover { background: #059669; }
+.mac-btn.ghost { background: transparent; color: var(--brand-primary); border-color: var(--brand-primary); }
+.mac-btn.ghost:hover { background: var(--brand-primary); color: white; }
+.mac-btn.danger { background: var(--brand-danger); }
+
+/* —— Card —— */
+.mac-card {
+  background: var(--bg-card); border-radius: var(--radius-md);
+  padding: var(--gap-lg); box-shadow: var(--shadow-soft);
+  border: 1px solid var(--line);
+}
+
+/* —— Section title —— */
+.mac-section-title {
+  font-family: var(--font-serif); font-size: 18px;
+  color: var(--brand-primary); margin: var(--gap-lg) 0 var(--gap-md);
+  padding-bottom: var(--gap-sm); border-bottom: 2px solid var(--brand-light);
+}
+
+/* —— Badge —— */
+.mac-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  background: var(--brand-light); color: white;
+}
+.mac-badge.success { background: var(--brand-accent); }
+.mac-badge.warning { background: var(--brand-warning); }
+.mac-badge.danger { background: var(--brand-danger); }
+
+/* —— Input —— */
+.mac-input {
+  padding: 8px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--line); background: var(--bg-cream);
+  font-family: var(--font-sans); font-size: 14px;
+}
+.mac-input:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px rgba(107,66,38,0.1); }
