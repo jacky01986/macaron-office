@@ -73,6 +73,23 @@
 </style>
 </head>
 <body>
+<style>
+.macaron-topnav { background: linear-gradient(135deg,#6B4226,#8B5A33); padding: 8px 16px; display: flex; gap: 8px; align-items: center; overflow-x: auto; white-space: nowrap; flex-shrink: 0; font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.macaron-topnav strong { color:#FAF7F2; font-size:14px; margin-right:8px; flex-shrink:0; }
+.macaron-topnav a { padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; flex-shrink:0; background:#FAF7F2; color:#6B4226; transition: all 0.15s; }
+.macaron-topnav a:hover { background:#fff; }
+.macaron-topnav a.active { background:#10b981; color:white; }
+</style>
+<div class="macaron-topnav">
+  <strong>溫點 WarmPlace</strong>
+  <a href="/">🏠 主控台</a>
+  <a href="/content-hub.html">📚 內容中心</a>
+  <a href="/customer-hub.html">👥 客戶中心</a>
+  <a href="/ads-hub.html">📊 廣告中心</a>
+  <a href="/market-intel.html">🔍 市場情報</a>
+  <a href="/teachers.html" class="active">🏪 門店戰報</a>
+</div>
+
 <div class="nav">
   <span class="brand">溫點 WarmPlace</span>
   <a href="/" class="home">← 主辦公室</a>
@@ -143,13 +160,13 @@ async function load() {
     buildTabs();
     render();
   } catch (e) {
-    document.getElementById('content').innerHTML = '<div class="error-box">載入失敗：' + escapeHtml(e.message) + '<br><br>提示：請聯絡管理員確認門店 Meta 廣告帳號設定。</div>';
+    document.getElementById('content').innerHTML = '<div class="error-box">載入失敗：' + escapeHtml(e.message) + '<br><br>提示：請確認 META_AD_ACCOUNT_ID / META_ACCESS_TOKEN 已設定，且 TEACHERS_CONFIG 環境變數格式正確。</div>';
   }
 }
 
 function render() {
   if (Object.keys(DATA || {}).length === 0) {
-    document.getElementById('content').innerHTML = '<div class="error-box">尚未設定任何門店 / 分店。<br><br>請聯絡管理員設定門店清單。</div>';
+    document.getElementById('content').innerHTML = '<div class="error-box">尚未設定任何門店 / 分店。<br><br>請在 Render 環境變數設定 <code>TEACHERS_CONFIG</code>，例如：<pre>[\n  { "key": "main", "name": "溫點 WarmPlace", "page_id": "你的FB粉專ID", "match": "" },\n  { "key": "antoine", "name": "Antoine 主廚", "page_id": "另一個粉專ID", "match": "antoine" }\n]</pre>match 用 regex 比對 campaign 名稱（不分大小寫），留空代表 fallback 預設。</div>';
     return;
   }
   if (CURRENT === 'compare') return renderCompare();
