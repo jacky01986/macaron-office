@@ -4234,6 +4234,33 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
       return;
     }
 
+    // /peek-prompt — DEBUG: dump the actual dataLine being injected into Claude
+    if (text === '/peek-prompt' || text === '/peek' || text === '/debug') {
+      try {
+        const liveData = await gatherTelegramContext();
+        function fmtInbox(label, conv) {
+          if (!Array.isArray(conv) || conv.length === 0) return `\n${label}: (無對話)`;
+          const lines = [`\n${label} (共 ${conv.length} 通, 真實客戶訊息):`];
+          conv.slice(0, 5).forEach((c, i) => {
+            lines.push(`  ${i + 1}. 客戶: ${c.with || '(匿名)'}`);
+            (c.messages || []).slice(-6).forEach(m => {
+              const who = m.from === '我們' ? '我們' : '客人';
+              lines.push(`     [${who}] ${(m.text || '').slice(0, 100)}`);
+            });
+          });
+          return lines.join('\n');
+        }
+        const dbg = '🔍 [PEEK] dataLine 真實內容:\n' +
+          fmtInbox('📨 FB Messenger', liveData.meta_inbox_fb) +
+          fmtInbox('📷 IG DM', liveData.meta_inbox_ig) +
+          '\n\n[meta_inbox_errors] ' + JSON.stringify(liveData.meta_inbox_errors || 'none');
+        await sendTelegram(chatId, dbg.slice(0, 3500));
+      } catch (e) {
+        await sendTelegram(chatId, '⚠️ /peek-prompt error: ' + e.message);
+      }
+      return;
+    }
+
     // Build conversation history (last 6 turns)
     const history = tgLoadHistory(chatId);
     history.push({ role: 'user', content: text });
