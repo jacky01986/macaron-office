@@ -137,6 +137,24 @@
 </head>
 <body>
 <style>
+@media all { .macaron-topnav.in-iframe { display: none !important; } }
+</style>
+<script>
+(function(){
+  try {
+    if (window.parent !== window) {
+      var nav = document.querySelector('.macaron-topnav');
+      if (nav) nav.classList.add('in-iframe');
+      else document.addEventListener('DOMContentLoaded', function(){
+        var n = document.querySelector('.macaron-topnav');
+        if (n) n.classList.add('in-iframe');
+      });
+    }
+  } catch(e){}
+})();
+</script>
+
+<style>
 .macaron-topnav { background: linear-gradient(135deg,#6B4226,#8B5A33); padding: 8px 16px; display: flex; gap: 8px; align-items: center; overflow-x: auto; white-space: nowrap; flex-shrink: 0; font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 .macaron-topnav strong { color:#FAF7F2; font-size:14px; margin-right:8px; flex-shrink:0; }
 .macaron-topnav a { padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; flex-shrink:0; background:#FAF7F2; color:#6B4226; transition: all 0.15s; }
