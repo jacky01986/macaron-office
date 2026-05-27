@@ -209,14 +209,6 @@
     <button class="btn ghost" onclick="testImage()">🎨 測試生圖</button>
   </div>
 
-  <div class="config-card">
-    <h3>🔧 環境變數檢查</h3>
-    <div id="envCheck">⏳ 檢查中…</div>
-    <div style="margin-top: 10px; color: var(--muted); font-size: 11px;">
-      💡 <b>運作模式</b>:沒設 <code>OPENAI_API_KEY</code> → 草稿產生後 IG 部分會顯示「📤 上傳圖片」按鈕,你拖一張圖上去就能發。<br>沒設 <code>META_*</code> 不會發 FB/IG;沒設 <code>TELEGRAM_BOT_TOKEN</code> 不會推送預覽。
-    </div>
-  </div>
-
   <h2 class="section-title">📋 待審草稿</h2>
   <div id="draftsArea" class="drafts-grid"></div>
 
@@ -338,16 +330,7 @@ async function loadEnvCheck() {
     document.getElementById('sysStatus').textContent = '❌ 離線';
     document.getElementById('sysStatus').className = 'val err';
   }
-  // env vars 沒辦法直接從 client 端看,顯示說明
-  document.getElementById('envCheck').innerHTML = `
-    <div class="env-row"><span class="env-name">ANTHROPIC_API_KEY</span><span class="env-status">→ 給 CAMILLE 寫文案</span></div>
-    <div class="env-row"><span class="env-name">OPENAI_API_KEY</span><span class="env-status">→ ARIA 自動生圖(<b>選用</b>,沒設就手動上傳)</span></div>
-    <div class="env-row"><span class="env-name">META_ACCESS_TOKEN</span><span class="env-status">→ 發 FB/IG</span></div>
-    <div class="env-row"><span class="env-name">META_FB_PAGE_ID</span><span class="env-status">→ 指定 FB 粉專</span></div>
-    <div class="env-row"><span class="env-name">META_IG_USER_ID</span><span class="env-status">→ 指定 IG 商用帳號</span></div>
-    <div class="env-row"><span class="env-name">TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID</span><span class="env-status">→ 預覽推送</span></div>
-    <div class="env-row"><span class="env-name">SITE_URL</span><span class="env-status">→ 預設 https://macaron-office.onrender.com (給 IG 抓圖用)</span></div>
-  `;
+
 }
 
 async function triggerNow() {
