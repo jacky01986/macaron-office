@@ -926,33 +926,41 @@ async function getTokenStatus() {
 // getInbox — 直接從 Meta Graph 讀 FB Messenger + IG DM 對話 + 訊息內容
 // 需要 page_access_token 有 pages_messaging + instagram_manage_messages 權限
 // ============================================================
-async function getInbox({ limit_conv = 10, limit_msg = 8 } = {}) {
+async function getInbox({ limit_conv = 10, limit_msg = 8, timeout_ms = 15000 } = {}) {
   const out = { fb: [], ig: [], errors: [] };
   if (!process.env.META_ACCESS_TOKEN) {
     out.errors.push("META_ACCESS_TOKEN not set");
     return out;
   }
   const fields = "participants,updated_time,messages.limit(" + limit_msg + "){message,from,created_time}";
-  for (const platform of ["messenger", "instagram"]) {
-    try {
-      const url = "/me/conversations?platform=" + platform + "&fields=" + encodeURIComponent(fields) + "&limit=" + limit_conv;
-      const r = await graphGet(url);
-      const convs = (r.data || []).map(c => ({
-        id: c.id,
-        participants: (c.participants && c.participants.data) || [],
-        updated_time: c.updated_time,
-        messages: ((c.messages && c.messages.data) || []).slice(0, limit_msg).reverse().map(m => ({
-          text: (m.message || "").slice(0, 300),
-          from: m.from && m.from.name,
-          from_is_us: m.from && m.from.name && /溫點|warmplace|WarmPlace/i.test(m.from.name),
-          at: m.created_time,
-        })),
-      }));
-      out[platform === "messenger" ? "fb" : "ig"] = convs;
-    } catch (e) {
-      out.errors.push(platform + ": " + e.message);
-    }
+
+  async function fetchPlatform(platform) {
+    const url = "/me/conversations?platform=" + platform + "&fields=" + encodeURIComponent(fields) + "&limit=" + limit_conv;
+    const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout after " + timeout_ms + "ms")), timeout_ms));
+    const r = await Promise.race([graphGet(url), timeoutPromise]);
+    return (r.data || []).map(c => ({
+      id: c.id,
+      participants: (c.participants && c.participants.data) || [],
+      updated_time: c.updated_time,
+      messages: ((c.messages && c.messages.data) || []).slice(0, limit_msg).reverse().map(m => ({
+        text: (m.message || "").slice(0, 300),
+        from: m.from && m.from.name,
+        from_is_us: m.from && m.from.name && /溫點|warmplace|WarmPlace/i.test(m.from.name),
+        at: m.created_time,
+      })),
+    }));
   }
+
+  // FB + IG in PARALLEL — IG timeout doesn't block FB
+  const [fbRes, igRes] = await Promise.allSettled([
+    fetchPlatform("messenger"),
+    fetchPlatform("instagram"),
+  ]);
+  if (fbRes.status === "fulfilled") out.fb = fbRes.value;
+  else out.errors.push("messenger: " + fbRes.reason.message);
+  if (igRes.status === "fulfilled") out.ig = igRes.value;
+  else out.errors.push("instagram: " + igRes.reason.message);
+
   return out;
 }
 

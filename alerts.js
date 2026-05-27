@@ -26,6 +26,155 @@ salesmartly = tryRequire('./salesmartly');
 decisions  = tryRequire('./decisions');
 const briefingAi = tryRequire('./briefing-ai');
 const marketIntel = tryRequire('./market-intel');
+let Anthropic = null;
+try { Anthropic = require('@anthropic-ai/sdk'); } catch {}
+let _anth = null;
+function getAnthropic() {
+  if (_anth) return _anth;
+  if (!Anthropic || !process.env.ANTHROPIC_API_KEY) return null;
+  try { _anth = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); } catch { _anth = null; }
+  return _anth;
+}
+
+// ============================================================
+// A1 — 客戶對話日報 (從 Meta inbox 過去 24h)
+// ============================================================
+async function customerConversationDailyReport() {
+  if (!meta || typeof meta.getInbox !== 'function') return null;
+  try {
+    const ib = await meta.getInbox({ limit_conv: 15, limit_msg: 10 });
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    const all = [...(ib.fb || []), ...(ib.ig || [])];
+    const recent = all.filter(c => {
+      const t = new Date(c.updated_time).getTime();
+      return !isNaN(t) && t > cutoff;
+    });
+    if (recent.length === 0) return '📨 過去 24 小時客戶對話\n(無新對話)';
+
+    const needsReply = [];
+    const stalledAtPrice = [];
+    const conversed = [];
+    for (const c of recent) {
+      const msgs = c.messages || [];
+      if (msgs.length === 0) continue;
+      const last = msgs[msgs.length - 1];
+      const who = (c.participants || []).find(p => !/溫點|warmplace/i.test(p.name || ''));
+      const name = (who && who.name) || (c.participants[0] && c.participants[0].name) || '匿名';
+      if (last && !last.from_is_us) {
+        needsReply.push({ name, last_text: last.text.slice(0, 80), at: last.at });
+        if (/價|多少錢|價格|報價|多錢/.test(last.text)) {
+          stalledAtPrice.push({ name, q: last.text.slice(0, 60) });
+        }
+      } else {
+        conversed.push({ name });
+      }
+    }
+
+    const c = getAnthropic();
+    let topQuestions = '';
+    if (c && recent.length > 0) {
+      const allText = recent.flatMap(r => (r.messages || []).filter(m => !m.from_is_us).map(m => m.text)).join('\n').slice(0, 4000);
+      try {
+        const resp = await c.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 400,
+          system: '你是溫點 WarmPlace 客服分析師。看完客人訊息後,給 Top 3 最常見的問題類型 (例: 價格 / 取貨方式 / 客製化 / 過敏原) 各 1 行. 純條列,不要其他.',
+          messages: [{ role: 'user', content: allText }],
+        });
+        const block = resp.content && resp.content[0];
+        if (block && block.type === 'text') topQuestions = block.text.trim();
+      } catch (e) { console.error('[A1 ai]', e.message); }
+    }
+
+    const lines = ['📨 過去 24h 客戶對話 (Meta DM)'];
+    lines.push(`  總計: ${recent.length} 通 (${needsReply.length} 待回, ${conversed.length} 已回)`);
+    if (topQuestions) {
+      lines.push('\n  🔍 Top 問題:');
+      topQuestions.split('\n').slice(0, 3).forEach(l => lines.push('     ' + l.replace(/^[\s\d\.\-]+/, '').trim()));
+    }
+    if (needsReply.length > 0) {
+      lines.push('\n  ⚠️ 待回客人 (' + needsReply.length + '):');
+      needsReply.slice(0, 8).forEach(r => lines.push(`     • ${r.name}: 「${r.last_text}」`));
+    }
+    if (stalledAtPrice.length > 0) {
+      lines.push('\n  🚨 問完價沒下文 (急救名單):');
+      stalledAtPrice.slice(0, 5).forEach(r => lines.push(`     • ${r.name}`));
+    }
+    return lines.join('\n');
+  } catch (e) {
+    console.error('[customerConversationDailyReport]', e.message);
+    return null;
+  }
+}
+
+// ============================================================
+// A2 — 轉換漏斗週報
+// ============================================================
+async function conversionFunnelWeeklyReport() {
+  const base = process.env.SITE_URL || 'https://macaron-office.onrender.com';
+  try {
+    const [ads, cust] = await Promise.all([
+      fetch(base + '/api/meta/ads/insights').then(r => r.json()).catch(() => null),
+      fetch(base + '/api/customer-hub/dashboard').then(r => r.json()).catch(() => null),
+    ]);
+    const impressions = (ads && ads.data && ads.data[0] && +ads.data[0].impressions) || 0;
+    const clicks = (ads && ads.data && ads.data[0] && +ads.data[0].clicks) || 0;
+    const inquiries = (cust && cust.inquiries && cust.inquiries.total) || 0;
+    const customers_total = (cust && cust.groups && cust.groups.summary && cust.groups.summary.total) || 0;
+    const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) : '0';
+    const inq_rate = clicks > 0 ? ((inquiries / clicks) * 100).toFixed(1) : '0';
+    const lines = [
+      '📊 轉換漏斗週報 (過去 7 天)',
+      '',
+      `  曝光: ${impressions.toLocaleString()}`,
+      `   ↓ ${ctr}% CTR`,
+      `  點擊: ${clicks.toLocaleString()}`,
+      `   ↓ ${inq_rate}% 詢問轉換`,
+      `  詢問: ${inquiries}`,
+      `   ↓ -`,
+      `  客戶: ${customers_total}`,
+    ];
+    if (clicks > 0 && parseFloat(inq_rate) < 5) {
+      lines.push('\n  🚨 點擊 → 詢問漏最多 (詢問轉換率 < 5%)');
+      lines.push('     建議: CAMILLE 強化 IG 限時動態 CTA + 直接報價');
+    } else if (parseFloat(ctr) < 1) {
+      lines.push('\n  🚨 曝光 → 點擊漏最多 (CTR < 1%)');
+      lines.push('     建議: ARIA 視覺 + CAMILLE 文案翻新');
+    }
+    return lines.join('\n');
+  } catch (e) {
+    console.error('[conversionFunnelWeeklyReport]', e.message);
+    return null;
+  }
+}
+
+// ============================================================
+// B2 — Cron 錯誤推 Telegram
+// ============================================================
+async function notifyError(source, error) {
+  const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+  const tgChat = process.env.TELEGRAM_CHAT_ID;
+  if (!tgToken || !tgChat) return;
+  try {
+    const text = '⚠️ 系統錯誤 ' + new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) +
+      '\n\n來源: ' + source +
+      '\n訊息: ' + ((error && error.message) || String(error)).slice(0, 400);
+    await fetch('https://api.telegram.org/bot' + tgToken + '/sendMessage', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: tgChat, text }),
+    });
+  } catch {}
+}
+
+function wrapCron(name, fn) {
+  return async () => {
+    try { await fn(); }
+    catch (e) {
+      console.error('[cron:' + name + ']', e.message);
+      await notifyError('cron:' + name, e);
+    }
+  };
+}
 
 const ADMIN = process.env.ADMIN_LINE_USER_ID || '';
 const TZ = process.env.TZ || 'Asia/Taipei';
@@ -222,8 +371,16 @@ async function dailyBriefing() {
     sections.push(await reviewSection());
   }
 
+  const custConv = await customerConversationDailyReport();
+  if (custConv) sections.push(custConv);
+
   const market = await marketSection();
   if (market) sections.push(market);
+
+  if (wd === 0) {
+    const funnel = await conversionFunnelWeeklyReport();
+    if (funnel) sections.push(funnel);
+  }
 
   const pending = await pendingDecisionsSection();
   if (pending) sections.push(pending);
@@ -290,9 +447,20 @@ function registerCronJobs(cron) {
     console.warn('[alerts] cron module not provided, jobs not scheduled');
     return;
   }
-  cron.schedule('0 9 * * *', sendBriefing, { timezone: TZ });
+  cron.schedule('0 9 * * *', wrapCron('dailyBriefing', sendBriefing), { timezone: TZ });
   // [REMOVED] cron.schedule('*/30 * * * *', checkAdsAlerts, { timezone: TZ }); // 老闆要求不推廣告警示
-  console.log('[alerts] cron jobs registered (daily 09:00 only, ads alerts disabled)');
+  cron.schedule('0 18 * * 0', wrapCron('weeklyFunnel', async () => {
+    const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+    const tgChat = process.env.TELEGRAM_CHAT_ID;
+    if (!tgToken || !tgChat) return;
+    const report = await conversionFunnelWeeklyReport();
+    if (!report) return;
+    await fetch('https://api.telegram.org/bot' + tgToken + '/sendMessage', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: tgChat, text: report }),
+    });
+  }), { timezone: TZ });
+  console.log('[alerts] cron: daily 09:00 briefing + Sunday 18:00 funnel + error notification');
 }
 
 function loadAdmin(dataDir) {
@@ -310,4 +478,4 @@ function registerAdminFromLine(dataDir, userId, displayName) {
   } catch (e) { console.error('[alerts] registerAdmin failed:', e.message); }
 }
 
-module.exports = { dailyBriefing, sendBriefing, checkAdsAlerts, registerCronJobs, loadAdmin, registerAdminFromLine };
+module.exports = { dailyBriefing, sendBriefing, checkAdsAlerts, registerCronJobs, loadAdmin, registerAdminFromLine, customerConversationDailyReport, conversionFunnelWeeklyReport, notifyError, wrapCron };
