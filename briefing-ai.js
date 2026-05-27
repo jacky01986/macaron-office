@@ -9,6 +9,7 @@ const meta = (() => { try { return require('./meta'); } catch { return null; } }
 const customers = (() => { try { return require('./customers'); } catch { return null; } })();
 const salesmartly = (() => { try { return require('./salesmartly'); } catch { return null; } })();
 const decisions = (() => { try { return require('./decisions'); } catch { return null; } })();
+const marketIntel = (() => { try { return require('./market-intel'); } catch { return null; } })();
 
 const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || 'claude-opus-4-6';
 
@@ -48,6 +49,11 @@ async function gatherContext({ days = 7 } = {}) {
       }));
     }
   } catch {}
+  try {
+    if (marketIntel && typeof marketIntel.getMarketIntelContext === 'function') {
+      ctx.market_intel = marketIntel.getMarketIntelContext({ compact: true });
+    }
+  } catch {}
   return ctx;
 }
 
@@ -59,6 +65,9 @@ function ctxToPrompt(ctx) {
   if (ctx.customer_topics) lines.push('=== 客人最常問什麼 ===\n' + JSON.stringify(ctx.customer_topics));
   if (ctx.recent_decisions && ctx.recent_decisions.length) {
     lines.push('=== 最近 10 件決策 ===\n' + JSON.stringify(ctx.recent_decisions));
+  }
+  if (ctx.market_intel) {
+    lines.push('=== 今日台灣市場情報 (Google News + PTT + Dcard + Trends + 對手廣告) ===\n' + ctx.market_intel);
   }
   if (lines.length === 0) return '（暫無數據可參考）';
   return lines.join('\n\n');

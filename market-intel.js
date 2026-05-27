@@ -113,6 +113,80 @@ async function fetchFbAdsLibrary(searchTerms) {
 }
 
 // ============================================================
+// PTT 看板搜尋 (免 API, 用 Google Site Search 抓 PTT)
+// ============================================================
+async function fetchPtt(keyword) {
+  const url = 'https://news.google.com/rss/search?q=' + encodeURIComponent(keyword + ' site:ptt.cc') + '&hl=zh-TW&gl=TW&ceid=TW:zh-Hant';
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    if (!r.ok) return [];
+    const xml = await r.text();
+    const items = [];
+    const re = /<item>([\s\S]*?)<\/item>/g;
+    let m;
+    while ((m = re.exec(xml)) !== null && items.length < 10) {
+      const b = m[1];
+      const t = b.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
+      const l = b.match(/<link>([\s\S]*?)<\/link>/);
+      const d = b.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+      if (t) items.push({ title: t[1].trim(), link: l && l[1] && l[1].trim(), pubDate: d && d[1] && d[1].trim(), source: 'PTT' });
+    }
+    return items;
+  } catch (e) { console.error('[ptt]', e.message); return []; }
+}
+
+// ============================================================
+// Dcard 公開 API 搜尋
+// ============================================================
+async function fetchDcard(keyword) {
+  const url = 'https://www.dcard.tw/service/api/v2/search/posts?query=' + encodeURIComponent(keyword) + '&limit=10';
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } });
+    if (!r.ok) return [];
+    const data = await r.json();
+    if (!Array.isArray(data)) return [];
+    return data.slice(0, 10).map(p => ({
+      title: p.title,
+      excerpt: (p.excerpt || '').slice(0, 100),
+      forum: p.forumName,
+      like: p.likeCount,
+      comment: p.commentCount,
+      at: p.createdAt,
+      link: 'https://www.dcard.tw/f/' + (p.forumAlias || '') + '/p/' + p.id,
+      source: 'Dcard',
+    }));
+  } catch (e) { console.error('[dcard]', e.message); return []; }
+}
+
+// ============================================================
+// Google Trends 每日熱門 (RSS, 免 API)
+// ============================================================
+async function fetchGoogleTrends() {
+  const url = 'https://trends.google.com/trending/rss?geo=TW';
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    if (!r.ok) return [];
+    const xml = await r.text();
+    const items = [];
+    const re = /<item>([\s\S]*?)<\/item>/g;
+    let m;
+    while ((m = re.exec(xml)) !== null && items.length < 20) {
+      const b = m[1];
+      const t = b.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
+      const tr = b.match(/<ht:approx_traffic>([\s\S]*?)<\/ht:approx_traffic>/);
+      const news = b.match(/<ht:news_item_title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/ht:news_item_title>/);
+      if (t) items.push({
+        keyword: t[1].trim(),
+        traffic: tr && tr[1] && tr[1].trim(),
+        related_news: news && news[1] && news[1].trim(),
+        source: 'GoogleTrends',
+      });
+    }
+    return items;
+  } catch (e) { console.error('[gtrends]', e.message); return []; }
+}
+
+// ============================================================
 // 完整每日掃描
 // ============================================================
 async function runDailyScan() {
@@ -139,6 +213,21 @@ async function runDailyScan() {
   // 2) FB Ads
   result.fb_ads = await fetchFbAdsLibrary([...NEWS_KEYWORDS, ...COMPETITORS]);
 
+  // 3) PTT 看板搜尋
+  result.ptt = {};
+  for (const kw of NEWS_KEYWORDS) {
+    result.ptt[kw] = await fetchPtt(kw);
+  }
+
+  // 4) Dcard 公開 API
+  result.dcard = {};
+  for (const kw of NEWS_KEYWORDS) {
+    result.dcard[kw] = await fetchDcard(kw);
+  }
+
+  // 5) Google Trends 每日熱門 (台灣)
+  result.google_trends = await fetchGoogleTrends();
+
   result.finished_at = new Date().toISOString();
 
   // 統計
@@ -146,9 +235,15 @@ async function runDailyScan() {
   for (const items of Object.values(result.google_news)) {
     if (Array.isArray(items)) newsCount += items.length;
   }
+  let pttCount = 0, dcardCount = 0;
+  for (const items of Object.values(result.ptt || {})) if (Array.isArray(items)) pttCount += items.length;
+  for (const items of Object.values(result.dcard || {})) if (Array.isArray(items)) dcardCount += items.length;
   result.summary_stats = {
     total_news: newsCount,
     total_fb_ads: Array.isArray(result.fb_ads) ? result.fb_ads.length : 0,
+    total_ptt: pttCount,
+    total_dcard: dcardCount,
+    total_gtrends: Array.isArray(result.google_trends) ? result.google_trends.length : 0,
     keywords_scanned: NEWS_KEYWORDS.length + COMPETITORS.length,
   };
 
@@ -212,6 +307,40 @@ function getMarketIntelContext({ compact = true } = {}) {
     lines.push(...compNews);
   }
 
+  // PTT (top 2 per keyword)
+  let pttLines = [];
+  for (const kw of NEWS_KEYWORDS) {
+    const items = (intel.ptt || {})[kw];
+    if (Array.isArray(items) && items.length > 0) {
+      items.slice(0, compact ? 2 : 4).forEach(it => pttLines.push(`  • [PTT/${kw}] ${it.title}`));
+    }
+  }
+  if (pttLines.length) {
+    lines.push('\n💬 PTT 討論:');
+    lines.push(...pttLines.slice(0, compact ? 8 : 20));
+  }
+
+  // Dcard (top 2 per keyword)
+  let dcardLines = [];
+  for (const kw of NEWS_KEYWORDS) {
+    const items = (intel.dcard || {})[kw];
+    if (Array.isArray(items) && items.length > 0) {
+      items.slice(0, compact ? 2 : 4).forEach(it => dcardLines.push(`  • [${it.forum}] ${it.title} (❤${it.like || 0})`));
+    }
+  }
+  if (dcardLines.length) {
+    lines.push('\n🎓 Dcard 討論:');
+    lines.push(...dcardLines.slice(0, compact ? 8 : 20));
+  }
+
+  // Google Trends 台灣熱門
+  if (Array.isArray(intel.google_trends) && intel.google_trends.length > 0) {
+    lines.push('\n🔥 今日 Google Trends 台灣熱門:');
+    intel.google_trends.slice(0, compact ? 5 : 10).forEach(t => {
+      lines.push(`  • ${t.keyword}${t.traffic ? ' (' + t.traffic + ')' : ''}`);
+    });
+  }
+
   // 對手廣告 hook (top 5)
   if (Array.isArray(intel.fb_ads) && intel.fb_ads.length > 0) {
     lines.push('\n📢 對手正在跑的廣告:');
@@ -261,4 +390,7 @@ module.exports = {
   todayKey,
   NEWS_KEYWORDS,
   COMPETITORS,
+  fetchPtt,
+  fetchDcard,
+  fetchGoogleTrends,
 };

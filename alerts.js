@@ -25,6 +25,7 @@ meta       = tryRequire('./meta');
 salesmartly = tryRequire('./salesmartly');
 decisions  = tryRequire('./decisions');
 const briefingAi = tryRequire('./briefing-ai');
+const marketIntel = tryRequire('./market-intel');
 
 const ADMIN = process.env.ADMIN_LINE_USER_ID || '';
 const TZ = process.env.TZ || 'Asia/Taipei';
@@ -145,6 +146,58 @@ async function pendingDecisionsSection() {
   return null;
 }
 
+async function marketSection() {
+  if (!marketIntel) return null;
+  try {
+    const intel = marketIntel.loadLatestIntel();
+    if (!intel) return null;
+    const lines = ['🌍 今日市場掃描 (' + intel.date + ')'];
+    const stats = intel.summary_stats || {};
+    lines.push(`  📰 ${stats.total_news || 0} 篇新聞 · 💬 ${stats.total_ptt || 0} PTT · 🎓 ${stats.total_dcard || 0} Dcard · 🔥 ${stats.total_gtrends || 0} GTrends · 📢 ${stats.total_fb_ads || 0} 對手廣告`);
+
+    // Google Trends Top 3
+    if (Array.isArray(intel.google_trends) && intel.google_trends.length > 0) {
+      lines.push('\n  🔥 今日熱搜 Top 3:');
+      intel.google_trends.slice(0, 3).forEach(t => {
+        lines.push(`     • ${t.keyword}${t.traffic ? ' (' + t.traffic + ')' : ''}`);
+      });
+    }
+
+    // PTT 熱門討論 (合計 top 3)
+    const pttTop = [];
+    for (const items of Object.values(intel.ptt || {})) {
+      if (Array.isArray(items)) pttTop.push(...items.slice(0, 1));
+    }
+    if (pttTop.length) {
+      lines.push('\n  💬 PTT 討論 Top 3:');
+      pttTop.slice(0, 3).forEach(it => lines.push(`     • ${it.title.slice(0, 60)}`));
+    }
+
+    // Dcard 熱門 (合計 top 3)
+    const dcardTop = [];
+    for (const items of Object.values(intel.dcard || {})) {
+      if (Array.isArray(items)) dcardTop.push(...items.slice(0, 1));
+    }
+    if (dcardTop.length) {
+      lines.push('\n  🎓 Dcard 話題 Top 3:');
+      dcardTop.slice(0, 3).forEach(it => lines.push(`     • [${it.forum}] ${it.title.slice(0, 50)} (❤${it.like || 0})`));
+    }
+
+    // 對手廣告 top 3
+    if (Array.isArray(intel.fb_ads) && intel.fb_ads.length > 0) {
+      lines.push('\n  📢 對手在跑的廣告 Top 3:');
+      intel.fb_ads.slice(0, 3).forEach(ad => {
+        const hook = (ad.body || ad.title || '').slice(0, 60);
+        lines.push(`     • [${ad.page}] ${hook}`);
+      });
+    }
+    return lines.join('\n');
+  } catch (e) {
+    console.error('[alerts marketSection]', e.message);
+    return null;
+  }
+}
+
 async function dailyBriefing() {
   const wd = getWeekday();
   const date = new Date().toLocaleDateString('zh-TW', { timeZone: TZ });
@@ -168,6 +221,9 @@ async function dailyBriefing() {
   } else if (wd === 0) {
     sections.push(await reviewSection());
   }
+
+  const market = await marketSection();
+  if (market) sections.push(market);
 
   const pending = await pendingDecisionsSection();
   if (pending) sections.push(pending);

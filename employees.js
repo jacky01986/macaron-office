@@ -4,6 +4,24 @@
 // 7 位 AI 員工：1 位行銷總監 (VICTOR) + 6 位專員
 // v2 重點：加入「思考協議」「品質紅線」「好壞範例對比」「自我檢核」
 
+// Market intel auto-injector (runs at module load + on demand)
+let _marketIntelCache = '';
+try {
+  const mi = require('./market-intel');
+  function refreshMarketIntel() {
+    try { _marketIntelCache = mi.getMarketIntelContext({ compact: true }) || ''; }
+    catch { _marketIntelCache = ''; }
+  }
+  refreshMarketIntel();
+  // Auto-refresh every 30 min
+  setInterval(refreshMarketIntel, 30 * 60 * 1000);
+} catch {}
+
+function getMarketIntelTail() {
+  if (!_marketIntelCache) return '';
+  return '\n\n=== 今日台灣即時市場情報 (自動更新, 給你參考用) ===\n' + _marketIntelCache + '\n=== 情報結束 ===\n';
+}
+
 const BRAND_CONTEXT = `
 【品牌定位 (不可動搖)】
 溫點 WarmPlace 是台灣精品馬卡龍品牌，正從「文青手作」轉型為「韓系精品高端禮贈」。
@@ -556,4 +574,21 @@ ${THINKING_PROTOCOL}
 
   };
 
-module.exports = { EMPLOYEES };
+// Wrap EMPLOYEES so accessing employee.systemPrompt always includes fresh market intel
+const _origEmployees = EMPLOYEES;
+const EMPLOYEES_WITH_MARKET = new Proxy(_origEmployees, {
+  get(target, key) {
+    const emp = target[key];
+    if (!emp || typeof emp !== 'object') return emp;
+    return new Proxy(emp, {
+      get(t, k) {
+        if (k === 'systemPrompt' && typeof t[k] === 'string') {
+          return t[k] + getMarketIntelTail();
+        }
+        return t[k];
+      },
+    });
+  },
+});
+
+module.exports = { EMPLOYEES: EMPLOYEES_WITH_MARKET, getMarketIntelTail };
