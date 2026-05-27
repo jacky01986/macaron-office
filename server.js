@@ -4238,11 +4238,41 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     const history = tgLoadHistory(chatId);
     history.push({ role: 'user', content: text });
 
-    // Inject live data into context
+    // Inject live data into context (FORMATTED for readability — Claude was missing fields in raw JSON)
     const liveData = await gatherTelegramContext();
     let marketCtx = "";
     try { if (marketIntel) marketCtx = marketIntel.getMarketIntelContext({ compact: true }); } catch {}
-    const dataLine = `\n\n[目前 MACARON 即時數據]\n${JSON.stringify(liveData)}\n\n${marketCtx}`;
+
+    // Build a human-readable summary FIRST, then attach raw JSON for completeness
+    function fmtInbox(label, conv) {
+      if (!Array.isArray(conv) || conv.length === 0) return `\n${label}: (\u7121\u5c0d\u8a71)`;
+      const lines = [`\n${label} (\u5171 ${conv.length} \u901a, \u4ee5\u4e0b\u662f\u771f\u5be6\u5ba2\u6236\u8a0a\u606f \u2014 \u4f60\u53ef\u4ee5\u4e14\u5fc5\u9808\u5f15\u7528\u9019\u4e9b\u539f\u53e5):`];
+      conv.slice(0, 5).forEach((c, i) => {
+        lines.push(`  ${i + 1}. \u5ba2\u6236: ${c.with || '(\u533f\u540d)'}  \u6700\u5f8c\u4e92\u52d5: ${c.last_at || '?'}`);
+        (c.messages || []).slice(-6).forEach(m => {
+          const who = m.from === '我們' ? '\u6211\u5011\u56de\u8986' : '\u5ba2\u4eba\u8aaa';
+          lines.push(`     [${who}] ${(m.text || '').replace(/\n/g, ' ').slice(0, 140)}`);
+        });
+      });
+      return lines.join('\n');
+    }
+
+    const fmtSummary = [];
+    fmtSummary.push('\n\n[\u6eab\u9ede WarmPlace \u5373\u6642\u8cc7\u6599 \u2014 ' + new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) + ']');
+    fmtSummary.push(fmtInbox('\ud83d\udce8 FB Messenger \u5c0d\u8a71', liveData.meta_inbox_fb));
+    fmtSummary.push(fmtInbox('\ud83d\udcf7 Instagram DM \u5c0d\u8a71', liveData.meta_inbox_ig));
+    if (liveData.recent_ig_posts && liveData.recent_ig_posts.length) {
+      fmtSummary.push('\n\ud83d\udcf8 IG \u6700\u8fd1\u8cbc\u6587:');
+      liveData.recent_ig_posts.slice(0, 5).forEach((p, i) => fmtSummary.push(`  ${i+1}. \u2764\ufe0f${p.like || 0} \ud83d\udcac${p.comments || 0}  ${(p.caption || '').slice(0, 80)}`));
+    }
+    if (liveData.customers) {
+      fmtSummary.push(`\n\ud83d\udc65 \u5ba2\u6236\u7d71\u8a08: \u5171 ${liveData.customers.total || 0} \u4eba \u00b7 \u8a62\u554f ${liveData.customers.inquiries || 0} \u4ef6 (\u904e\u53bb 7 \u5929)`);
+    }
+    if (liveData.meta && liveData.meta.ad_7d) {
+      fmtSummary.push(`\n\ud83d\udcb0 \u5ee3\u544a (7 \u5929): \u82b1\u8cbb NT$${liveData.meta.ad_7d.spend || 0} \u00b7 \u66dd\u5149 ${liveData.meta.ad_7d.impressions || 0}`);
+    }
+
+    const dataLine = fmtSummary.join('\n') + '\n\n' + marketCtx + '\n\n[\u539f\u59cb JSON \u4f9b\u53c3\u8003]\n' + JSON.stringify(liveData).slice(0, 6000);
 
     const systemPrompt = `今天日期: ${new Date().toLocaleDateString('zh-TW', {timeZone:'Asia/Taipei', year:'numeric', month:'long', day:'numeric', weekday:'long'})} (台北時區)。\n\n你是 VICTOR — 溫點 WarmPlace 的 AI 行銷總監兼整個 AI 團隊的大腦。\n\n品牌:精品馬卡龍與費南雪禮贈品牌,4 家門店(台南本店、新光西門 B2、新光中港 B2、新光南西 B2)。月度預算 NT$60,000。\nIG @warmplace.here 粉絲 32K,FB 粉專 118 粉絲(主戰場在 IG)。\nLINE Bot @110ypqki, SaleSmartly 對話追蹤已開。\n\n你帶領團隊:LEON(廣告投手)、CAMILLE(內容主筆,負責文案+部落格 SEO)、ARIA(視覺指導)、DEX(數據分析)、NOVA(品牌經理,負責社群+公關)、MILO(KOL)。
 
