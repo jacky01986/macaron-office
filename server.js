@@ -3388,7 +3388,9 @@ app.post('/api/telegram/webhook', express.json(), async (req, res) => {
       console.warn('[telegram] rejected chat_id', chatId);
       return;
     }
-    const text = msg.text.trim();
+    let text = msg.text.trim();
+    // Normalize fullwidth slash (Chinese keyboards auto-convert / to ／ U+FF0F)
+    text = text.replace(/\uff0f/g, '/').replace(/^\u3000+/, '').replace(/\s+@warmplace2026bot/i, '');
     console.log('[telegram] cmd:', text);
     
     // Quick commands
