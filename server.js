@@ -3382,6 +3382,48 @@ app.get('/api/admin/disk-info', (req, res) => {
 });
 
 
+// Simulate a Telegram message hitting the bot — for automated testing of VICTOR
+// Sends the response to the real admin's Telegram chat AND returns it via HTTP.
+app.post('/api/admin/test-victor-msg', async (req, res) => {
+  try {
+    const text = (req.body && req.body.text) || req.query.text;
+    if (!text) return res.status(400).json({ ok: false, error: 'text required (POST body.text or ?text=)' });
+    const chatIdStr = process.env.TELEGRAM_CHAT_ID;
+    if (!chatIdStr) return res.status(400).json({ ok: false, error: 'TELEGRAM_CHAT_ID not set' });
+    // Build a fake Telegram update payload matching what real Telegram sends
+    const update = {
+      update_id: Date.now(),
+      message: {
+        message_id: Date.now(),
+        from: { id: parseInt(chatIdStr) || chatIdStr, is_bot: false, first_name: 'AdminTest' },
+        chat: { id: parseInt(chatIdStr) || chatIdStr, type: 'private' },
+        date: Math.floor(Date.now() / 1000),
+        text: text,
+      },
+    };
+    // POST to our own webhook (self-call) to reuse the exact same code path
+    const host = req.get('host');
+    const proto = req.protocol;
+    const url = `${proto}://${host}/api/telegram/webhook`;
+    const t0 = Date.now();
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(update),
+    });
+    const dt = Date.now() - t0;
+    res.json({
+      ok: true,
+      sent_text: text,
+      webhook_status: r.status,
+      duration_ms: dt,
+      note: 'VICTOR\'s reply was sent to your Telegram chat. Check phone.',
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 app.post('/api/admin/test-victor-briefing', async (req, res) => {
   try {
     const adminId = process.env.ADMIN_LINE_USER_ID;
