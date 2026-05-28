@@ -3346,6 +3346,41 @@ app.post('/api/admin/test-line-push', async (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
+app.get('/api/admin/disk-info', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  const mount = process.env.RENDER_DISK_MOUNT_PATH || null;
+  const fallback = path.join(__dirname, 'data');
+  const targetDir = mount || fallback;
+  let exists = false, isDir = false, contents = [], writeOk = false, writeErr = null, stat = null;
+  try {
+    exists = fs.existsSync(targetDir);
+    if (exists) {
+      stat = fs.statSync(targetDir);
+      isDir = stat.isDirectory();
+      if (isDir) contents = fs.readdirSync(targetDir).slice(0, 50);
+    }
+    // Try writing a probe file
+    const probe = path.join(targetDir, '.disk-probe.txt');
+    fs.mkdirSync(targetDir, { recursive: true });
+    fs.writeFileSync(probe, 'probe ' + new Date().toISOString());
+    writeOk = fs.existsSync(probe);
+  } catch (e) {
+    writeErr = e.message;
+  }
+  res.json({
+    ok: true,
+    RENDER_DISK_MOUNT_PATH: mount,
+    fallback_path: fallback,
+    using: targetDir,
+    is_persistent_disk: !!mount,
+    exists, isDir,
+    contents,
+    write_ok: writeOk,
+    write_err: writeErr,
+  });
+});
+
 
 app.post('/api/admin/test-victor-briefing', async (req, res) => {
   try {
