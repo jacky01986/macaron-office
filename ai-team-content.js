@@ -24,7 +24,7 @@ const path = require('path');
 let customerProfiler;
 try { customerProfiler = require('./customer-profiler'); } catch (e) { customerProfiler = null; }
 
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 const CONTENT_FILE = path.join(DATA_DIR, 'ai-content-monthly.json');
 
 let Anthropic = null;

@@ -16,7 +16,7 @@ const SCOUT_MODEL = process.env.SCOUT_MODEL || 'claude-sonnet-4-6';
 // DISTILL 用 Opus 4.6（synthesis 需要更深度）
 const DISTILL_MODEL = process.env.DISTILL_MODEL || 'claude-opus-4-6';
 
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 const SCOUT_FILE = path.join(DATA_DIR, 'scout-reports.json');
 const INTEL_FILE = path.join(DATA_DIR, 'market-intelligence.json');
 

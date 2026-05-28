@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 const ACTIONS_FILE = path.join(DATA_DIR, 'actions.json');
 
 let line = null;
