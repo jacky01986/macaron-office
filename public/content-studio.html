@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>內容工作室 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{ --burgundy:#6D2E46; --gold:#B08D57; --dark:#1C1213; --dark-2:#2a1a1d; --ivory:#FCF6F5; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; background:var(--dark); color:var(--ivory);
+    font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; }
+  .studio-intro{ padding:14px 18px 4px; }
+  .studio-intro h1{ margin:0 0 4px; font-size:20px; color:var(--gold); }
+  .studio-intro p{ margin:0; font-size:13px; color:rgba(252,246,245,.7); }
+  .studio-section{ margin:14px 0 0; border-top:1px solid rgba(176,141,87,.25); }
+  .studio-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:14px 18px; background:linear-gradient(135deg,var(--burgundy),#4a1f30);
+    border-bottom:2px solid var(--gold); position:sticky; top:0; z-index:5; }
+  .studio-head h2{ margin:0; font-size:16px; color:var(--ivory); }
+  .studio-head .sub{ font-size:12px; color:rgba(252,246,245,.75); }
+  iframe{ width:100%; border:0; display:block; background:var(--dark); min-height:600px; }
+</style>
+</head>
+<body>
+
+<div class="studio-intro">
+  <h1>🎬 內容工作室</h1>
+  <p>同一頁兩種發文方式：上半「你給題目 → NOVA 幫你寫」，下半「系統每天自動產草稿 → 你審核」。兩套都會發到同一個 FB / IG。</p>
+</div>
+
+<div class="studio-section">
+  <div class="studio-head">
+    <h2>📱 社群草稿（你主導）</h2>
+    <span class="sub">你給 brief → NOVA 寫 3 個版本 → 選一個編輯 → 發佈</span>
+  </div>
+  <iframe id="f-social" src="/social.html" scrolling="no"></iframe>
+</div>
+
+<div class="studio-section">
+  <div class="studio-head">
+    <h2>🤖 自動發文（系統主導）</h2>
+    <span class="sub">每天 09:00 + 19:00 自動產 IG + FB 草稿 → 你配圖 / 審核 / 按發佈</span>
+  </div>
+  <iframe id="f-auto" src="/auto-publish.html" scrolling="no"></iframe>
+</div>
+
+<script>
+// 同源 iframe：依內容高度自動撐高，避免雙捲軸
+function fit(id){
+  var f = document.getElementById(id);
+  if(!f) return;
+  try{
+    var doc = f.contentWindow.document;
+    var h = Math.max(
+      doc.documentElement.scrollHeight,
+      doc.body ? doc.body.scrollHeight : 0
+    );
+    if(h > 300) f.style.height = (h + 30) + 'px';
+  }catch(e){
+    // 跨域或尚未載入時用保底高度
+    f.style.height = '1200px';
+  }
+}
+['f-social','f-auto'].forEach(function(id){
+  var f = document.getElementById(id);
+  f.addEventListener('load', function(){
+    fit(id);
+    setTimeout(function(){ fit(id); }, 800);
+    setTimeout(function(){ fit(id); }, 2000);
+  });
+});
+// 草稿是非同步載入的，內容會長高 → 定期重新量測
+setInterval(function(){ fit('f-social'); fit('f-auto'); }, 2500);
+</script>
+</body>
+</html>
