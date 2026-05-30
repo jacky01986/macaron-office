@@ -1,15 +1,35 @@
 // auto-publish.js — 自動產文 → 拍板 → 發佈 IG/FB
 // 流程：
-//   1. 每天 10:00 cron → Claude 寫 IG + FB 草稿
+//   1. 每天 09:00 + 19:00 cron → Claude 寫 IG + FB 草稿
 //   2. 草稿存到 data/auto-drafts.json + push 到 decisions 待審清單
-//   3. 早安簡報列出來等你 1ok / 1no
+//   3. 早安簡報 / Telegram 列出來等你 1ok / 1no
 //   4. 每 5 分鐘 cron 檢查 decisions.history → 已 1ok 的 → 自動發佈
+//
+// ⚙️ 2026-05 政策調整 (Jeffrey 要求):
+//   - FB 自動發文「整個關閉」: 即使你回 2ok 也不會自動貼 FB, 只保留草稿等你手動發
+//   - 夜間 / 週末不自動發: 只有台北時間「週一~週五 09:00-18:00」才會自動發佈
+//   - 這兩個閘門都只擋「發佈」, 不擋「產草稿+Telegram 預覽」
 
 const fs = require('fs');
 const path = require('path');
 
 const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 const DRAFTS_FILE = path.join(DATA_DIR, 'auto-drafts.json');
+
+// ===== 政策開關 =====
+// FB 自動發文總開關: 預設關閉(只產草稿,絕不自動貼 FB)。
+// 想重新打開就把這行改成 true,或設環境變數 FB_AUTOPUBLISH=on
+const FB_AUTOPUBLISH_ENABLED = (process.env.FB_AUTOPUBLISH || 'off').toLowerCase() === 'on';
+
+// 只有台北時間 週一~週五 09:00-18:00 才允許自動發佈
+function isPublishWindowOpen() {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+  const day = now.getDay();   // 0=週日, 6=週六
+  const hour = now.getHours();
+  if (day === 0 || day === 6) return { open: false, reason: '週末不自動發' };
+  if (hour < 9 || hour >= 18) return { open: false, reason: '非營業時段(09:00-18:00)不自動發' };
+  return { open: true };
+}
 
 let Anthropic = null;
 try { Anthropic = require('@anthropic-ai/sdk'); } catch {}
@@ -60,6 +80,17 @@ function saveDrafts(state) {
   fs.writeFileSync(DRAFTS_FILE, JSON.stringify(state, null, 2));
 }
 function genId() { return 'draft_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6); }
+
+// 把所有 pending 草稿標記為 dismissed (清空待審 queue,不會再被自動發)
+function clearPendingDrafts() {
+  const state = loadDrafts();
+  let cleared = 0;
+  (state.drafts || []).forEach(d => {
+    if (d.status === 'pending') { d.status = 'dismissed'; d.dismissed_at = new Date().toISOString(); cleared++; }
+  });
+  saveDrafts(state);
+  return { ok: true, cleared };
+}
 
 let client = null;
 function getClient() {
@@ -153,12 +184,15 @@ async function generateAndQueueDrafts() {
     }
 
     // ★ Telegram 預覽推送 (有圖就推圖文,無圖只推文字)
+    const fbNote = platform === 'FB'
+      ? '\n\n────────────\n📝 FB 自動發已關閉 — 這只是草稿。要發請到 ' + (process.env.SITE_URL || 'https://macaron-office.onrender.com') + '/auto-publish.html 手動發佈'
+      : '';
     const baseCap = '<b>📱 ' + platform + ' 新草稿</b>\n\n' + caption;
-    const tail = draft.image_url
-      ? '\n\n────────────\n✅ 圖已配好,回覆 <code>1ok</code> / <code>2ok</code> 即發布(1=IG, 2=FB,依產出順序)'
-      : (platform === 'IG'
-          ? '\n\n────────────\n⚠️ IG 還缺圖片,到 ' + (process.env.SITE_URL || 'https://macaron-office.onrender.com') + '/auto-publish.html 上傳圖片後再發'
-          : '\n\n────────────\n回覆 <code>2ok</code> 即發布 FB');
+    const tail = platform === 'FB'
+      ? fbNote
+      : (draft.image_url
+          ? '\n\n────────────\n✅ 圖已配好,回覆 <code>1ok</code> 即發布 IG'
+          : '\n\n────────────\n⚠️ IG 還缺圖片,到 ' + (process.env.SITE_URL || 'https://macaron-office.onrender.com') + '/auto-publish.html 上傳圖片後再發');
     const previewCaption = baseCap + tail;
     try {
       if (draft.image_url) {
@@ -218,6 +252,14 @@ async function processDecidedDrafts() {
     if (!draft || draft.status !== 'pending') continue;
     try {
       if (draft.platform === 'FB') {
+        // 🚫 FB 自動發文已關閉 — 即使你回 2ok 也不自動貼,只標記等你手動發
+        if (!FB_AUTOPUBLISH_ENABLED) {
+          draft.note = '⏸️ FB 自動發已關閉。要發請到 /auto-publish.html 手動按發佈。';
+          continue;
+        }
+        // 夜間/週末閘門
+        const win = isPublishWindowOpen();
+        if (!win.open) { draft.note = '⏳ ' + win.reason + ',暫不發,等營業時段。'; continue; }
         const r = await publishFB(draft.caption);
         draft.status = 'published';
         draft.published_at = new Date().toISOString();
@@ -230,15 +272,17 @@ async function processDecidedDrafts() {
           // 不報錯,只是先把狀態維持為 pending 等待手動上傳
           draft.note = '⏳ IG 等你手動上傳圖片(到 /auto-publish.html 控制台拖圖)';
           continue;
-        } else {
-          const r = await publishIG(draft.caption, draft.image_url);
-          draft.status = 'published';
-          draft.published_at = new Date().toISOString();
-          draft.publish_id = r.id;
-          publishedThis++;
-          console.log('[auto-publish] IG published:', r.id);
-          await tgSendText('✅ IG 已發佈\n\n' + draft.caption.slice(0, 200));
         }
+        // 夜間/週末閘門 (IG 也套用)
+        const win = isPublishWindowOpen();
+        if (!win.open) { draft.note = '⏳ ' + win.reason + ',暫不發,等營業時段。'; continue; }
+        const r = await publishIG(draft.caption, draft.image_url);
+        draft.status = 'published';
+        draft.published_at = new Date().toISOString();
+        draft.publish_id = r.id;
+        publishedThis++;
+        console.log('[auto-publish] IG published:', r.id);
+        await tgSendText('✅ IG 已發佈\n\n' + draft.caption.slice(0, 200));
       }
     } catch (e) {
       draft.status = 'failed';
@@ -253,12 +297,12 @@ async function processDecidedDrafts() {
 function registerCronJobs(cron) {
   if (!cron || typeof cron.schedule !== 'function') return;
   const tz = process.env.TZ || 'Asia/Taipei';
-  // 早上 09:00 + 晚上 19:00 雙峰時段,Telegram 預覽推送讓你看
+  // 早上 09:00 + 晚上 19:00 雙峰時段,Telegram 預覽推送讓你看(只產草稿,不自動發)
   cron.schedule('0 9 * * *', generateAndQueueDrafts, { timezone: tz });
   cron.schedule('0 19 * * *', generateAndQueueDrafts, { timezone: tz });
-  // 每 5 分鐘掃決策清單,看有 1ok 就發
+  // 每 5 分鐘掃決策清單,看有 1ok 就發(FB 已關閉,IG 限營業時段)
   cron.schedule('*/5 * * * *', processDecidedDrafts, { timezone: tz });
-  console.log('[auto-publish] cron jobs registered (drafts 09:00 + 19:00 daily, publish check every 5min)');
+  console.log('[auto-publish] cron jobs registered (drafts 09:00 + 19:00 daily, publish check every 5min; FB auto-publish=' + FB_AUTOPUBLISH_ENABLED + ')');
 }
 
 module.exports = {
@@ -268,4 +312,7 @@ module.exports = {
   publishIG,
   registerCronJobs,
   loadDrafts,
+  clearPendingDrafts,
+  isPublishWindowOpen,
+  FB_AUTOPUBLISH_ENABLED,
 };

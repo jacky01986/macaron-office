@@ -1398,6 +1398,18 @@ app.post('/api/auto-publish/upload-image/:draftId', imgUpload.single('image'), (
   }
 });
 
+// === 清空所有 pending 草稿 (標記為 dismissed,不會再被自動發) ===
+app.post('/api/auto-publish/clear-pending', express.json(), async (req, res) => {
+  try {
+    const ap = require('./auto-publish');
+    if (!ap.clearPendingDrafts) return res.status(500).json({ ok: false, error: 'clearPendingDrafts not available' });
+    const r = ap.clearPendingDrafts();
+    res.json(r);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // === 手動將草稿標記為 approved (繞過 LINE 1ok 流程) ===
 app.post('/api/auto-publish/approve/:draftId', express.json(), async (req, res) => {
   try {
