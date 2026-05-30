@@ -187,12 +187,13 @@ async function generateAndQueueDrafts() {
     const fbNote = platform === 'FB'
       ? '\n\n────────────\n📝 FB 自動發已關閉 — 這只是草稿。要發請到 ' + (process.env.SITE_URL || 'https://macaron-office.onrender.com') + '/auto-publish.html 手動發佈'
       : '';
+    const site = (process.env.SITE_URL || 'https://macaron-office.onrender.com');
     const baseCap = '<b>📱 ' + platform + ' 新草稿</b>\n\n' + caption;
     const tail = platform === 'FB'
       ? fbNote
       : (draft.image_url
-          ? '\n\n────────────\n✅ 圖已配好,回覆 <code>1ok</code> 即發布 IG'
-          : '\n\n────────────\n⚠️ IG 還缺圖片,到 ' + (process.env.SITE_URL || 'https://macaron-office.onrender.com') + '/auto-publish.html 上傳圖片後再發');
+          ? '\n\n────────────\n📝 這只是草稿。要發到後台網頁 ' + site + '/auto-publish.html 按「立刻發布」'
+          : '\n\n────────────\n⚠️ IG 還缺圖片,到 ' + site + '/auto-publish.html 上傳圖片後再按發布');
     const previewCaption = baseCap + tail;
     try {
       if (draft.image_url) {

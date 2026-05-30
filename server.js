@@ -1568,10 +1568,17 @@ async function runEmpBrain(key, label) {
 }
 
 // 每 4 小時掃 CPL，超 NT$500 警報，超 NT$800 自動暫停
-cron.schedule('0 */4 * * *', async () => {
-  try { const w = require('./cpl-watchdog'); await w.checkAndAlert(); }
-  catch (e) { console.error('[cpl-watchdog cron]', e.message); }
-}, { timezone: 'Asia/Taipei' });
+// ⚙️ 2026-05 Jeffrey 要求關閉 Telegram CPL 警示。預設關閉。
+//    想重新打開就設環境變數 CPL_WATCHDOG=on
+if ((process.env.CPL_WATCHDOG || 'off').toLowerCase() === 'on') {
+  cron.schedule('0 */4 * * *', async () => {
+    try { const w = require('./cpl-watchdog'); await w.checkAndAlert(); }
+    catch (e) { console.error('[cpl-watchdog cron]', e.message); }
+  }, { timezone: 'Asia/Taipei' });
+  console.log('[cpl-watchdog] cron registered (every 4h)');
+} else {
+  console.log('[cpl-watchdog] DISABLED (set CPL_WATCHDOG=on to re-enable)');
+}
 
 cron.schedule('30 8 * * *', async () => {
   console.log('[VICTOR] morning briefing cron firing...');
