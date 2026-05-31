@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>🎬 RINA 短影音企劃 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{ --burgundy:#6D2E46; --burgundy-dark:#4a1f30; --gold:#B08D57; --dark:#1C1213; --dark-2:#2a1a1d; --ivory:#FCF6F5; --green:#3fb27f; }
+  *{ box-sizing:border-box; }
+  body{ font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; background:var(--dark); color:var(--ivory); margin:0; padding:0 0 60px; }
+  .wrap{ padding:18px; max-width:920px; margin:0 auto; }
+  h1{ font-size:22px; margin:0 0 4px; color:var(--gold); }
+  .sub{ color:rgba(252,246,245,.7); font-size:13px; margin-bottom:18px; }
+  .card{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .intel-pill{ display:inline-block; padding:4px 10px; border-radius:12px; font-size:12px; background:rgba(63,178,127,.15); color:var(--green); border:1px solid rgba(63,178,127,.4); }
+  .intel-pill.warn{ background:rgba(176,141,87,.15); color:var(--gold); border-color:rgba(176,141,87,.4); }
+  label{ display:block; font-size:13px; margin:10px 0 4px; color:rgba(252,246,245,.85); }
+  textarea,select{ width:100%; background:var(--dark); border:1px solid var(--burgundy); color:var(--ivory); border-radius:6px; padding:9px 10px; font-size:14px; font-family:inherit; }
+  textarea{ min-height:64px; resize:vertical; }
+  .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .row > div{ flex:1; min-width:140px; }
+  button.go{ background:linear-gradient(135deg,var(--burgundy),var(--burgundy-dark)); color:var(--ivory); border:1px solid var(--gold); padding:11px 22px; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; }
+  button.go:disabled{ opacity:.5; cursor:not-allowed; }
+  #status{ font-size:13px; margin:12px 0; color:var(--gold); }
+  #out{ font-size:14px; line-height:1.7; }
+  #out h4{ color:var(--gold); border-bottom:1px solid rgba(176,141,87,.3); padding-bottom:6px; margin:22px 0 10px; }
+  #out ol{ padding-left:20px; }
+  #out p{ margin:6px 0; }
+  #out strong{ color:var(--gold); }
+  .empty{ color:rgba(252,246,245,.5); text-align:center; padding:24px; }
+</style>
+<link rel="stylesheet" href="/macaron-shared.css">
+</head>
+<body>
+<style>@media all { .macaron-topnav.in-iframe { display:none !important; } }</style>
+<script>
+(function(){ try{ if(window.parent!==window){ var n=document.querySelector('.macaron-topnav'); if(n)n.classList.add('in-iframe'); else document.addEventListener('DOMContentLoaded',function(){var x=document.querySelector('.macaron-topnav'); if(x)x.classList.add('in-iframe');}); } }catch(e){} })();
+</script>
+<style>
+.macaron-topnav{ background:linear-gradient(135deg,#6B4226,#8B5A33); padding:8px 16px; display:flex; gap:8px; align-items:center; overflow-x:auto; white-space:nowrap; }
+.macaron-topnav strong{ color:#FAF7F2; font-size:14px; margin-right:8px; }
+.macaron-topnav a{ padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; background:#FAF7F2; color:#6B4226; }
+</style>
+<div class="macaron-topnav">
+  <strong>溫點 WarmPlace</strong>
+  <a href="/">🏠 主控台</a>
+  <a href="/content-hub.html">📚 內容中心</a>
+  <a href="/customer-hub.html">👥 客戶中心</a>
+  <a href="/ads-hub.html">📊 廣告中心</a>
+  <a href="/market-intel.html">🔍 市場情報</a>
+  <a href="/teachers.html">🏪 門店戰報</a>
+</div>
+
+<div class="wrap">
+  <h1>🎬 RINA 短影音企劃</h1>
+  <p class="sub">RINA = AI 短影音導演。她讀 SCOUT 全球市場調查 → 產出「立刻可拍」的 Reels 行動建議（含分鏡 / 拍攝企劃 / 節奏配樂）。</p>
+
+  <div class="card">
+    <div id="intel-status"><span class="intel-pill warn">⏳ 檢查 SCOUT 情報中…</span></div>
+    <div class="row" style="margin-top:14px;">
+      <div style="max-width:140px;">
+        <label>要幾支企劃</label>
+        <select id="count">
+          <option value="3">3 支</option>
+          <option value="2">2 支</option>
+          <option value="1">1 支</option>
+          <option value="4">4 支</option>
+          <option value="5">5 支</option>
+        </select>
+      </div>
+      <div>
+        <label>額外要求（可留空 — 留空就讓 RINA 依市場調查自由發揮）</label>
+        <textarea id="brief" placeholder="例：這週主打母親節，想要催淚一點 / 或：幫我想企業送禮的 Reels"></textarea>
+      </div>
+    </div>
+    <div style="margin-top:14px;">
+      <button class="go" id="go" onclick="run()">🎬 RINA 開始企劃</button>
+    </div>
+  </div>
+
+  <div id="status"></div>
+  <div class="card" id="result" style="display:none;">
+    <div id="out"></div>
+  </div>
+</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+
+async function checkIntel(){
+  try{
+    const j = await fetch('/api/reels/intel').then(r=>r.json());
+    const el = $('intel-status');
+    if(j.has_intel){
+      el.innerHTML = '<span class="intel-pill">✅ 已連上 SCOUT 全球市場情報'+(j.scout_run?'（'+String(j.scout_run).slice(0,10)+'）':'')+'</span>';
+    }else{
+      el.innerHTML = '<span class="intel-pill warn">⚠️ 還沒有 SCOUT 情報 — 請先到「市場情報」跑一次 SCOUT，RINA 才有調查依據</span>';
+    }
+  }catch(e){
+    $('intel-status').innerHTML = '<span class="intel-pill warn">⚠️ 無法讀取 SCOUT 情報：'+e.message+'</span>';
+  }
+}
+
+async function run(){
+  const count = Number($('count').value);
+  const brief = $('brief').value.trim();
+  $('go').disabled = true;
+  $('status').textContent = '🎬 RINA 正在看市場調查、寫分鏡…（約 20–40 秒）';
+  $('result').style.display = 'none';
+  try{
+    const j = await fetch('/api/reels/generate', {
+      method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({ count, brief })
+    }).then(r=>r.json());
+    if(!j.ok) throw new Error(j.error||'unknown');
+    $('out').innerHTML = j.html + '<p style="margin-top:18px;font-size:12px;color:rgba(252,246,245,.5);">— '+(j.based_on_scout?'基於 SCOUT 全球市場調查':'（無 SCOUT 情報，依品牌常識發想）')+' · '+count+' 支</p>';
+    $('result').style.display = 'block';
+    $('status').textContent = '✅ 完成';
+    $('result').scrollIntoView({ behavior:'smooth' });
+  }catch(e){
+    $('status').textContent = '❌ 失敗：' + e.message;
+  }finally{
+    $('go').disabled = false;
+  }
+}
+
+checkIntel();
+</script>
+</body>
+</html>
