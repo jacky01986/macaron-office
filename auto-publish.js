@@ -37,6 +37,17 @@ try { Anthropic = require('@anthropic-ai/sdk'); } catch {}
 const decisions = (() => { try { return require('./decisions'); } catch { return null; } })();
 const customers = (() => { try { return require('./customers'); } catch { return null; } })();
 const salesmartly = (() => { try { return require('./salesmartly'); } catch { return null; } })();
+const _scout = (() => { try { return require('./scout'); } catch { return null; } })();
+function scoutTail() {
+  try {
+    const i = _scout && _scout.getMarketIntelligence && _scout.getMarketIntelligence();
+    if (!i) return '';
+    const wf = typeof i.weekly_focus === 'string' ? i.weekly_focus : JSON.stringify(i.weekly_focus || '');
+    const acts = (i.action_items || []).slice(0, 5).map((a, n) => (n + 1) + '. ' + (a.title || a)).join('\n');
+    return '\n\n=== SCOUT 全球市場調查 + 行動建議 (所有內容請優先參考這裡的市場洞察) ===\n本週重點：' + String(wf).slice(0, 320) + '\n行動建議：\n' + acts + '\n=== SCOUT 結束 ===';
+  } catch { return ''; }
+}
+
 const imageGen = (() => { try { return require('./image-gen'); } catch { return null; } })();
 
 // Telegram 通知 helper
@@ -109,7 +120,7 @@ async function generateCaption({ platform, context }) {
       '風格:韓系療癒、雋永、留白、像韓系咖啡店文案。長度 80-120 字。最後加 5-8 個相關 hashtag (例: #溫點WarmPlace #warmplacehere #韓系馬卡龍 #精品禮盒 #台南甜點)。用繁體中文。禁用詞:超讚/必吃/CP值/秒殺/小資/親民。禁止出現「MACARON DE LUXE」這個舊品牌名。'
     : '你是 CAMILLE — 溫點 WarmPlace 韓系精品甜點品牌的 FB 文案企劃。品牌名一律寫「溫點 WarmPlace」(絕對不要寫 MACARON DE LUXE 或任何舊品牌)。我們有雙主力:🍬 馬卡龍 + 🍰 費南雪。寫一篇 FB 貼文,主題圍繞:馬卡龍禮盒、費南雪禮盒、雙主力綜合禮盒、客製禮盒、婚禮喜餅、企業禮贈、季節限定、品牌故事 等。' +
       '風格:親切、有條理、引導行動,韓系療癒基調。長度 100-180 字,結尾加 1 個 CTA (例:「📩 私訊預訂」「🌹 線上訂購」)。用繁體中文。禁用詞:超讚/必吃/CP值/秒殺/小資/親民。禁止出現「MACARON DE LUXE」這個舊品牌名。';
-  const user = '請寫今天的 ' + platform + ' 貼文。\n\n參考資料：\n' + JSON.stringify(context || {}).slice(0, 1500);
+  const user = '請寫今天的 ' + platform + ' 貼文。\n\n參考資料：\n' + JSON.stringify(context || {}).slice(0, 1500) + scoutTail();
   try {
     const res = await c.messages.create({
       model: MODEL,

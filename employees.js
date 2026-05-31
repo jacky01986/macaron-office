@@ -17,9 +17,30 @@ try {
   setInterval(refreshMarketIntel, 30 * 60 * 1000);
 } catch {}
 
+// SCOUT 全球市場調查 + DISTILL 行動建議 自動注入 (覆蓋全員)
+let _scoutCache = '';
+try {
+  const _scoutMod = require('./scout');
+  function refreshScout() {
+    try {
+      const i = _scoutMod.getMarketIntelligence && _scoutMod.getMarketIntelligence();
+      if (i) {
+        const wf = typeof i.weekly_focus === 'string' ? i.weekly_focus : JSON.stringify(i.weekly_focus || '');
+        const acts = (i.action_items || []).slice(0, 5).map((a, n) => (n + 1) + '. ' + (a.title || a)).join('\n');
+        const trends = (i.trending_topics || []).slice(0, 4).map(t => '· ' + (t.topic || t)).join('\n');
+        _scoutCache = '本週重點：' + String(wf).slice(0, 320) + '\n\n行動建議：\n' + acts + (trends ? '\n\n趨勢：\n' + trends : '');
+      } else { _scoutCache = ''; }
+    } catch { _scoutCache = ''; }
+  }
+  refreshScout();
+  setInterval(refreshScout, 30 * 60 * 1000);
+} catch {}
+
 function getMarketIntelTail() {
-  if (!_marketIntelCache) return '';
-  return '\n\n=== 今日台灣即時市場情報 (自動更新, 給你參考用) ===\n' + _marketIntelCache + '\n=== 情報結束 ===\n';
+  let tail = '';
+  if (_scoutCache) tail += '\n\n=== SCOUT 全球市場調查 + DISTILL 行動建議 (做任何決策/內容前，請優先參考這裡) ===\n' + _scoutCache + '\n=== SCOUT 結束 ===\n';
+  if (_marketIntelCache) tail += '\n\n=== 今日台灣即時市場情報 ===\n' + _marketIntelCache + '\n=== 情報結束 ===\n';
+  return tail;
 }
 
 const BRAND_CONTEXT = `

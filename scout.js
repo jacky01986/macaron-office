@@ -357,11 +357,11 @@ function getContextForOtherAgents() {
 }
 
 function registerCronJobs(cron) {
-  // 每週一 08:00 跑 SCAN（會自動接 DISTILL）
-  cron.schedule('0 8 * * 1', () => {
+  // 每天 07:00 跑 SCAN（會自動接 DISTILL）
+  cron.schedule('0 7 * * *', () => {
     scoutScanAll().catch(e => console.error('[SCOUT cron]', e));
   }, { timezone: 'Asia/Taipei' });
-  console.log('[scout] cron registered (Monday 08:00 — scan + distill)');
+  console.log('[scout] cron registered (DAILY 07:00 — scan + distill)');
 }
 
 module.exports = {

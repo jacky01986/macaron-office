@@ -13,6 +13,17 @@ const router = express.Router();
 let Anthropic = null;
 try { Anthropic = require('@anthropic-ai/sdk'); } catch {}
 const sm = (() => { try { return require('./salesmartly'); } catch { return null; } })();
+const _scout = (() => { try { return require('./scout'); } catch { return null; } })();
+function scoutTail() {
+  try {
+    const i = _scout && _scout.getMarketIntelligence && _scout.getMarketIntelligence();
+    if (!i) return '';
+    const wf = typeof i.weekly_focus === 'string' ? i.weekly_focus : JSON.stringify(i.weekly_focus || '');
+    const acts = (i.action_items || []).slice(0, 5).map((a, n) => (n + 1) + '. ' + (a.title || a)).join('\n');
+    return '\n\n=== SCOUT 全球市場調查 + 行動建議 (所有內容請優先參考這裡的市場洞察) ===\n本週重點：' + String(wf).slice(0, 320) + '\n行動建議：\n' + acts + '\n=== SCOUT 結束 ===';
+  } catch { return ''; }
+}
+
 
 const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 const SETTINGS_FILE = path.join(DATA_DIR, 'closer-settings.json');
@@ -171,7 +182,7 @@ async function draftFor(chat_user_id) {
     model: MODEL,
     max_tokens: 1200,
     system: hanaPrompt(playbook),
-    messages: [{ role: 'user', content: '以下是一通真實客人對話，請你以成交為目標，寫一則「我們」該回的成交草稿：\n\n' + convoText }],
+    messages: [{ role: 'user', content: '以下是一通真實客人對話，請你以成交為目標，寫一則「我們」該回的成交草稿：\n\n' + convoText + scoutTail() }],
   });
   const html = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
   return { ok: true, chat_user_id, html, mode: getSettings().mode };

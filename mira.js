@@ -13,6 +13,17 @@ const router = express.Router();
 let Anthropic = null;
 try { Anthropic = require('@anthropic-ai/sdk'); } catch {}
 const sm = (() => { try { return require('./salesmartly'); } catch { return null; } })();
+const _scout = (() => { try { return require('./scout'); } catch { return null; } })();
+function scoutTail() {
+  try {
+    const i = _scout && _scout.getMarketIntelligence && _scout.getMarketIntelligence();
+    if (!i) return '';
+    const wf = typeof i.weekly_focus === 'string' ? i.weekly_focus : JSON.stringify(i.weekly_focus || '');
+    const acts = (i.action_items || []).slice(0, 5).map((a, n) => (n + 1) + '. ' + (a.title || a)).join('\n');
+    return '\n\n=== SCOUT 全球市場調查 + 行動建議 (所有內容請優先參考這裡的市場洞察) ===\n本週重點：' + String(wf).slice(0, 320) + '\n行動建議：\n' + acts + '\n=== SCOUT 結束 ===';
+  } catch { return ''; }
+}
+
 
 const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 const KB_FILE = path.join(DATA_DIR, 'mira-kb.json');
@@ -127,7 +138,7 @@ async function generate({ type = 'greeting', store = '全門店', brief = '' } =
     + (brief ? '\n\n額外要求：' + brief.slice(0, 400) : '')
     + '\n\n=== 客戶最常問的問題 (轉成店員該怎麼答) ===\n' + (custQ || '(無資料)')
     + '\n\n=== 使用者上傳的門市知識庫 / SOP (請優先遵循這裡的規範) ===\n' + kb
-    + '\n\n=== 網路教育內容參考 (輔助) ===\n' + web;
+    + '\n\n=== 網路教育內容參考 (輔助) ===\n' + web + scoutTail();
   const r = await c.messages.create({ model: MODEL, max_tokens: 3500, system: miraPrompt(playbook), messages: [{ role: 'user', content: user }] });
   const html = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
   return { ok: true, type, type_label: t.label, store, html, used_kb_docs: loadKB().docs.length };
