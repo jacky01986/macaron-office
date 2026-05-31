@@ -55,6 +55,16 @@ const SIGNAL = {
   corp:     /企業|公司|採購|大量|批發|團購|發票|統編/,
 };
 
+// ── 只看溫點 macaron 的頻道：FB 溫點(page id) + IG @warmplace.here ──
+const MACARON_FB_PAGE_ID = '903707566167263';
+function isMacaronChannel(s) {
+  const ch = Number(s.channel);
+  const cid = String(s.channel_id);
+  if (ch === 1 && cid === MACARON_FB_PAGE_ID) return true; // FB 溫點
+  if (ch === 6) return true;  // Instagram (溫點 IG @warmplace.here)
+  return false;
+}
+
 // 分類一通對話 → status + reason
 function classify(messages) {
   const msgs = (messages || []).filter(m => m.text);
@@ -93,7 +103,8 @@ async function buildBoard({ days = 14, limit = 30 } = {}) {
   if (!sm || !sm.listRecentConversations) throw new Error('salesmartly 未載入');
   const conv = await sm.listRecentConversations({ days, page_size: 200 });
   const list = (conv && (conv.list || (conv.data && conv.data.list))) || [];
-  const sliced = list.slice(0, limit);
+  const macaronList = list.filter(isMacaronChannel);
+  const sliced = macaronList.slice(0, limit);
   const out = [];
   for (const s of sliced) {
     const uid = s.chat_user_id || s.contact_id || s.user_id || s.session_id || s.id;
@@ -174,7 +185,7 @@ async function selfOptimize({ days = 3, sample = 25 } = {}) {
   const conv = await sm.listRecentConversations({ days, page_size: 200 });
   const list = (conv && (conv.list || (conv.data && conv.data.list))) || [];
   const ourMsgs = []; const custMsgs = [];
-  for (const s of list.slice(0, sample)) {
+  for (const s of list.filter(isMacaronChannel).slice(0, sample)) {
     const uid = s.chat_user_id || s.contact_id || s.user_id || s.session_id || s.id;
     if (!uid) continue;
     let msgs = [];
@@ -254,14 +265,40 @@ router.post('/send', express.json(), async (req, res) => {
   }
 });
 router.get('/send-probe', async (req, res) => {
-  try {
-    const r = await sendMessage('__probe_invalid_target__', '');
-    res.json({ ok: true, note: '端點存在且接受呼叫', probe_response: r });
-  } catch (e) {
-    res.json({ ok: false, note: '從錯誤訊息看端點是否存在/缺哪些參數', probe_error: e.message });
+  const candidates = [
+    '/api/v2/send-message', '/api/v2/send-text-message', '/api/v2/send-text',
+    '/api/v2/message-send', '/api/v2/send-msg', '/api/v2/send', '/api/v2/reply',
+    '/api/v2/create-message', '/api/v2/send-customer-message', '/api/v2/messages/send',
+    '/api/v2/send-conversation-message', '/api/v2/conversation/send'
+  ];
+  const results = [];
+  for (const ep of candidates) {
+    try {
+      await sm.apiCall(ep, { chat_user_id: '__probe_invalid__', message_type: 'text', content: '', text: '' }, 'POST');
+      results.push({ ep, status: 'NO_ERROR(端點存在)' });
+    } catch (e) {
+      const msg = e.message || '';
+      const is404 = /404|not found/i.test(msg);
+      results.push({ ep, status: is404 ? '404(不存在)' : 'EXISTS?(' + msg.slice(0, 80) + ')' });
+    }
   }
+  res.json({ ok: true, note: '非404者代表端點存在', results });
 });
 router.get('/sent', (req, res) => res.json({ ok: true, ...loadJSON(SENTLOG_FILE, { sent: [] }) }));
+router.get('/channels', async (req, res) => {
+  try {
+    if (!sm || !sm.listRecentConversations) throw new Error('salesmartly 未載入');
+    const conv = await sm.listRecentConversations({ days: 60, page_size: 200 });
+    const list = (conv && (conv.list || (conv.data && conv.data.list))) || [];
+    const combo = {};
+    list.forEach(s => {
+      const k = 'channel' + s.channel + '_id' + s.channel_id;
+      if (!combo[k]) combo[k] = { channel: s.channel, channel_id: s.channel_id, count: 0, sample_title: s.title, is_macaron: isMacaronChannel(s) };
+      combo[k].count++;
+    });
+    res.json({ ok: true, total_sessions: list.length, channels: Object.values(combo) });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
 router.get('/playbook', (req, res) => res.json({ ok: true, ...getPlaybook() }));
 router.post('/optimize', async (req, res) => {
   try { res.json(await selfOptimize({ days: 3 })); }
