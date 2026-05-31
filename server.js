@@ -1452,6 +1452,7 @@ app.post('/api/auto-publish/delete/:draftId', (req, res) => {
 });
 
 autoPublish.registerCronJobs(cron);
+try { require('./closer').registerCron(cron); } catch (e) { console.error('[closer cron]', e.message); }
 if (scout && typeof scout.registerCronJobs === 'function') scout.registerCronJobs(cron);
 if (aiTeamContent && typeof aiTeamContent.registerCronJobs === 'function') aiTeamContent.registerCronJobs(cron);
 cron.schedule("0 9 * * 1", () => {
@@ -4611,6 +4612,10 @@ app.post('/api/market-intel/compare', async (req, res) => {
 // === RINA 短影音導演路由 (吃 SCOUT 情報產 Reels 行動建議) ===
 try { app.use('/api/reels', require('./reels')); console.log('[reels] RINA route mounted at /api/reels'); }
 catch (e) { console.error('[reels] mount failed:', e.message); }
+
+// === HANA 私訊成交客服路由 (讀 SaleSmartly 對話 → 成交草稿) ===
+try { app.use('/api/closer', require('./closer')); console.log('[closer] HANA route mounted at /api/closer'); }
+catch (e) { console.error('[closer] mount failed:', e.message); }
 
 app.listen(PORT, () => {
   console.log('🥐 溫點 WarmPlace · Virtual Office v2');

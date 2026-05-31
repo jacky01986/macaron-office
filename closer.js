@@ -1,0 +1,249 @@
+// ============================================================
+// closer.js — HANA 私訊成交客服顧問
+// 讀 SaleSmartly 全對話 → 分級 → 寫「成交回覆草稿」(學用戶風格)
+// 每天 08:00 自我優化：回顧對話、更新成交 playbook (存 persistent disk)
+// 回覆模式：draft(現階段) / semi(按確認才發) / full(全自動) — 可切換
+// 掛載：app.use('/api/closer', require('./closer'));  cron：require('./closer').registerCron(cron)
+// ============================================================
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const router = express.Router();
+
+let Anthropic = null;
+try { Anthropic = require('@anthropic-ai/sdk'); } catch {}
+const sm = (() => { try { return require('./salesmartly'); } catch { return null; } })();
+
+const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
+const SETTINGS_FILE = path.join(DATA_DIR, 'closer-settings.json');
+const PLAYBOOK_FILE = path.join(DATA_DIR, 'closer-playbook.json');
+const MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-6';
+
+let client = null;
+function getClient() {
+  if (client) return client;
+  if (!Anthropic || !process.env.ANTHROPIC_API_KEY) return null;
+  try { client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); } catch { client = null; }
+  return client;
+}
+
+function ensureDir() { try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {} }
+function loadJSON(file, fallback) { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; } }
+function saveJSON(file, obj) { ensureDir(); try { fs.writeFileSync(file, JSON.stringify(obj, null, 2)); return true; } catch { return false; } }
+
+// ── 回覆模式設定 (draft / semi / full) ──
+function getSettings() { return loadJSON(SETTINGS_FILE, { mode: 'draft', updated_at: null }); }
+function setSettings(s) { s.updated_at = new Date().toISOString(); saveJSON(SETTINGS_FILE, s); return s; }
+
+// ── 成交 playbook (學來的風格 + 有效成交策略) ──
+function getPlaybook() {
+  return loadJSON(PLAYBOOK_FILE, {
+    style_notes: '(尚未學習。預設：韓系精品、溫柔有禮、不逼迫、不報 CP 值。)',
+    winning_tactics: [],
+    common_objections: [],
+    learned_at: null,
+    based_on_msgs: 0,
+  });
+}
+
+// ── 關鍵字分級 ──
+const SIGNAL = {
+  buy:      /價錢|多少錢|價格|報價|怎麼訂|怎麼買|可以買|要訂|下單|匯款|轉帳|付款|現貨|有貨|數量|幾盒/,
+  pickup:   /取貨|自取|宅配|寄送|配送|運費|門市|到貨|什麼時候/,
+  objection:/太貴|好貴|有點貴|便宜|折扣|優惠|比較|考慮|過敏|麩質|蛋奶|保存|期限|放多久|可以放/,
+  wedding:  /喜餅|婚禮|新人|結婚|小物|迎賓/,
+  corp:     /企業|公司|採購|大量|批發|團購|發票|統編/,
+};
+
+// 分類一通對話 → status + reason
+function classify(messages) {
+  const msgs = (messages || []).filter(m => m.text);
+  if (!msgs.length) return null;
+  const last = msgs[msgs.length - 1];
+  const lastFromCustomer = !!last.from_customer;
+  // 取近期客人訊息文字
+  const custText = msgs.filter(m => m.from_customer).slice(-6).map(m => m.text).join(' ');
+  const hasBuy = SIGNAL.buy.test(custText) || SIGNAL.pickup.test(custText);
+  const hasObj = SIGNAL.objection.test(custText);
+  const isWedding = SIGNAL.wedding.test(custText);
+  const isCorp = SIGNAL.corp.test(custText);
+
+  let status, reason, priority;
+  if (lastFromCustomer && hasBuy) {
+    status = 'hot'; reason = '客人問了價格/訂購/取貨 — 臨門一腳就能成交'; priority = 1;
+  } else if (lastFromCustomer && hasObj) {
+    status = 'objection'; reason = '客人有疑慮(嫌貴/比較/過敏/保存) — 需要對症破解'; priority = 2;
+  } else if (lastFromCustomer) {
+    status = 'stalled'; reason = '客人最後發言、我們還沒回 — 別讓詢問冷掉'; priority = 2;
+  } else {
+    status = 'waiting'; reason = '我們已回、等客人回應 — 可主動追一句'; priority = 3;
+  }
+  const tags = [];
+  if (isWedding) tags.push('婚禮喜餅');
+  if (isCorp) tags.push('企業/團購');
+  if (hasBuy) tags.push('購買訊號');
+  if (hasObj) tags.push('有疑慮');
+  return { status, reason, priority, lastFromCustomer, tags, msg_count: msgs.length };
+}
+
+const STATUS_LABEL = { hot: '🔥 快成交', objection: '💔 有疑慮', stalled: '⏳ 晾著沒回', waiting: '🕗 等客人' };
+
+// ── 讀對話清單 + 分級 (看板用，快速，不呼叫 Claude) ──
+async function buildBoard({ days = 14, limit = 30 } = {}) {
+  if (!sm || !sm.listRecentConversations) throw new Error('salesmartly 未載入');
+  const conv = await sm.listRecentConversations({ days, page_size: 200 });
+  const list = (conv && (conv.list || (conv.data && conv.data.list))) || [];
+  const sliced = list.slice(0, limit);
+  const out = [];
+  for (const s of sliced) {
+    const uid = s.chat_user_id || s.contact_id || s.user_id || s.session_id || s.id;
+    if (!uid) continue;
+    let messages = [];
+    try { messages = await sm.listMessagesNormalized(uid, { page_size: 30 }); } catch {}
+    const cls = classify(messages);
+    if (!cls) continue;
+    // 只放需要處理的 (hot/objection/stalled)；waiting 收進但排後面
+    out.push({
+      chat_user_id: uid,
+      name: s.nickname || s.name || s.contact_name || s.user_name || '(匿名客人)',
+      channel: s.channel || s.source || s.platform || '',
+      last_at: s.last_message_time || s.start_time || null,
+      status: cls.status,
+      status_label: STATUS_LABEL[cls.status] || cls.status,
+      reason: cls.reason,
+      priority: cls.priority,
+      tags: cls.tags,
+      last_text: (messages[messages.length - 1] || {}).text ? (messages[messages.length - 1].text.slice(0, 60)) : '',
+    });
+  }
+  out.sort((a, b) => a.priority - b.priority);
+  const counts = { hot: 0, objection: 0, stalled: 0, waiting: 0 };
+  out.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
+  return { ok: true, total: out.length, counts, conversations: out };
+}
+
+// ── HANA 人設 prompt ──
+function hanaPrompt(playbook) {
+  return `你是 HANA — 溫點 WarmPlace 的 AI 私訊成交客服顧問。
+你不是「客服機器人」，你是把「冷掉的詢問」變成「結單」的成交高手，同時保有韓系精品品牌的溫柔得體。
+品牌：精品馬卡龍 + 費南雪韓系禮贈。禮盒 NT$480–2,280，主力 6 入 NT$880 / 12 入 NT$1,580。
+四家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2。
+
+【你的成交信念】
+1. 每一通的目標是「推進到下一步」：問價→給價並引導下單；猶豫→消除疑慮給台階；已熱→直接給訂購方式臨門一腳。
+2. 不逼迫、不轟炸、不報「CP值/限時搶購/秒殺」。用從容、有溫度、給選擇的語氣。
+3. 報價要明確、附上「怎麼下一步」(下單連結/到店/私訊確認)，不要只回價格就句點。
+4. 疑慮要對症：嫌貴→講價值與場景不講折扣；過敏/保存→給專業具體答案；比較→講溫點獨有的雙主力與韓系定位。
+
+【你學到的「老闆風格 + 有效成交策略」(請務必模仿這個語氣)】
+${JSON.stringify(playbook, null, 1).slice(0, 2500)}
+
+【輸出格式 (HTML 片段)】
+<div><strong>🎯 成交判斷：</strong>[這通現在卡在哪、下一步要把他推到哪]</div>
+<div><strong>💬 建議回覆草稿：</strong></div>
+<blockquote>[可直接複製貼上給客人的話，繁體中文，韓系溫柔語氣，明確且有下一步]</blockquote>
+<div><strong>🧠 為什麼這樣回：</strong>[一句話策略說明 + 若客人接著問什麼可以怎麼接]</div>
+
+【禁止】罐頭語氣、報 CP 值/限時搶購、只回價格不給下一步、過度熱情驚嘆號。`;
+}
+
+// ── 為單一對話寫成交草稿 ──
+async function draftFor(chat_user_id) {
+  const c = getClient();
+  if (!c) throw new Error('ANTHROPIC_API_KEY 未設');
+  if (!sm) throw new Error('salesmartly 未載入');
+  const messages = await sm.listMessagesNormalized(chat_user_id, { page_size: 40 });
+  if (!messages || !messages.length) throw new Error('這通對話沒有訊息');
+  const playbook = getPlaybook();
+  const convoText = messages.slice(-20).map(m => (m.from_customer ? '客人' : '我們') + '：' + m.text).join('\n');
+  const r = await c.messages.create({
+    model: MODEL,
+    max_tokens: 1200,
+    system: hanaPrompt(playbook),
+    messages: [{ role: 'user', content: '以下是一通真實客人對話，請你以成交為目標，寫一則「我們」該回的成交草稿：\n\n' + convoText }],
+  });
+  const html = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  return { ok: true, chat_user_id, html, mode: getSettings().mode };
+}
+
+// ── 每天 08:00 自我優化：學風格 + 更新成交 playbook ──
+async function selfOptimize({ days = 3, sample = 25 } = {}) {
+  const c = getClient();
+  if (!c) return { ok: false, error: 'no api key' };
+  if (!sm || !sm.listRecentConversations) return { ok: false, error: 'salesmartly missing' };
+  const conv = await sm.listRecentConversations({ days, page_size: 200 });
+  const list = (conv && (conv.list || (conv.data && conv.data.list))) || [];
+  const ourMsgs = []; const custMsgs = [];
+  for (const s of list.slice(0, sample)) {
+    const uid = s.chat_user_id || s.contact_id || s.user_id || s.session_id || s.id;
+    if (!uid) continue;
+    let msgs = [];
+    try { msgs = await sm.listMessagesNormalized(uid, { page_size: 30 }); } catch {}
+    msgs.forEach(m => { if (!m.text) return; (m.from_customer ? custMsgs : ourMsgs).push(m.text.slice(0, 200)); });
+  }
+  if (!ourMsgs.length && !custMsgs.length) return { ok: false, error: '近期沒有對話可學習' };
+  const prompt = '你是 HANA 的自我優化引擎。以下是溫點 WarmPlace 近 ' + days + ' 天的 SaleSmartly 對話。'
+    + '「我們」是店家回覆、「客人」是顧客。請分析並用 JSON 回覆（只回 JSON）：\n'
+    + '{\n  "style_notes": "老闆/店家回覆的語氣特徵與常用句型(要具體，讓 AI 能模仿)",\n'
+    + '  "winning_tactics": ["從對話中觀察到、似乎能推進成交的有效回法，3-6 條"],\n'
+    + '  "common_objections": ["客人最常出現的疑慮/反對，與建議破解方向，3-6 條"]\n}\n\n'
+    + '=== 我們(店家)的回覆樣本 ===\n' + ourMsgs.slice(0, 60).join('\n')
+    + '\n\n=== 客人訊息樣本 ===\n' + custMsgs.slice(0, 60).join('\n');
+  const r = await c.messages.create({ model: MODEL, max_tokens: 1500, messages: [{ role: 'user', content: prompt }] });
+  let text = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  text = text.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '');
+  let parsed;
+  try { parsed = JSON.parse(text); } catch { parsed = { style_notes: text.slice(0, 1000), winning_tactics: [], common_objections: [] }; }
+  parsed.learned_at = new Date().toISOString();
+  parsed.based_on_msgs = ourMsgs.length + custMsgs.length;
+  saveJSON(PLAYBOOK_FILE, parsed);
+  return { ok: true, learned_at: parsed.learned_at, based_on_msgs: parsed.based_on_msgs };
+}
+
+// ───────────────────────── Routes ─────────────────────────
+router.get('/board', async (req, res) => {
+  try {
+    const days = Math.min(Math.max(parseInt(req.query.days) || 14, 1), 90);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 30, 5), 60);
+    res.json(await buildBoard({ days, limit }));
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+router.post('/draft', express.json(), async (req, res) => {
+  try {
+    const id = req.body && req.body.chat_user_id;
+    if (!id) return res.status(400).json({ ok: false, error: 'chat_user_id required' });
+    res.json(await draftFor(id));
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+router.get('/settings', (req, res) => res.json({ ok: true, ...getSettings() }));
+router.post('/settings', express.json(), (req, res) => {
+  const mode = req.body && req.body.mode;
+  if (!['draft', 'semi', 'full'].includes(mode)) return res.status(400).json({ ok: false, error: 'mode 必須是 draft/semi/full' });
+  // 安全：semi/full 的「實際送出」功能尚未啟用，僅保存偏好設定
+  res.json({ ok: true, ...setSettings({ mode }), note: mode === 'draft' ? '草稿模式' : (mode + ' 模式已記錄，但實際自動發送功能尚未啟用(需後續開通)') });
+});
+
+router.get('/playbook', (req, res) => res.json({ ok: true, ...getPlaybook() }));
+router.post('/optimize', async (req, res) => {
+  try { res.json(await selfOptimize({ days: 3 })); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+function registerCron(cron) {
+  if (!cron || typeof cron.schedule !== 'function') return;
+  const tz = process.env.TZ || 'Asia/Taipei';
+  // 每天 08:00 自我優化
+  cron.schedule('0 8 * * *', async () => {
+    console.log('[closer] HANA 08:00 self-optimize starting...');
+    try { const r = await selfOptimize({ days: 3 }); console.log('[closer] self-optimize:', JSON.stringify(r)); }
+    catch (e) { console.error('[closer] self-optimize failed:', e.message); }
+  }, { timezone: tz });
+  console.log('[closer] HANA cron registered (daily 08:00 self-optimize)');
+}
+
+module.exports = router;
+module.exports.registerCron = registerCron;
+module.exports.selfOptimize = selfOptimize;
+module.exports.buildBoard = buildBoard;
