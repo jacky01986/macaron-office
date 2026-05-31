@@ -474,31 +474,57 @@ async function callDirector({ copy, mode = 'social', count = 3 }) {
     messages: [{ role: 'user', content: user }],
   });
   const raw = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
-  // 嘗試從輸出抓 JSON (處理 markdown code fence / 前後雜訊)
-  let json = null;
-  let cleaned = raw.trim();
-  // 1. 剝 markdown code fence
-  cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
-  // 2. 直接 parse
-  try { json = JSON.parse(cleaned); } catch {}
-  // 3. 抓最外層 {...}
-  if (!json) {
-    const start = cleaned.indexOf('{');
-    const end = cleaned.lastIndexOf('}');
-    if (start !== -1 && end > start) {
-      try { json = JSON.parse(cleaned.slice(start, end + 1)); } catch {}
-    }
-  }
-  // 4. 全文 regex 抓 JSON 片段
-  if (!json) {
-    const m = raw.match(/\{[\s\S]*\}/);
-    if (m) { try { json = JSON.parse(m[0]); } catch {} }
-  }
+  const json = extractJsonRobust(raw);
   if (!json || !Array.isArray(json.shots)) {
-    console.error('[shot-director] raw response preview:', raw.slice(0, 300));
+    console.error('[shot-director] raw response preview:', raw.slice(0, 500));
     throw new Error('DIRECTOR 輸出非預期 JSON');
   }
   return json;
+}
+
+// 強健 JSON 解析：剝 markdown / 找平衡括號 / 修常見 AI 怪癖
+function extractJsonRobust(raw) {
+  if (!raw) return null;
+  // 1. 全文剝 markdown code fence (可能多組)
+  let s = String(raw).trim();
+  s = s.replace(/```(?:json|JSON)?\s*/g, '').replace(/```/g, '').trim();
+  // 2. 直接 parse
+  try { return JSON.parse(s); } catch {}
+  // 3. 修常見怪癖再試
+  const fixed = s
+    .replace(/,(\s*[}\]])/g, '$1')      // 移除尾隨逗號
+    .replace(/[\u201C\u201D]/g, '"')   // 中文雙引號 → "
+    .replace(/[\u2018\u2019]/g, "'")   // 中文單引號 → '
+    .replace(/[\u3001]/g, ',');          // 頓號 → ,
+  try { return JSON.parse(fixed); } catch {}
+  // 4. 找第一個平衡 {...} 區段
+  const tryStart = s.indexOf('{');
+  if (tryStart === -1) return null;
+  for (let i = tryStart; i < s.length; i++) {
+    let depth = 0, inStr = false, esc = false;
+    for (let j = i; j < s.length; j++) {
+      const c = s[j];
+      if (esc) { esc = false; continue; }
+      if (c === '\\') { esc = true; continue; }
+      if (c === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (c === '{') depth++;
+      else if (c === '}') {
+        depth--;
+        if (depth === 0) {
+          const candidate = s.slice(i, j + 1);
+          try { return JSON.parse(candidate); } catch {}
+          try { return JSON.parse(candidate.replace(/,(\s*[}\]])/g, '$1')); } catch {}
+          break;
+        }
+      }
+    }
+    // 跳到下一個 { 重試
+    const next = s.indexOf('{', i + 1);
+    if (next === -1) break;
+    i = next - 1;
+  }
+  return null;
 }
 
 async function generateShotsFor({ copy, mode = 'social', count = 3 } = {}) {

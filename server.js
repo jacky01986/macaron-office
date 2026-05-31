@@ -3171,9 +3171,8 @@ app.get('/api/scout/intelligence', (req, res) => {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
   try { res.json(scout.getMarketIntelligence() || { ok: false, reason: 'not yet distilled' }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
-app.get('/api/scout/distill', async (req, res) => {
+async function _distillHandler(req, res) {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
-  // Run DISTILL synchronously when requested via GET so caller knows result
   try {
     const r = await scout.distillIntelligence();
     res.json({ ok: true, finished: true, result: r });
@@ -3181,7 +3180,9 @@ app.get('/api/scout/distill', async (req, res) => {
     console.error('[distill]', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
-});
+}
+app.get('/api/scout/distill', _distillHandler);
+app.post('/api/scout/distill', _distillHandler);
 app.get('/api/scout/report/:serviceId', (req, res) => {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
   try {
