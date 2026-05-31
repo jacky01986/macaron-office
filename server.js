@@ -1782,7 +1782,7 @@ async function handleLineEvent(event) {
 app.get("/api/line/status", async (req, res) => {
   res.json({
     tokenSet: line.tokenOk(),
-    webhookUrl: `${req.protocol}://${req.get("host")}/api/line/webhook`,
+    webhookUrl: `https://${req.get("host")}/api/line/webhook`,
   });
 });
 
