@@ -4642,6 +4642,10 @@ catch (e) { console.error('[june] mount failed:', e.message); }
 try { app.use('/api/sola', require('./sola')); console.log('[sola] SOLA route mounted at /api/sola'); }
 catch (e) { console.error('[sola] mount failed:', e.message); }
 
+// === DIRECTOR 拍攝指導路由 ===
+try { app.use('/api/shot-director', require('./shot-director')); console.log('[shot-director] DIRECTOR route mounted at /api/shot-director'); }
+catch (e) { console.error('[shot-director] mount failed:', e.message); }
+
 app.listen(PORT, () => {
   console.log('🥐 溫點 WarmPlace · Virtual Office v2');
   console.log('   Listening on http://localhost:' + PORT);

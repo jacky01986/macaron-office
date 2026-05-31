@@ -96,7 +96,14 @@ router.post('/generate', express.json({ limit: '256kb' }), async (req, res) => {
       messages: [{ role: 'user', content: user }],
     });
     const html = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
-    res.json({ ok: true, html, count, based_on_scout: intel.has, scout_run: intel.run });
+    // 自動附 DIRECTOR 分鏡示意
+    let shots_html = '', shots_css = '';
+    try {
+      const dir = require('./shot-director');
+      const sd = await dir.generateShotsFor({ copy: html.slice(0, 1800), mode: 'reels', count: 5 });
+      shots_html = sd.html || ''; shots_css = sd.css || '';
+    } catch (e) { console.error('[reels] shot-director failed:', e.message); }
+    res.json({ ok: true, html, count, based_on_scout: intel.has, scout_run: intel.run, shots_html, shots_css });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }

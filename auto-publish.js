@@ -179,6 +179,16 @@ async function generateAndQueueDrafts() {
       }
     }
 
+    // 📸 DIRECTOR 拍攝示意（依文案內容生成、存到草稿）
+    try {
+      const dir = require('./shot-director');
+      const sd = await dir.generateShotsFor({ copy: caption, mode: 'social', count: 3 });
+      if (sd && sd.html) {
+        draft.shots_html = sd.html;
+        draft.shots_css = sd.css || '';
+      }
+    } catch (e) { console.error('[auto-publish] shot-director failed:', e.message); }
+
     generated.push(draft);
     if (decisions && decisions.addPending) {
       try {
