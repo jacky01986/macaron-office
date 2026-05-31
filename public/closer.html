@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>💬 HANA 成交看板 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{ --burgundy:#6D2E46; --burgundy-dark:#4a1f30; --gold:#B08D57; --dark:#1C1213; --dark-2:#2a1a1d; --ivory:#FCF6F5; --green:#3fb27f; --red:#d05a6e; --amber:#cda35a; }
+  *{ box-sizing:border-box; }
+  body{ font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; background:var(--dark); color:var(--ivory); margin:0; padding:0 0 60px; }
+  .wrap{ padding:16px; max-width:920px; margin:0 auto; }
+  h1{ font-size:21px; margin:0 0 4px; color:var(--gold); }
+  .sub{ color:rgba(252,246,245,.7); font-size:13px; margin-bottom:14px; }
+  .card{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .modebar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .modebar .seg{ display:flex; border:1px solid var(--burgundy); border-radius:8px; overflow:hidden; }
+  .modebar .seg button{ background:var(--dark); color:rgba(252,246,245,.7); border:0; padding:8px 14px; cursor:pointer; font-size:13px; }
+  .modebar .seg button.on{ background:var(--burgundy); color:var(--ivory); font-weight:700; }
+  .modebar .note{ font-size:12px; color:rgba(252,246,245,.55); }
+  .counts{ display:flex; gap:10px; flex-wrap:wrap; margin:8px 0; }
+  .pill{ padding:5px 10px; border-radius:12px; font-size:13px; border:1px solid rgba(176,141,87,.35); }
+  .pill.hot{ color:var(--red); border-color:rgba(208,90,110,.5); }
+  .pill.obj{ color:var(--amber); }
+  .pill.stall{ color:rgba(252,246,245,.7); }
+  button.go{ background:linear-gradient(135deg,var(--burgundy),var(--burgundy-dark)); color:var(--ivory); border:1px solid var(--gold); padding:9px 18px; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+  button.go:disabled{ opacity:.5; cursor:not-allowed; }
+  button.mini{ background:transparent; color:var(--gold); border:1px solid var(--gold); padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; }
+  .conv{ border:1px solid rgba(176,141,87,.25); border-radius:10px; padding:12px; margin-bottom:10px; }
+  .conv .top{ display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap; }
+  .conv .who{ font-weight:700; color:var(--ivory); }
+  .conv .badge{ font-size:12px; padding:2px 8px; border-radius:10px; background:rgba(109,46,70,.5); border:1px solid var(--burgundy); }
+  .conv .reason{ font-size:12px; color:rgba(252,246,245,.65); margin:4px 0; }
+  .conv .last{ font-size:12px; color:rgba(252,246,245,.5); font-style:italic; }
+  .conv .tags span{ font-size:11px; color:var(--gold); margin-right:6px; }
+  .draft{ margin-top:10px; padding:10px; background:var(--dark); border-radius:8px; border:1px solid rgba(63,178,127,.3); font-size:13px; line-height:1.65; }
+  .draft blockquote{ border-left:3px solid var(--gold); margin:6px 0; padding:6px 10px; background:rgba(176,141,87,.08); color:var(--ivory); }
+  .draft strong{ color:var(--gold); }
+  #status{ font-size:13px; color:var(--gold); margin:10px 0; }
+  .empty{ color:rgba(252,246,245,.5); text-align:center; padding:20px; }
+</style>
+<link rel="stylesheet" href="/macaron-shared.css">
+</head>
+<body>
+<style>@media all { .macaron-topnav.in-iframe { display:none !important; } }</style>
+<script>(function(){ try{ if(window.parent!==window){ var n=document.querySelector('.macaron-topnav'); if(n)n.classList.add('in-iframe'); else document.addEventListener('DOMContentLoaded',function(){var x=document.querySelector('.macaron-topnav'); if(x)x.classList.add('in-iframe');}); } }catch(e){} })();</script>
+<style>
+.macaron-topnav{ background:linear-gradient(135deg,#6B4226,#8B5A33); padding:8px 16px; display:flex; gap:8px; align-items:center; overflow-x:auto; white-space:nowrap; }
+.macaron-topnav strong{ color:#FAF7F2; font-size:14px; margin-right:8px; }
+.macaron-topnav a{ padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; background:#FAF7F2; color:#6B4226; }
+</style>
+<div class="macaron-topnav">
+  <strong>溫點 WarmPlace</strong>
+  <a href="/">🏠 主控台</a>
+  <a href="/content-hub.html">📚 內容中心</a>
+  <a href="/customer-hub.html">👥 客戶中心</a>
+  <a href="/ads-hub.html">📊 廣告中心</a>
+  <a href="/market-intel.html">🔍 市場情報</a>
+  <a href="/teachers.html">🏪 門店戰報</a>
+</div>
+
+<div class="wrap">
+  <h1>💬 HANA 成交看板</h1>
+  <p class="sub">HANA = AI 私訊成交客服。她讀所有 SaleSmartly 對話（Meta DM + IG DM + LINE）→ 挑出該出手的 → 學你的風格寫成交回覆草稿。每天 08:00 自動回顧昨天對話、自我優化。</p>
+
+  <div class="card">
+    <div class="modebar">
+      <span style="font-size:13px;">回覆模式：</span>
+      <div class="seg" id="modeseg">
+        <button data-mode="draft" class="on">📝 草稿</button>
+        <button data-mode="semi">✋ 半自動</button>
+        <button data-mode="full">⚡ 全自動</button>
+      </div>
+      <span class="note" id="modenote">草稿模式：HANA 只寫草稿，你自己複製去貼。</span>
+    </div>
+    <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      <button class="go" id="scan" onclick="scan()">🔍 掃描對話</button>
+      <button class="mini" onclick="optimize()">🧠 立刻自我優化</button>
+      <span class="note" id="pbnote"></span>
+    </div>
+  </div>
+
+  <div id="status"></div>
+  <div class="counts" id="counts" style="display:none;"></div>
+  <div id="list"></div>
+</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+// 回覆模式
+async function loadMode(){
+  try{ const j=await fetch('/api/closer/settings').then(r=>r.json());
+    document.querySelectorAll('#modeseg button').forEach(b=>b.classList.toggle('on', b.dataset.mode===j.mode));
+    setModeNote(j.mode);
+  }catch(e){}
+}
+function setModeNote(mode){
+  const t = mode==='draft' ? '草稿模式：HANA 只寫草稿，你自己複製去貼。最安全。'
+        : mode==='semi' ? '半自動：之後可開通「按確認才發」。目前仍只產草稿（發送功能未啟用）。'
+        : '全自動：之後可開通「自動回客人」。目前仍只產草稿（發送功能未啟用）。';
+  $('modenote').textContent = t;
+}
+document.querySelectorAll('#modeseg button').forEach(b=>{
+  b.onclick = async()=>{
+    const mode=b.dataset.mode;
+    document.querySelectorAll('#modeseg button').forEach(x=>x.classList.toggle('on',x===b));
+    setModeNote(mode);
+    try{ await fetch('/api/closer/settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode})}); }catch(e){}
+  };
+});
+
+async function loadPlaybook(){
+  try{ const j=await fetch('/api/closer/playbook').then(r=>r.json());
+    $('pbnote').textContent = j.learned_at ? ('已學習：'+String(j.learned_at).slice(0,10)+'（'+(j.based_on_msgs||0)+' 則對話）') : '尚未學習你的風格 — 按「立刻自我優化」開始';
+  }catch(e){}
+}
+
+async function optimize(){
+  $('status').textContent='🧠 HANA 正在回顧近期對話、學你的回覆風格…（約 20–40 秒）';
+  try{ const j=await fetch('/api/closer/optimize',{method:'POST'}).then(r=>r.json());
+    $('status').textContent = j.ok ? ('✅ 自我優化完成（學了 '+(j.based_on_msgs||0)+' 則對話）') : ('⚠️ '+(j.error||'失敗'));
+    loadPlaybook();
+  }catch(e){ $('status').textContent='❌ '+e.message; }
+}
+
+async function scan(){
+  $('scan').disabled=true; $('status').textContent='🔍 HANA 正在掃描所有對話並分級…';
+  $('list').innerHTML=''; $('counts').style.display='none';
+  try{
+    const j=await fetch('/api/closer/board?days=14&limit=30').then(r=>r.json());
+    if(!j.ok) throw new Error(j.error||'失敗');
+    const c=j.counts||{};
+    $('counts').style.display='flex';
+    $('counts').innerHTML = '<span class="pill hot">🔥 快成交 '+(c.hot||0)+'</span><span class="pill obj">💔 有疑慮 '+(c.objection||0)+'</span><span class="pill stall">⏳ 晾著 '+(c.stalled||0)+'</span><span class="pill">🕗 等客人 '+(c.waiting||0)+'</span>';
+    if(!j.conversations.length){ $('list').innerHTML='<div class="empty">近 14 天沒有需要處理的對話 🎉</div>'; $('status').textContent=''; return; }
+    $('list').innerHTML = j.conversations.map((o,i)=>`
+      <div class="conv" data-id="${esc(o.chat_user_id)}">
+        <div class="top">
+          <span class="who">${esc(o.name)} <span class="badge">${esc(o.status_label)}</span></span>
+          <button class="mini" onclick="draft(this,'${esc(o.chat_user_id)}')">✍️ 寫成交草稿</button>
+        </div>
+        <div class="reason">${esc(o.reason)}</div>
+        ${o.tags&&o.tags.length?'<div class="tags">'+o.tags.map(t=>'<span>#'+esc(t)+'</span>').join('')+'</div>':''}
+        <div class="last">最後一句：${esc(o.last_text)||'(無)'}</div>
+        <div class="draftbox"></div>
+      </div>`).join('');
+    $('status').textContent='✅ 找到 '+j.conversations.length+' 通對話。點「寫成交草稿」讓 HANA 幫你回。';
+  }catch(e){ $('status').textContent='❌ '+e.message; }
+  finally{ $('scan').disabled=false; }
+}
+
+async function draft(btn, id){
+  btn.disabled=true; btn.textContent='⏳ HANA 思考中…';
+  const box = btn.closest('.conv').querySelector('.draftbox');
+  try{
+    const j=await fetch('/api/closer/draft',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_user_id:id})}).then(r=>r.json());
+    if(!j.ok) throw new Error(j.error||'失敗');
+    box.innerHTML = '<div class="draft">'+j.html+'<div style="margin-top:8px;"><button class="mini" onclick="copyDraft(this)">📋 複製回覆</button></div></div>';
+    btn.textContent='🔄 重寫';
+  }catch(e){ box.innerHTML='<div class="draft" style="color:#d05a6e;">❌ '+esc(e.message)+'</div>'; btn.textContent='✍️ 寫成交草稿'; }
+  finally{ btn.disabled=false; }
+}
+
+function copyDraft(b){
+  const bq = b.closest('.draft').querySelector('blockquote');
+  const txt = bq ? bq.innerText : b.closest('.draft').innerText;
+  navigator.clipboard.writeText(txt).then(()=>{ b.textContent='✅ 已複製'; setTimeout(()=>b.textContent='📋 複製回覆',1500); }).catch(()=>{ b.textContent='⚠️ 請手動選取'; });
+}
+
+loadMode(); loadPlaybook();
+</script>
+</body>
+</html>
