@@ -156,7 +156,10 @@ async function draft(btn, id){
   try{
     const j=await fetch('/api/closer/draft',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_user_id:id})}).then(r=>r.json());
     if(!j.ok) throw new Error(j.error||'失敗');
-    box.innerHTML = '<div class="draft">'+j.html+'<div style="margin-top:8px;"><button class="mini" onclick="copyDraft(this)">📋 複製回覆</button></div></div>';
+    const onBtn = document.querySelector('#modeseg button.on');
+    const curMode = onBtn ? onBtn.dataset.mode : 'draft';
+    const sendBtn = curMode==='draft' ? '' : '<button class="mini" style="border-color:#3fb27f;color:#3fb27f;" onclick="sendReply(this,\''+id+'\')">✅ 確認發送給客人</button>';
+    box.innerHTML = '<div class="draft">'+j.html+'<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button class="mini" onclick="copyDraft(this)">📋 複製回覆</button>'+sendBtn+'</div></div>';
     btn.textContent='🔄 重寫';
   }catch(e){ box.innerHTML='<div class="draft" style="color:#d05a6e;">❌ '+esc(e.message)+'</div>'; btn.textContent='✍️ 寫成交草稿'; }
   finally{ btn.disabled=false; }
@@ -166,6 +169,19 @@ function copyDraft(b){
   const bq = b.closest('.draft').querySelector('blockquote');
   const txt = bq ? bq.innerText : b.closest('.draft').innerText;
   navigator.clipboard.writeText(txt).then(()=>{ b.textContent='✅ 已複製'; setTimeout(()=>b.textContent='📋 複製回覆',1500); }).catch(()=>{ b.textContent='⚠️ 請手動選取'; });
+}
+
+async function sendReply(b, id){
+  const draft=b.closest('.draft'); const bq=draft.querySelector('blockquote');
+  const txt=bq?bq.innerText.trim():'';
+  if(!txt){ alert('找不到回覆內容'); return; }
+  if(!confirm('確認把這則訊息發送給客人？（會送到該客人的 FB / IG 對話）\n\n'+txt.slice(0,200))) return;
+  b.disabled=true; b.textContent='⏳ 發送中…';
+  try{
+    const j=await fetch('/api/closer/send',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_user_id:id,text:txt})}).then(r=>r.json());
+    if(j.ok){ b.textContent='✅ 已發送'; b.style.opacity='.6'; }
+    else { b.disabled=false; b.textContent='✅ 確認發送給客人'; alert('❌ 發送失敗：'+(j.error||'未知')); }
+  }catch(e){ b.disabled=false; b.textContent='✅ 確認發送給客人'; alert('❌ '+e.message); }
 }
 
 loadMode(); loadPlaybook();
