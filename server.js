@@ -4214,6 +4214,17 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     const liveData = await gatherTelegramContext();
     let marketCtx = "";
     try { if (marketIntel) marketCtx = marketIntel.getMarketIntelContext({ compact: true }); } catch {}
+    let scoutCtx = "";
+    try {
+      if (scout && scout.getMarketIntelligence) {
+        const _i = scout.getMarketIntelligence();
+        if (_i) {
+          const _wf = typeof _i.weekly_focus === 'string' ? _i.weekly_focus : JSON.stringify(_i.weekly_focus || '');
+          const _acts = (_i.action_items || []).slice(0, 5).map((a, n) => (n + 1) + '. ' + (a.title || a)).join('\n');
+          scoutCtx = '\n[SCOUT 全球市場調查 + 行動建議 — 你給任何建議前請優先參考這裡的市場洞察]\n本週重點：' + String(_wf).slice(0, 320) + '\n行動建議：\n' + _acts + '\n';
+        }
+      }
+    } catch {}
 
     // Build a human-readable summary FIRST, then attach raw JSON for completeness
     function fmtInbox(label, conv) {
@@ -4244,7 +4255,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
       fmtSummary.push(`\n\ud83d\udcb0 \u5ee3\u544a (7 \u5929): \u82b1\u8cbb NT$${liveData.meta.ad_7d.spend || 0} \u00b7 \u66dd\u5149 ${liveData.meta.ad_7d.impressions || 0}`);
     }
 
-    const dataLine = fmtSummary.join('\n') + '\n\n' + marketCtx;
+    const dataLine = fmtSummary.join('\n') + '\n\n' + scoutCtx + '\n\n' + marketCtx;
 
     const systemPrompt = `今天日期: ${new Date().toLocaleDateString('zh-TW', {timeZone:'Asia/Taipei', year:'numeric', month:'long', day:'numeric', weekday:'long'})} (台北時區)。\n\n你是 VICTOR — 溫點 WarmPlace 的 AI 行銷總監兼整個 AI 團隊的大腦。\n\n品牌:精品馬卡龍與費南雪禮贈品牌,4 家門店(台南本店、新光西門 B2、新光中港 B2、新光南西 B2)。月度預算 NT$60,000。\nIG @warmplace.here 粉絲 32K,FB 粉專 118 粉絲(主戰場在 IG)。\nLINE Bot @110ypqki, SaleSmartly 對話追蹤已開。\n\n你帶領團隊:LEON(廣告投手)、CAMILLE(內容主筆,負責文案+部落格 SEO)、ARIA(視覺指導)、DEX(數據分析)、NOVA(品牌經理,負責社群+公關)、MILO(KOL)。
 
