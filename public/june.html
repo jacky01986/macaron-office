@@ -115,7 +115,9 @@ async function loadIntel(){
     if(j.has_intel){
       $('intel-status').innerHTML='<span class="intel-pill">✅ 已連上 SCOUT 行動建議'+(j.scout_run?'（'+String(j.scout_run).slice(0,10)+'）':'')+'</span>';
       const items=j.action_items||[];
-      $('actions').innerHTML = items.length ? items.map((a,i)=>'<div class="actitem"><strong>'+(i+1)+'. '+esc(a.title||a)+'</strong>'+(a.detail?'<br><span class="meta">'+esc(String(a.detail).slice(0,120))+'</span>':'')+'</div>').join('') : '<div class="empty">SCOUT 暫無行動建議</div>';
+      function titleOf(a){ if(typeof a==='string') return a; if(!a) return ''; return a.title||a.action||a.recommendation||a.task||a.name||a.text||''; }
+      function detailOf(a){ if(typeof a==='string') return ''; return a.detail||a.description||a.note||a.body||''; }
+      $('actions').innerHTML = items.length ? items.map((a,i)=>{const t=titleOf(a); const d=detailOf(a); return '<div class="actitem"><strong>'+(i+1)+'. '+esc(t||'（未命名建議）')+'</strong>'+(d?'<br><span class="meta">'+esc(String(d).slice(0,200))+'</span>':'')+'</div>';}).join('') : '<div class="empty">SCOUT 暫無行動建議</div>';
     }else{
       $('intel-status').innerHTML='<span class="intel-pill warn">⚠️ 還沒有 SCOUT 行動建議 — 請先到市場情報跑 SCOUT，JUNE 才有依據</span>';
     }
