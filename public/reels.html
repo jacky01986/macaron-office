@@ -113,14 +113,85 @@ async function run(){
       body: JSON.stringify({ count, brief })
     }).then(r=>r.json());
     if(!j.ok) throw new Error(j.error||'unknown');
-    $('out').innerHTML = j.html + '<p style="margin-top:18px;font-size:12px;color:rgba(252,246,245,.5);">— '+(j.based_on_scout?'基於 SCOUT 全球市場調查':'（無 SCOUT 情報，依品牌常識發想）')+' · '+count+' 支</p>' + (j.shots_css||'') + (j.shots_html ? '<h4 style="color:var(--gold);border-bottom:1px solid rgba(176,141,87,.3);padding-bottom:6px;margin:22px 0 10px;">📸 DIRECTOR 拍攝示意（依本支腳本生成）</h4>' + j.shots_html : '');
+    $('out').innerHTML = j.html + '<p style="margin-top:18px;font-size:12px;color:rgba(252,246,245,.5);">— '+(j.based_on_scout?'基於 SCOUT 全球市場調查':'（無 SCOUT 情報，依品牌常識發想）')+' · '+count+' 支</p>';
     $('result').style.display = 'block';
-    $('status').textContent = '✅ 完成';
+    $('status').textContent = '✅ 完成 — 點每支 Reels 下方「📸 為這支生成分鏡示意」即可拿到構圖';
+    splitReelsAndAddButtons();
     $('result').scrollIntoView({ behavior:'smooth' });
   }catch(e){
     $('status').textContent = '❌ 失敗：' + e.message;
   }finally{
     $('go').disabled = false;
+  }
+}
+
+// 把 RINA 輸出依 Reels N 標題切段，每段尾部插一顆按鈕＋容器
+function splitReelsAndAddButtons(){
+  const out = $('out');
+  // 找出所有 Reels 標題（h4 / h3 / strong 都可能）
+  const heads = Array.from(out.querySelectorAll('h1,h2,h3,h4,h5')).filter(h => /Reels?\s*\d+/i.test(h.textContent || ''));
+  if (!heads.length) {
+    // 沒抓到分段 — 退而求其次，整篇給一顆按鈕
+    const btn = makeShotBtn(out.innerText.slice(0, 2200), '本次全部腳本');
+    const wrap = document.createElement('div');
+    wrap.style.marginTop = '14px';
+    wrap.appendChild(btn);
+    const box = document.createElement('div'); box.className = 'shot-box'; box.style.marginTop = '10px';
+    wrap.appendChild(box);
+    out.appendChild(wrap);
+    return;
+  }
+  // 為每個 Reels 段落結尾插按鈕（在「下一個 Reels 標題出現之前」的最後位置）
+  for (let i = 0; i < heads.length; i++) {
+    const h = heads[i];
+    const next = heads[i+1] || null;
+    // 收集這段的純文字（h 到 next 之間）
+    let txt = h.textContent + '\n';
+    let n = h.nextSibling;
+    while (n && n !== next) {
+      if (n.nodeType === 1) txt += (n.textContent || '') + '\n';
+      else if (n.nodeType === 3) txt += (n.nodeValue || '');
+      n = n.nextSibling;
+    }
+    const label = (h.textContent.match(/Reels?\s*\d+[^\n:：]*/i) || ['這支'])[0].trim();
+    const btn = makeShotBtn(txt.slice(0, 2200), label);
+    const wrap = document.createElement('div');
+    wrap.style.margin = '10px 0 18px';
+    wrap.appendChild(btn);
+    const box = document.createElement('div'); box.className = 'shot-box'; box.style.marginTop = '10px';
+    wrap.appendChild(box);
+    // 插到下一個 Reels 標題前；若沒下一個就附到 out 尾
+    if (next) out.insertBefore(wrap, next);
+    else out.appendChild(wrap);
+  }
+}
+
+function makeShotBtn(copy, label){
+  const b = document.createElement('button');
+  b.textContent = '📸 為「' + label + '」生成 5 鏡分鏡示意';
+  b.style.cssText = 'background:transparent;color:#B08D57;border:1px solid #B08D57;padding:8px 14px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;';
+  b.onclick = () => generateShotsForReels(b, copy);
+  return b;
+}
+
+async function generateShotsForReels(btn, copy){
+  const wrap = btn.parentNode;
+  const box = wrap.querySelector('.shot-box');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '🎨 DIRECTOR 思考中…';
+  box.innerHTML = '<div style="font-size:12px;color:#B08D57;padding:8px 0;">📸 DIRECTOR 正在依這支腳本設計分鏡示意…（10-30 秒）</div>';
+  try {
+    const res = await fetch('/api/shot-director/from-copy', {
+      method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({ copy, mode:'reels', count: 5 }),
+    });
+    const d = await res.json();
+    if (!d.ok) throw new Error(d.error || '失敗');
+    box.innerHTML = (d.css||'') + '<div style="font-size:12px;color:#B08D57;margin-bottom:6px;">📸 本支 Reels 的拍攝分鏡：</div>' + (d.html || '');
+  } catch (e) {
+    box.innerHTML = '<div style="color:#e76b6b;font-size:12px;">❌ ' + (e.message||e) + '</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
   }
 }
 
