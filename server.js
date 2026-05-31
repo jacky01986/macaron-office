@@ -4608,6 +4608,10 @@ app.post('/api/market-intel/compare', async (req, res) => {
 // ============================================================
 // app.listen — required for Render to detect open port
 // ============================================================
+// === RINA 短影音導演路由 (吃 SCOUT 情報產 Reels 行動建議) ===
+try { app.use('/api/reels', require('./reels')); console.log('[reels] RINA route mounted at /api/reels'); }
+catch (e) { console.error('[reels] mount failed:', e.message); }
+
 app.listen(PORT, () => {
   console.log('🥐 溫點 WarmPlace · Virtual Office v2');
   console.log('   Listening on http://localhost:' + PORT);
