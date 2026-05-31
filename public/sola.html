@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>🛒 SOLA 官網營運 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{ --burgundy:#6D2E46; --burgundy-dark:#4a1f30; --gold:#B08D57; --dark:#1C1213; --dark-2:#2a1a1d; --ivory:#FCF6F5; --green:#3fb27f; }
+  *{ box-sizing:border-box; }
+  body{ font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; background:var(--dark); color:var(--ivory); margin:0; padding:0 0 60px; }
+  .wrap{ padding:16px; max-width:920px; margin:0 auto; }
+  h1{ font-size:21px; margin:0 0 4px; color:var(--gold); }
+  .sub{ color:rgba(252,246,245,.7); font-size:13px; margin-bottom:14px; }
+  .card{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:12px; padding:14px; margin-bottom:14px; }
+  label{ display:block; font-size:13px; margin:8px 0 4px; color:rgba(252,246,245,.85); }
+  textarea,select,input[type=text]{ width:100%; background:var(--dark); border:1px solid var(--burgundy); color:var(--ivory); border-radius:6px; padding:9px 10px; font-size:14px; font-family:inherit; }
+  textarea{ min-height:56px; resize:vertical; }
+  .row{ display:flex; gap:12px; flex-wrap:wrap; }
+  .row > div{ flex:1; min-width:150px; }
+  button.go{ background:linear-gradient(135deg,var(--burgundy),var(--burgundy-dark)); color:var(--ivory); border:1px solid var(--gold); padding:10px 20px; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+  button.go:disabled{ opacity:.5; }
+  button.mini{ background:transparent; color:var(--gold); border:1px solid var(--gold); padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; }
+  .intel-pill{ display:inline-block; padding:4px 10px; border-radius:12px; font-size:12px; background:rgba(63,178,127,.15); color:var(--green); border:1px solid rgba(63,178,127,.4); }
+  .intel-pill.warn{ background:rgba(176,141,87,.15); color:var(--gold); border-color:rgba(176,141,87,.4); }
+  #status{ font-size:13px; color:var(--gold); margin:10px 0; }
+  #out{ font-size:14px; line-height:1.7; }
+  #out h4{ color:var(--gold); border-bottom:1px solid rgba(176,141,87,.3); padding-bottom:6px; margin:16px 0 8px; }
+  #out table.data{ border-collapse:collapse; width:100%; font-size:13px; }
+  #out table.data th,#out table.data td{ border:1px solid rgba(176,141,87,.3); padding:6px 8px; text-align:left; }
+  #out blockquote{ border-left:3px solid var(--gold); margin:6px 0; padding:6px 10px; background:rgba(176,141,87,.08); }
+  .note{ font-size:12px; color:rgba(252,246,245,.55); }
+</style>
+<link rel="stylesheet" href="/macaron-shared.css">
+</head>
+<body>
+<style>@media all { .macaron-topnav.in-iframe { display:none !important; } }</style>
+<script>(function(){ try{ if(window.parent!==window){ var n=document.querySelector('.macaron-topnav'); if(n)n.classList.add('in-iframe'); else document.addEventListener('DOMContentLoaded',function(){var x=document.querySelector('.macaron-topnav'); if(x)x.classList.add('in-iframe');}); } }catch(e){} })();</script>
+<style>
+.macaron-topnav{ background:linear-gradient(135deg,#6B4226,#8B5A33); padding:8px 16px; display:flex; gap:8px; align-items:center; overflow-x:auto; white-space:nowrap; }
+.macaron-topnav strong{ color:#FAF7F2; font-size:14px; margin-right:8px; }
+.macaron-topnav a{ padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; background:#FAF7F2; color:#6B4226; }
+</style>
+<div class="macaron-topnav">
+  <strong>溫點 WarmPlace</strong>
+  <a href="/">🏠 主控台</a>
+  <a href="/content-hub.html">📚 內容中心</a>
+  <a href="/customer-hub.html">👥 客戶中心</a>
+  <a href="/ads-hub.html">📊 廣告中心</a>
+  <a href="/market-intel.html">🔍 市場情報</a>
+  <a href="/teachers.html">🏪 門店戰報</a>
+</div>
+
+<div class="wrap">
+  <h1>🛒 SOLA 官網營運</h1>
+  <p class="sub">SOLA = AI 電商/官網營運。她讀 <strong>SCOUT 市場調查 + 品牌風格</strong>，產出轉換導向的商品頁/活動頁/SEO/轉換建議。文案可直接貼到 SHOPLINE 後台。</p>
+
+  <div class="card">
+    <div id="intel-status"><span class="intel-pill warn">⏳ 檢查 SCOUT 情報…</span></div>
+    <div class="row" style="margin-top:12px;">
+      <div style="max-width:200px;">
+        <label>要做什麼</label>
+        <select id="type" onchange="toggleProduct()"></select>
+      </div>
+      <div id="product-wrap">
+        <label>商品 / 禮盒（哪一款）</label>
+        <input type="text" id="product" placeholder="例：6 入馬卡龍禮盒 / 雙奏禮盒 / 12 入費南雪">
+      </div>
+    </div>
+    <label>額外要求（可留空）</label>
+    <textarea id="brief" placeholder="例：母親節檔期版 / 主打企業送禮 / 加強信任元素"></textarea>
+    <div style="margin-top:12px;"><button class="go" id="gen" onclick="gen()">🛒 SOLA 產出</button></div>
+  </div>
+
+  <div id="status"></div>
+  <div class="card" id="result" style="display:none;"><div id="out"></div><div style="margin-top:10px;"><button class="mini" onclick="copyOut()">📋 複製（貼到 SHOPLINE）</button></div></div>
+</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+let TYPES=[];
+
+async function loadTypes(){
+  try{ const j=await fetch('/api/sola/types').then(r=>r.json());
+    TYPES=j.types||[];
+    $('type').innerHTML=TYPES.map(t=>'<option value="'+t.key+'">'+t.label+'</option>').join('');
+    toggleProduct();
+  }catch(e){}
+}
+function toggleProduct(){
+  const t=TYPES.find(x=>x.key===$('type').value);
+  $('product-wrap').style.display=(t&&t.needProduct)?'block':'none';
+}
+async function loadIntel(){
+  try{ const j=await fetch('/api/scout/intelligence').then(r=>r.json());
+    if(j&&j.distilled_at){ $('intel-status').innerHTML='<span class="intel-pill">✅ 已連上 SCOUT 市場調查（'+String(j.distilled_at).slice(0,10)+'）</span>'; }
+    else { $('intel-status').innerHTML='<span class="intel-pill warn">⚠️ 還沒有 SCOUT 情報 — 仍可產文案，但有 SCOUT 會更貼市場</span>'; }
+  }catch(e){ $('intel-status').innerHTML='<span class="intel-pill warn">⚠️ '+e.message+'</span>'; }
+}
+
+async function gen(){
+  const type=$('type').value, product=$('product').value.trim(), brief=$('brief').value.trim();
+  $('gen').disabled=true; $('result').style.display='none';
+  $('status').textContent='🛒 SOLA 正在讀市場調查、寫電商文案…（約 30–50 秒）';
+  try{
+    const j=await fetch('/api/sola/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type,product,brief})}).then(r=>r.json());
+    if(!j.ok) throw new Error(j.error||'失敗');
+    $('out').innerHTML='<h4>'+(j.type_label)+(j.product?' ｜ '+j.product:'')+'</h4>'+j.html+'<p class="note" style="margin-top:12px;">'+(j.based_on_scout?'✅ 基於 SCOUT 市場調查':'⚠️ 無 SCOUT 情報')+'</p>';
+    $('result').style.display='block'; $('status').textContent='✅ 完成'; $('result').scrollIntoView({behavior:'smooth'});
+  }catch(e){ $('status').textContent='❌ '+e.message; }
+  finally{ $('gen').disabled=false; }
+}
+function copyOut(){ navigator.clipboard.writeText($('out').innerText).then(()=>{ $('status').textContent='✅ 已複製，可貼到 SHOPLINE 後台'; }).catch(()=>alert('請手動選取')); }
+
+loadTypes(); loadIntel();
+</script>
+</body>
+</html>
