@@ -4281,7 +4281,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
         input_schema: {
           type: 'object',
           properties: {
-            employee: { type: 'string', enum: ['CAMILLE', 'ARIA', 'DEX', 'NOVA', 'MILO', 'RINA', 'HANA', 'MIRA', 'JUNE'] },
+            employee: { type: 'string', enum: ['CAMILLE', 'ARIA', 'DEX', 'NOVA', 'MILO', 'RINA', 'HANA', 'MIRA', 'JUNE', 'SOLA'] },
             task: { type: 'string', description: '完整任務描述 (請包含主題/平台/長度/格式要求)' },
             context: { type: 'string', description: '相關背景 (例如關鍵字、目標客群)' }
           },
@@ -4365,7 +4365,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
             if (!empMod || !empMod.EMPLOYEES) return { error: 'employees module not loaded' };
             const empKey = String(input.employee || '').toLowerCase();
             const employee = empMod.EMPLOYEES[empKey];
-            if (!employee) return { error: 'unknown employee: ' + input.employee + '. 可用: CAMILLE, ARIA, DEX, NOVA, MILO, RINA, HANA, MIRA, JUNE' };
+            if (!employee) return { error: 'unknown employee: ' + input.employee + '. 可用: CAMILLE, ARIA, DEX, NOVA, MILO, RINA, HANA, MIRA, JUNE, SOLA' };
             const empPrompt = employee.systemPrompt || ('你是 ' + employee.name);
             const empUser = input.task + (input.context ? '\n\n背景:\n' + input.context : '');
             const r = await c.messages.create({
@@ -4637,6 +4637,10 @@ catch (e) { console.error('[mira] mount failed:', e.message); }
 // === JUNE 專案總管路由 ===
 try { app.use('/api/june', require('./june')); console.log('[june] JUNE route mounted at /api/june'); }
 catch (e) { console.error('[june] mount failed:', e.message); }
+
+// === SOLA 官網營運路由 ===
+try { app.use('/api/sola', require('./sola')); console.log('[sola] SOLA route mounted at /api/sola'); }
+catch (e) { console.error('[sola] mount failed:', e.message); }
 
 app.listen(PORT, () => {
   console.log('🥐 溫點 WarmPlace · Virtual Office v2');
