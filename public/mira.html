@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>🏪 MIRA 門市教育中心 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{ --burgundy:#6D2E46; --burgundy-dark:#4a1f30; --gold:#B08D57; --dark:#1C1213; --dark-2:#2a1a1d; --ivory:#FCF6F5; --green:#3fb27f; }
+  *{ box-sizing:border-box; }
+  body{ font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; background:var(--dark); color:var(--ivory); margin:0; padding:0 0 60px; }
+  .wrap{ padding:16px; max-width:940px; margin:0 auto; }
+  h1{ font-size:21px; margin:0 0 4px; color:var(--gold); }
+  .sub{ color:rgba(252,246,245,.7); font-size:13px; margin-bottom:14px; }
+  .card{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .card h3{ margin:0 0 10px; font-size:15px; color:var(--gold); }
+  label{ display:block; font-size:13px; margin:8px 0 4px; color:rgba(252,246,245,.85); }
+  textarea,select,input[type=text]{ width:100%; background:var(--dark); border:1px solid var(--burgundy); color:var(--ivory); border-radius:6px; padding:9px 10px; font-size:14px; font-family:inherit; }
+  textarea{ min-height:60px; resize:vertical; }
+  .row{ display:flex; gap:12px; flex-wrap:wrap; }
+  .row > div{ flex:1; min-width:150px; }
+  button.go{ background:linear-gradient(135deg,var(--burgundy),var(--burgundy-dark)); color:var(--ivory); border:1px solid var(--gold); padding:10px 20px; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+  button.go:disabled{ opacity:.5; cursor:not-allowed; }
+  button.mini{ background:transparent; color:var(--gold); border:1px solid var(--gold); padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; }
+  button.del{ color:#d05a6e; border-color:#d05a6e; }
+  .kbitem{ display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 10px; border:1px solid rgba(176,141,87,.2); border-radius:8px; margin-bottom:6px; font-size:13px; }
+  #status{ font-size:13px; color:var(--gold); margin:10px 0; }
+  #out{ font-size:14px; line-height:1.7; }
+  #out h4{ color:var(--gold); border-bottom:1px solid rgba(176,141,87,.3); padding-bottom:6px; margin:18px 0 8px; }
+  #out table.data{ border-collapse:collapse; width:100%; font-size:13px; }
+  #out table.data th,#out table.data td{ border:1px solid rgba(176,141,87,.3); padding:6px 8px; text-align:left; }
+  #out blockquote{ border-left:3px solid var(--gold); margin:6px 0; padding:6px 10px; background:rgba(176,141,87,.08); }
+  .empty{ color:rgba(252,246,245,.5); font-size:13px; }
+  .pbnote{ font-size:12px; color:rgba(252,246,245,.6); }
+</style>
+<link rel="stylesheet" href="/macaron-shared.css">
+</head>
+<body>
+<style>@media all { .macaron-topnav.in-iframe { display:none !important; } }</style>
+<script>(function(){ try{ if(window.parent!==window){ var n=document.querySelector('.macaron-topnav'); if(n)n.classList.add('in-iframe'); else document.addEventListener('DOMContentLoaded',function(){var x=document.querySelector('.macaron-topnav'); if(x)x.classList.add('in-iframe');}); } }catch(e){} })();</script>
+<style>
+.macaron-topnav{ background:linear-gradient(135deg,#6B4226,#8B5A33); padding:8px 16px; display:flex; gap:8px; align-items:center; overflow-x:auto; white-space:nowrap; }
+.macaron-topnav strong{ color:#FAF7F2; font-size:14px; margin-right:8px; }
+.macaron-topnav a{ padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; background:#FAF7F2; color:#6B4226; }
+</style>
+<div class="macaron-topnav">
+  <strong>溫點 WarmPlace</strong>
+  <a href="/">🏠 主控台</a>
+  <a href="/content-hub.html">📚 內容中心</a>
+  <a href="/customer-hub.html">👥 客戶中心</a>
+  <a href="/ads-hub.html">📊 廣告中心</a>
+  <a href="/market-intel.html">🔍 市場情報</a>
+  <a href="/teachers.html">🏪 門店戰報</a>
+</div>
+
+<div class="wrap">
+  <h1>🏪 MIRA 門市教育中心</h1>
+  <p class="sub">MIRA = AI 門市教育主管。她結合「品牌核心風格 + 客戶常問(SaleSmartly) + 你上傳的知識庫 + 網路教育內容」產出可立刻給店員用的教材。每天 08:30 自動回顧優化。</p>
+
+  <!-- 知識庫上傳 -->
+  <div class="card">
+    <h3>📚 門市知識庫（上傳你的 SOP / 教材 / 規範，MIRA 會優先遵循）</h3>
+    <div class="row">
+      <div style="flex:2;">
+        <label>標題</label>
+        <input type="text" id="kbtitle" placeholder="例：門市退換貨 SOP / 禮盒包裝標準 / 員工守則">
+        <label>內容（貼上文字）</label>
+        <textarea id="kbtext" placeholder="把你現有的 SOP / 教育訓練文字貼進來…"></textarea>
+      </div>
+      <div style="flex:1;">
+        <label>或上傳檔案（.txt / .md / .csv）</label>
+        <input type="file" id="kbfile" accept=".txt,.md,.csv,.text" style="font-size:12px;">
+        <p class="pbnote" style="margin-top:6px;">PDF/Word 請先另存成純文字或直接複製內文貼上。</p>
+      </div>
+    </div>
+    <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="go" onclick="addKB()">➕ 加入知識庫</button>
+      <span class="pbnote" id="kbmsg"></span>
+    </div>
+    <div id="kblist" style="margin-top:12px;"></div>
+  </div>
+
+  <!-- 產教材 -->
+  <div class="card">
+    <h3>🎓 產出門市教材</h3>
+    <div class="row">
+      <div>
+        <label>教材類型</label>
+        <select id="type"></select>
+      </div>
+      <div>
+        <label>門店</label>
+        <select id="store"></select>
+      </div>
+    </div>
+    <label>額外要求（可留空）</label>
+    <textarea id="brief" placeholder="例：母親節檔期版 / 針對新人 / 加強企業送禮"></textarea>
+    <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      <button class="go" id="gen" onclick="gen()">🎓 MIRA 產出教材</button>
+      <button class="mini" onclick="optimize()">🧠 立刻自我優化</button>
+      <span class="pbnote" id="pbnote"></span>
+    </div>
+  </div>
+
+  <div id="status"></div>
+  <div class="card" id="result" style="display:none;"><div id="out"></div><div style="margin-top:10px;"><button class="mini" onclick="copyOut()">📋 複製全部</button></div></div>
+</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+
+async function loadTypes(){
+  try{ const j=await fetch('/api/mira/types').then(r=>r.json());
+    $('type').innerHTML=(j.types||[]).map(t=>'<option value="'+t.key+'">'+t.label+'</option>').join('');
+    $('store').innerHTML=(j.stores||[]).map(s=>'<option>'+s+'</option>').join('');
+  }catch(e){}
+}
+async function loadKBList(){
+  try{ const j=await fetch('/api/mira/kb').then(r=>r.json());
+    if(!j.docs||!j.docs.length){ $('kblist').innerHTML='<div class="empty">還沒有上傳任何知識庫。MIRA 仍可用品牌風格+客戶對話產教材，但有你的 SOP 會更貼。</div>'; return; }
+    $('kblist').innerHTML=j.docs.map(d=>'<div class="kbitem"><span>📄 '+esc(d.title)+' <span class="pbnote">('+d.chars+' 字 · '+String(d.added_at).slice(0,10)+')</span></span><button class="mini del" onclick="delKB(\''+d.id+'\')">刪除</button></div>').join('');
+  }catch(e){}
+}
+function esc(s){ return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+$('kbfile').addEventListener('change', function(){
+  const f=this.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ $('kbtext').value=rd.result; if(!$('kbtitle').value) $('kbtitle').value=f.name.replace(/\.[^.]+$/,''); };
+  rd.readAsText(f);
+});
+
+async function addKB(){
+  const title=$('kbtitle').value.trim(); const text=$('kbtext').value.trim();
+  if(!text){ alert('請貼上內容或選檔案'); return; }
+  $('kbmsg').textContent='上傳中…';
+  try{ const j=await fetch('/api/mira/kb',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title,text})}).then(r=>r.json());
+    if(j.ok){ $('kbmsg').textContent='✅ 已加入（'+j.doc.chars+' 字）'; $('kbtitle').value=''; $('kbtext').value=''; $('kbfile').value=''; loadKBList(); }
+    else $('kbmsg').textContent='⚠️ '+(j.error||'失敗');
+  }catch(e){ $('kbmsg').textContent='❌ '+e.message; }
+}
+async function delKB(id){
+  if(!confirm('刪除這份知識庫文件？')) return;
+  try{ await fetch('/api/mira/kb/'+id,{method:'DELETE'}); loadKBList(); }catch(e){}
+}
+
+async function loadPlaybook(){
+  try{ const j=await fetch('/api/mira/playbook').then(r=>r.json());
+    $('pbnote').textContent = j.learned_at ? ('本期重點已更新：'+String(j.learned_at).slice(0,10)) : '尚未優化 — 可按「立刻自我優化」';
+  }catch(e){}
+}
+async function optimize(){
+  $('status').textContent='🧠 MIRA 正在回顧客戶對話+知識庫，更新本期教學重點…（約 20–40 秒）';
+  try{ const j=await fetch('/api/mira/optimize',{method:'POST'}).then(r=>r.json());
+    $('status').textContent=j.ok?('✅ 本期教學重點已更新（參考 '+(j.questions||0)+' 類客戶問題）'):('⚠️ '+(j.error||'失敗'));
+    loadPlaybook();
+  }catch(e){ $('status').textContent='❌ '+e.message; }
+}
+
+async function gen(){
+  const type=$('type').value, store=$('store').value, brief=$('brief').value.trim();
+  $('gen').disabled=true; $('result').style.display='none';
+  $('status').textContent='🎓 MIRA 正在結合品牌風格+客戶常問+你的知識庫+網路內容寫教材…（約 30–50 秒）';
+  try{
+    const j=await fetch('/api/mira/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type,store,brief})}).then(r=>r.json());
+    if(!j.ok) throw new Error(j.error||'失敗');
+    $('out').innerHTML='<h4>'+esc(j.type_label)+' ｜ '+esc(j.store)+'</h4>'+j.html+'<p class="pbnote" style="margin-top:14px;">參考了 '+(j.used_kb_docs||0)+' 份知識庫文件 + 客戶對話 + 網路內容</p>';
+    $('result').style.display='block'; $('status').textContent='✅ 完成'; $('result').scrollIntoView({behavior:'smooth'});
+  }catch(e){ $('status').textContent='❌ '+e.message; }
+  finally{ $('gen').disabled=false; }
+}
+function copyOut(){
+  const txt=$('out').innerText;
+  navigator.clipboard.writeText(txt).then(()=>{ $('status').textContent='✅ 已複製全部教材'; }).catch(()=>{ alert('請手動選取複製'); });
+}
+
+loadTypes(); loadKBList(); loadPlaybook();
+</script>
+</body>
+</html>
