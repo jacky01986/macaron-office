@@ -1454,6 +1454,7 @@ app.post('/api/auto-publish/delete/:draftId', (req, res) => {
 autoPublish.registerCronJobs(cron);
 try { require('./closer').registerCron(cron); } catch (e) { console.error('[closer cron]', e.message); }
 try { require('./mira').registerCron(cron); } catch (e) { console.error('[mira cron]', e.message); }
+try { require('./june').registerCron(cron); } catch (e) { console.error('[june cron]', e.message); }
 if (scout && typeof scout.registerCronJobs === 'function') scout.registerCronJobs(cron);
 if (aiTeamContent && typeof aiTeamContent.registerCronJobs === 'function') aiTeamContent.registerCronJobs(cron);
 cron.schedule("0 9 * * 1", () => {
@@ -4269,7 +4270,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
         input_schema: {
           type: 'object',
           properties: {
-            employee: { type: 'string', enum: ['CAMILLE', 'ARIA', 'DEX', 'NOVA', 'MILO', 'RINA', 'HANA', 'MIRA'] },
+            employee: { type: 'string', enum: ['CAMILLE', 'ARIA', 'DEX', 'NOVA', 'MILO', 'RINA', 'HANA', 'MIRA', 'JUNE'] },
             task: { type: 'string', description: '完整任務描述 (請包含主題/平台/長度/格式要求)' },
             context: { type: 'string', description: '相關背景 (例如關鍵字、目標客群)' }
           },
@@ -4353,7 +4354,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
             if (!empMod || !empMod.EMPLOYEES) return { error: 'employees module not loaded' };
             const empKey = String(input.employee || '').toLowerCase();
             const employee = empMod.EMPLOYEES[empKey];
-            if (!employee) return { error: 'unknown employee: ' + input.employee + '. 可用: CAMILLE, ARIA, DEX, NOVA, MILO, RINA, HANA, MIRA' };
+            if (!employee) return { error: 'unknown employee: ' + input.employee + '. 可用: CAMILLE, ARIA, DEX, NOVA, MILO, RINA, HANA, MIRA, JUNE' };
             const empPrompt = employee.systemPrompt || ('你是 ' + employee.name);
             const empUser = input.task + (input.context ? '\n\n背景:\n' + input.context : '');
             const r = await c.messages.create({
@@ -4621,6 +4622,10 @@ catch (e) { console.error('[closer] mount failed:', e.message); }
 // === MIRA 門市教育路由 ===
 try { app.use('/api/mira', require('./mira')); console.log('[mira] MIRA route mounted at /api/mira'); }
 catch (e) { console.error('[mira] mount failed:', e.message); }
+
+// === JUNE 專案總管路由 ===
+try { app.use('/api/june', require('./june')); console.log('[june] JUNE route mounted at /api/june'); }
+catch (e) { console.error('[june] mount failed:', e.message); }
 
 app.listen(PORT, () => {
   console.log('🥐 溫點 WarmPlace · Virtual Office v2');
