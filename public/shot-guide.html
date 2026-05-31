@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>📸 拍攝示意指南 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{ --burgundy:#6D2E46; --burgundy-dark:#4a1f30; --gold:#B08D57; --dark:#1C1213; --dark-2:#2a1a1d; --ivory:#FCF6F5; --green:#3fb27f; --red:#e76b6b; }
+*{box-sizing:border-box;}
+body{ font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; background:var(--dark); color:var(--ivory); margin:0; padding:0 0 60px; }
+.wrap{ padding:20px; max-width:1200px; margin:0 auto; }
+h1{ font-size:24px; margin:0 0 6px; color:var(--gold); }
+.sub{ color:rgba(252,246,245,.75); font-size:14px; margin-bottom:18px; line-height:1.6; }
+.section-head{ display:flex; align-items:baseline; gap:10px; margin:28px 0 12px; padding-bottom:8px; border-bottom:1px solid rgba(176,141,87,.3); }
+.section-head h2{ font-size:18px; color:var(--gold); margin:0; }
+.section-head .meta{ color:rgba(252,246,245,.55); font-size:12px; }
+.grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }
+.reels-group{ background:rgba(176,141,87,.06); border:1px solid rgba(176,141,87,.2); border-radius:12px; padding:14px; margin-bottom:18px; }
+.reels-group h3{ font-size:15px; color:var(--gold); margin:0 0 4px; }
+.reels-group .desc{ color:rgba(252,246,245,.65); font-size:12px; margin-bottom:12px; }
+.card{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:10px; padding:12px; }
+.card-head{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.card-head h3{ font-size:14px; margin:0; color:var(--ivory); font-weight:600; flex:1; }
+.badge{ display:inline-block; background:var(--burgundy); color:var(--ivory); border:1px solid var(--gold); padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+.badge.sec{ background:var(--gold); color:var(--burgundy-dark); border-color:var(--gold); }
+.frame-wrap{ background:#1a1010; border-radius:6px; padding:8px; display:flex; justify-content:center; align-items:center; margin-bottom:10px; min-height:160px; }
+.frame-wrap svg{ width:100%; max-width:220px; height:auto; }
+.r-card .frame-wrap svg{ max-width:130px; }
+.specs{ font-size:12px; line-height:1.55; }
+.spec-row{ display:flex; gap:8px; padding:4px 0; border-bottom:1px dashed rgba(176,141,87,.15); }
+.spec-row:last-child{ border-bottom:none; }
+.spec-row .k{ flex:0 0 42px; color:var(--gold); font-weight:600; font-size:11px; padding-top:1px; }
+.spec-row .v{ flex:1; color:rgba(252,246,245,.85); }
+.spec-row .v.quote{ font-style:italic; color:rgba(252,246,245,.95); }
+.bul{ margin:0; padding-left:0; list-style:none; flex:1; }
+.bul li{ position:relative; padding-left:14px; color:rgba(252,246,245,.85); font-size:11.5px; }
+.bul.good li::before{ content:"✓"; color:var(--green); position:absolute; left:0; font-weight:700; }
+.bul.bad li::before{ content:"×"; color:var(--red); position:absolute; left:0; font-weight:700; }
+.tips .v{ color:rgba(252,246,245,.7); font-size:11.5px; }
+.legend{ background:rgba(176,141,87,.08); border:1px solid rgba(176,141,87,.25); border-radius:10px; padding:12px 14px; margin-bottom:18px; }
+.legend h3{ font-size:13px; color:var(--gold); margin:0 0 6px; }
+.legend .row{ display:flex; flex-wrap:wrap; gap:10px 22px; font-size:12px; color:rgba(252,246,245,.8); }
+.legend .row span b{ color:var(--gold); margin-right:4px; }
+</style>
+<link rel="stylesheet" href="/macaron-shared.css">
+</head>
+<body>
+<style>@media all { .macaron-topnav.in-iframe { display:none !important; } }</style>
+<script>(function(){ try{ if(window.parent!==window){ var n=document.querySelector('.macaron-topnav'); if(n)n.classList.add('in-iframe'); else document.addEventListener('DOMContentLoaded',function(){var x=document.querySelector('.macaron-topnav'); if(x)x.classList.add('in-iframe');}); } }catch(e){} })();</script>
+<style>
+.macaron-topnav{ background:linear-gradient(135deg,#6B4226,#8B5A33); padding:8px 16px; display:flex; gap:8px; align-items:center; overflow-x:auto; white-space:nowrap; }
+.macaron-topnav strong{ color:#FAF7F2; font-size:14px; margin-right:8px; }
+.macaron-topnav a{ padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; background:#FAF7F2; color:#6B4226; }
+</style>
+<div class="macaron-topnav">
+  <strong>溫點 WarmPlace</strong>
+  <a href="/">🏠 主控台</a>
+  <a href="/content-hub.html">📚 內容中心</a>
+  <a href="/customer-hub.html">👥 客戶中心</a>
+  <a href="/ads-hub.html">📊 廣告中心</a>
+  <a href="/market-intel.html">🔍 市場情報</a>
+  <a href="/teachers.html">🏪 門店戰報</a>
+</div>
+<div class="wrap">
+<h1>📸 拍攝示意指南</h1>
+<p class="sub">商品照 10 種 + RINA Reels 分鏡 15 鏡。每張卡含構圖示意圖、鏡位、光線方向、安全範圍、該/不該入鏡、手機可重現的技術參數。看著拍就能掌握。</p>
+
+<div class="legend"><h3>圖例</h3><div class="row">
+<span><b>邊框</b>金線 = 畫面邊界 / 安全範圍</span>
+<span><b>黃虛線 →</b>光線來向</span>
+<span><b>相機圖示</b>鏡位 & 角度</span>
+<span><b>右上角徽章</b>畫面比例</span>
+</div></div>
+
+<div class="section-head"><h2>📦 商品照 10 種</h2><span class="meta">官網 / IG / FB 必拍</span></div>
+<div class="grid">
+<div class="card">
+<div class="card-head"><span class="badge">1:1</span><h3>01. 單顆馬卡龍特寫</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="200" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="154" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="174" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">1:1</text><circle cx="100" cy="100" r="38" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.6"/><circle cx="90.5" cy="88.6" r="9.5" fill="#FFFFFF" opacity="0.45"/><line x1="20" y1="30" x2="60" y2="65" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="20" cy="30" r="3" fill="#F5D580" opacity="0.55"/><rect x="91" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="100" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="114" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">俯拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">正俯拍 90°</span></div>
+<div class="spec-row"><span class="k">光線</span><span class="v">左上自然光</span></div>
+<div class="spec-row"><span class="k">該入鏡</span><ul class="bul good"><li>主角馬卡龍置中</li><li>淺色乾淨桌面</li><li>留 30% 以上的留白</li></ul></div>
+<div class="spec-row"><span class="k">不該</span><ul class="bul bad"><li>手</li><li>其他物品</li><li>硬陰影</li></ul></div>
+<div class="spec-row tips"><span class="k">技術</span><span class="v">對焦點：餅殼接縫處・距離 15–20cm・人像模式輕微虛化・避免閃光燈</span></div>
+</div>
+</div>
+<div class="card">
+<div class="card-head"><span class="badge">1.91:1</span><h3>02. 六顆漸層排列</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 240 126" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="240" height="126" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="194" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="214" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">1.91:1</text><path d="M17.0,75 a13.0,11.700000000000001 0 0 1 26,0 Z" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.6"/><rect x="17.0" y="75" width="26" height="4.68" fill="#B07A47" stroke="#9E7A55" stroke-width="0.4"/><path d="M17.0,79.68 a13.0,11.700000000000001 0 0 0 26,0 Z" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.6"/><path d="M49.0,75 a13.0,11.700000000000001 0 0 1 26,0 Z" fill="#E8B280" stroke="#9E7A55" stroke-width="0.6"/><rect x="49.0" y="75" width="26" height="4.68" fill="#B07A47" stroke="#9E7A55" stroke-width="0.4"/><path d="M49.0,79.68 a13.0,11.700000000000001 0 0 0 26,0 Z" fill="#E8B280" stroke="#9E7A55" stroke-width="0.6"/><path d="M81.0,75 a13.0,11.700000000000001 0 0 1 26,0 Z" fill="#9CB47A" stroke="#9E7A55" stroke-width="0.6"/><rect x="81.0" y="75" width="26" height="4.68" fill="#B07A47" stroke="#9E7A55" stroke-width="0.4"/><path d="M81.0,79.68 a13.0,11.700000000000001 0 0 0 26,0 Z" fill="#9CB47A" stroke="#9E7A55" stroke-width="0.6"/><path d="M113.0,75 a13.0,11.700000000000001 0 0 1 26,0 Z" fill="#A99BC5" stroke="#9E7A55" stroke-width="0.6"/><rect x="113.0" y="75" width="26" height="4.68" fill="#B07A47" stroke="#9E7A55" stroke-width="0.4"/><path d="M113.0,79.68 a13.0,11.700000000000001 0 0 0 26,0 Z" fill="#A99BC5" stroke="#9E7A55" stroke-width="0.6"/><path d="M145.0,75 a13.0,11.700000000000001 0 0 1 26,0 Z" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><rect x="145.0" y="75" width="26" height="4.68" fill="#B07A47" stroke="#9E7A55" stroke-width="0.4"/><path d="M145.0,79.68 a13.0,11.700000000000001 0 0 0 26,0 Z" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><path d="M177.0,75 a13.0,11.700000000000001 0 0 1 26,0 Z" fill="#6D2E46" stroke="#9E7A55" stroke-width="0.6"/><rect x="177.0" y="75" width="26" height="4.68" fill="#B07A47" stroke="#9E7A55" stroke-width="0.4"/><path d="M177.0,79.68 a13.0,11.700000000000001 0 0 0 26,0 Z" fill="#6D2E46" stroke="#9E7A55" stroke-width="0.6"/><line x1="20" y1="20" x2="50" y2="50" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="20" cy="20" r="3" fill="#F5D580" opacity="0.55"/><rect x="111" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="120" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="134" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">側拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">側拍 30°</span></div>
+<div class="spec-row"><span class="k">光線</span><span class="v">側上自然光</span></div>
+<div class="spec-row"><span class="k">該入鏡</span><ul class="bul good"><li>顏色由淺到深漸層</li><li>彼此微微留縫</li><li>前後對焦清晰</li></ul></div>
+<div class="spec-row"><span class="k">不該</span><ul class="bul bad"><li>顏色雜亂無序</li><li>馬卡龍緊貼</li><li>傾斜歪七扭八</li></ul></div>
+<div class="spec-row tips"><span class="k">技術</span><span class="v">視角略低於餅殼高度・對焦中間顆・拍 2–3 張取中間色顆最清的</span></div>
+</div>
+</div>
+<div class="card">
+<div class="card-head"><span class="badge">4:5</span><h3>03. 6 入禮盒全開</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">4:5</text><rect x="25.0" y="35.0" width="110" height="130" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="29.0" y="39.0" width="102" height="122" rx="2" fill="#F4E9DB" stroke="#9E7A55" stroke-width="0.4"/><circle cx="48.666666666666664" cy="71.5" r="10.026666666666667" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.5"/><circle cx="80.0" cy="71.5" r="10.026666666666667" fill="#E8B280" stroke="#9E7A55" stroke-width="0.5"/><circle cx="111.33333333333333" cy="71.5" r="10.026666666666667" fill="#9CB47A" stroke="#9E7A55" stroke-width="0.5"/><circle cx="48.666666666666664" cy="128.5" r="10.026666666666667" fill="#A99BC5" stroke="#9E7A55" stroke-width="0.5"/><circle cx="80.0" cy="128.5" r="10.026666666666667" fill="#D4A574" stroke="#9E7A55" stroke-width="0.5"/><circle cx="111.33333333333333" cy="128.5" r="10.026666666666667" fill="#6D2E46" stroke="#9E7A55" stroke-width="0.5"/><line x1="15" y1="25" x2="50" y2="60" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="71" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">俯拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">正俯拍 90°</span></div>
+<div class="spec-row"><span class="k">光線</span><span class="v">左上自然光</span></div>
+<div class="spec-row"><span class="k">該入鏡</span><ul class="bul good"><li>禮盒填滿畫面 70%</li><li>馬卡龍排列整齊</li><li>蓋子可入可不入</li></ul></div>
+<div class="spec-row"><span class="k">不該</span><ul class="bul bad"><li>盒外雜物</li><li>桌面太暗</li><li>馬卡龍順序混亂</li></ul></div>
+<div class="spec-row tips"><span class="k">技術</span><span class="v">手機架高俯拍・對焦中間顆・拍前用乾布擦盒緣</span></div>
+</div>
+</div>
+<div class="card">
+<div class="card-head"><span class="badge">4:5</span><h3>04. 12 入禮盒全開</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">4:5</text><rect x="20.0" y="30.0" width="120" height="140" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="24.0" y="34.0" width="112" height="132" rx="2" fill="#F4E9DB" stroke="#9E7A55" stroke-width="0.4"/><circle cx="41.0" cy="58.66666666666667" r="8.32" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.5"/><circle cx="67.0" cy="58.66666666666667" r="8.32" fill="#E8B280" stroke="#9E7A55" stroke-width="0.5"/><circle cx="93.0" cy="58.66666666666667" r="8.32" fill="#9CB47A" stroke="#9E7A55" stroke-width="0.5"/><circle cx="119.0" cy="58.66666666666667" r="8.32" fill="#A99BC5" stroke="#9E7A55" stroke-width="0.5"/><circle cx="41.0" cy="100.0" r="8.32" fill="#D4A574" stroke="#9E7A55" stroke-width="0.5"/><circle cx="67.0" cy="100.0" r="8.32" fill="#6D2E46" stroke="#9E7A55" stroke-width="0.5"/><circle cx="93.0" cy="100.0" r="8.32" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.5"/><circle cx="119.0" cy="100.0" r="8.32" fill="#E8B280" stroke="#9E7A55" stroke-width="0.5"/><circle cx="41.0" cy="141.33333333333334" r="8.32" fill="#9CB47A" stroke="#9E7A55" stroke-width="0.5"/><circle cx="67.0" cy="141.33333333333334" r="8.32" fill="#A99BC5" stroke="#9E7A55" stroke-width="0.5"/><circle cx="93.0" cy="141.33333333333334" r="8.32" fill="#D4A574" stroke="#9E7A55" stroke-width="0.5"/><circle cx="119.0" cy="141.33333333333334" r="8.32" fill="#6D2E46" stroke="#9E7A55" stroke-width="0.5"/><line x1="15" y1="25" x2="50" y2="60" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="71" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">俯拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">正俯拍 90°</span></div>
+<div class="spec-row"><span class="k">光線</span><span class="v">左上柔光</span></div>
+<div class="spec-row"><span class="k">該入鏡</span><ul class="bul good"><li>12 顆配色錯落</li><li>盒緣留 1–2cm 邊</li><li>桌面同色系或對比</li></ul></div>
+<div class="spec-row"><span class="k">不該</span><ul class="bul bad"><li>陰影遮馬卡龍</li><li>蓋子半開蓋住主體</li></ul></div>
+<div class="spec-row tips"><span class="k">技術</span><span class="v">燈源越柔越好・可用窗紗濾光・避免正中午直射</span></div>
+</div>
+</div>
+<div class="card">
+<div class="card-head"><span class="badge">1:1</span><h3>05. 禮盒側拍包裝</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="200" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="154" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="174" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">1:1</text><path d="M45.0,75.0 L147.0,69.0 L155.0,139.0 L53.0,145.0 Z" fill="#4a1f30" stroke="#4a1f30" stroke-width="0.6"/><path d="M45.0,75.0 L53.0,145.0 L155.0,139.0 L147.0,69.0 Z" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.6"/><rect x="63.0" y="71.0" width="6" height="72" fill="#B08D57" opacity="0.95" transform="skewY(8)"/><ellipse cx="89.33333333333333" cy="90" rx="10.666666666666666" ry="7.0" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="110.66666666666667" cy="90" rx="10.666666666666666" ry="7.0" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><circle cx="100" cy="90" r="3" fill="#C9A66B"/><line x1="25" y1="25" x2="55" y2="55" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="25" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="161" y="44" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="170" cy="50" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="184" y="53" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">45°</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">斜側拍 45°</span></div>
+<div class="spec-row"><span class="k">光線</span><span class="v">前左上光</span></div>
+<div class="spec-row"><span class="k">該入鏡</span><ul class="bul good"><li>緞帶與盒型線條俐落</li><li>盒蓋緊閉</li><li>可帶品牌標</li></ul></div>
+<div class="spec-row"><span class="k">不該</span><ul class="bul bad"><li>緞帶歪斜</li><li>盒角凹陷</li><li>強反光打在金邊</li></ul></div>
+<div class="spec-row tips"><span class="k">技術</span><span class="v">側面看立體感最美・手機放略低於盒面・可開廣角避免邊緣失真</span></div>
+</div>
+</div>
+<div class="card">
+<div class="card-head"><span class="badge">1:1</span><h3>06. 單塊費南雪特寫</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="200" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="154" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="174" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">1:1</text><rect x="55.0" y="72.0" width="90" height="56" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="77.5" y1="75.0" x2="77.5" y2="125.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="100.0" y1="75.0" x2="100.0" y2="125.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="122.5" y1="75.0" x2="122.5" y2="125.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="20" y1="25" x2="60" y2="65" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="20" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="91" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="100" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="114" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">俯拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">正俯拍 90°</span></div>
+<div class="spec-row"><span class="k">光線</span><span class="v">斜上自然光</span></div>
+<div class="spec-row"><span class="k">該入鏡</span><ul class="bul good"><li>金黃紋路清楚</li><li>邊緣酥脆感入鏡</li><li>深色或木質桌面</li></ul></div>
+<div class="spec-row"><span class="k">不該</span><ul class="bul bad"><li>糖粉過厚</li><li>破角</li><li>高光過曝</li></ul></div>
+<div class="spec-row tips"><span class="k">技術</span><span class="v">對焦邊緣・側光最能拍出立體紋路・若太亮可手動降一格曝光</span></div>
+</div>
+</div>
+<div class="card">
+<div class="card-head"><span class="badge">1:1</span><h3>07. 費南雪排列</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="200" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="154" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="174" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">1:1</text><rect x="17.0" y="58.0" width="36" height="24" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="26.0" y1="61.0" x2="26.0" y2="79.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="35.0" y1="61.0" x2="35.0" y2="79.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="44.0" y1="61.0" x2="44.0" y2="79.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="17.0" y="118.0" width="36" height="24" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="26.0" y1="121.0" x2="26.0" y2="139.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="35.0" y1="121.0" x2="35.0" y2="139.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="44.0" y1="121.0" x2="44.0" y2="139.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="59.0" y="58.0" width="36" height="24" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="68.0" y1="61.0" x2="68.0" y2="79.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="77.0" y1="61.0" x2="77.0" y2="79.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="86.0" y1="61.0" x2="86.0" y2="79.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="59.0" y="118.0" width="36" height="24" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="68.0" y1="121.0" x2="68.0" y2="139.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="77.0" y1="121.0" x2="77.0" y2="139.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="86.0" y1="121.0" x2="86.0" y2="139.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="101.0" y="58.0" width="36" height="24" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="110.0" y1="61.0" x2="110.0" y2="79.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="119.0" y1="61.0" x2="119.0" y2="79.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="128.0" y1="61.0" x2="128.0" y2="79.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="101.0" y="118.0" width="36" height="24" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="110.0" y1="121.0" x2="110.0" y2="139.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="119.0" y1="121.0" x2="119.0" y2="139.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="128.0" y1="121.0" x2="128.0" y2="139.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="143.0" y="58.0" width="36" height="24" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="152.0" y1="61.0" x2="152.0" y2="79.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="161.0" y1="61.0" x2="161.0" y2="79.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="170.0" y1="61.0" x2="170.0" y2="79.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="143.0" y="118.0" width="36" height="24" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="152.0" y1="121.0" x2="152.0" y2="139.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="161.0" y1="121.0" x2="161.0" y2="139.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="170.0" y1="121.0" x2="170.0" y2="139.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="20" y1="20" x2="50" y2="50" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="20" cy="20" r="3" fill="#F5D580" opacity="0.55"/><rect x="91" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="100" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="114" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">俯拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">正俯拍 90°</span></div>
+<div class="spec-row"><span class="k">光線</span><span class="v">斜側光</span></div>
+<div class="spec-row"><span class="k">該入鏡</span><ul class="bul good"><li>整齊矩陣排列</li><li>塊與塊留小縫</li><li>底色木質或深色</li></ul></div>
+<div class="spec-row"><span class="k">不該</span><ul class="bul bad"><li>排列東倒西歪</li><li>黏在一起無分離</li></ul></div>
+<div class="spec-row tips"><span class="k">技術</span><span class="v">若做檔期主視覺・盒前可放品牌標籤・拍 2 種版本（密與疏）</span></div>
+</div>
+</div>
+<div class="card">
+<div class="card-head"><span class="badge">4:5</span><h3>08. 雙手捧禮盒情境</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">4:5</text><path d="M35.0,70.0 L117.0,64.0 L125.0,124.0 L43.0,130.0 Z" fill="#4a1f30" stroke="#4a1f30" stroke-width="0.6"/><path d="M35.0,70.0 L43.0,130.0 L125.0,124.0 L117.0,64.0 Z" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.6"/><rect x="53.0" y="66.0" width="6" height="62" fill="#B08D57" opacity="0.95" transform="skewY(8)"/><path d="M38,130 Q48.8,124.6 63.2,130 Q74,135.4 59.599999999999994,148 Q45.2,144.4 38,137.2 Z" fill="#E5C2A0" stroke="#9E7A55" stroke-width="0.5"/><path d="M122,130 Q111.2,124.6 96.8,130 Q86,135.4 100.4,148 Q114.8,144.4 122,137.2 Z" fill="#E5C2A0" stroke="#9E7A55" stroke-width="0.5"/><line x1="15" y1="25" x2="50" y2="60" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="71" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">平拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">平視 / 略低 10°</span></div>
+<div class="spec-row"><span class="k">光線</span><span class="v">順光 / 窗光</span></div>
+<div class="spec-row"><span class="k">該入鏡</span><ul class="bul good"><li>雙手對稱捧盒</li><li>盒置中略偏上</li><li>可帶部分人像（袖子/胸前）</li></ul></div>
+<div class="spec-row"><span class="k">不該</span><ul class="bul bad"><li>手指髒亂</li><li>戒指過於搶戲</li><li>背景雜亂</li></ul></div>
+<div class="spec-row tips"><span class="k">技術</span><span class="v">白色針織或淺色服裝最襯・對焦盒面・可拍多版（仰角/平視）</span></div>
+</div>
+</div>
+<div class="card">
+<div class="card-head"><span class="badge">4:5</span><h3>09. 開箱半開蓋</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">4:5</text><rect x="25.0" y="63.0" width="110" height="102" rx="4" fill="#F4E9DB" stroke="#6D2E46" stroke-width="1"/><rect x="21.0" y="49.0" width="118" height="14" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8" transform="rotate(-8 80 55.0)"/><circle cx="48.666666666666664" cy="91.0" r="10.026666666666667" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.5"/><circle cx="80.0" cy="91.0" r="10.026666666666667" fill="#E8B280" stroke="#9E7A55" stroke-width="0.5"/><circle cx="111.33333333333333" cy="91.0" r="10.026666666666667" fill="#9CB47A" stroke="#9E7A55" stroke-width="0.5"/><circle cx="48.666666666666664" cy="135.0" r="10.026666666666667" fill="#A99BC5" stroke="#9E7A55" stroke-width="0.5"/><circle cx="80.0" cy="135.0" r="10.026666666666667" fill="#D4A574" stroke="#9E7A55" stroke-width="0.5"/><circle cx="111.33333333333333" cy="135.0" r="10.026666666666667" fill="#6D2E46" stroke="#9E7A55" stroke-width="0.5"/><path d="M130,80 Q119.2,75.2 104.8,80 Q94,84.8 108.4,96 Q122.8,92.8 130,86.4 Z" fill="#E5C2A0" stroke="#9E7A55" stroke-width="0.5"/><line x1="15" y1="25" x2="50" y2="50" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="71" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">略斜俯</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">略斜俯 75°</span></div>
+<div class="spec-row"><span class="k">光線</span><span class="v">左上光</span></div>
+<div class="spec-row"><span class="k">該入鏡</span><ul class="bul good"><li>盒蓋掀起 70°</li><li>手從右側拉緞帶或扶蓋</li><li>看得到內部 2/3 馬卡龍</li></ul></div>
+<div class="spec-row"><span class="k">不該</span><ul class="bul bad"><li>手擋住主角</li><li>蓋子全開或全閉</li><li>馬卡龍亂</li></ul></div>
+<div class="spec-row tips"><span class="k">技術</span><span class="v">拍開蓋瞬間 3 連拍・對焦盒內・後製可慢動作</span></div>
+</div>
+</div>
+<div class="card">
+<div class="card-head"><span class="badge">1.91:1</span><h3>10. 門市櫃位形象</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 240 126" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="240" height="126" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="194" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="214" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">1.91:1</text><rect x="10" y="20" width="220" height="60" fill="#3C2A20" stroke="#B08D57" stroke-width="0.4"/><rect x="10" y="78" width="220" height="38" fill="#5C4A3A"/><rect x="40" y="36" width="160" height="22" fill="#6D2E46" stroke="#B08D57" stroke-width="0.5"/><text x="120" y="51" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">溫點 WarmPlace</text><rect x="14.0" y="84.0" width="32" height="22" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="14.0" y="92" width="32" height="6" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="27" y="84.0" width="6" height="22" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="24" cy="95" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="36" cy="95" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="59.0" y="84.0" width="32" height="22" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="59.0" y="92" width="32" height="6" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="72" y="84.0" width="6" height="22" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="69" cy="95" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="81" cy="95" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="104.0" y="84.0" width="32" height="22" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="104.0" y="92" width="32" height="6" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="117" y="84.0" width="6" height="22" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="114" cy="95" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="126" cy="95" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="149.0" y="84.0" width="32" height="22" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="149.0" y="92" width="32" height="6" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="162" y="84.0" width="6" height="22" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="159" cy="95" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="171" cy="95" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><line x1="50" y1="8" x2="90" y2="32" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="50" cy="8" r="3" fill="#F5D580" opacity="0.55"/><rect x="171" y="2" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="180" cy="8" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="194" y="11" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">平拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">平拍 / 略低 5°</span></div>
+<div class="spec-row"><span class="k">光線</span><span class="v">頂光 + 後光</span></div>
+<div class="spec-row"><span class="k">該入鏡</span><ul class="bul good"><li>品牌名清晰</li><li>禮盒整齊一字排開</li><li>空間感不擠</li></ul></div>
+<div class="spec-row"><span class="k">不該</span><ul class="bul bad"><li>人潮過多</li><li>其他品牌入鏡</li><li>燈光偏色（橘綠）</li></ul></div>
+<div class="spec-row tips"><span class="k">技術</span><span class="v">用 0.5x 廣角拍出空間感・對焦中央禮盒・避開反光玻璃</span></div>
+</div>
+</div>
+</div>
+
+<div class="section-head" style="margin-top:36px;"><h2>🎬 RINA Reels 分鏡庫 · 3 概念 × 5 鏡</h2><span class="meta">直式 9:16 · 約 18 秒</span></div>
+<div class="reels-group"><h3>Reels A · 開箱儀式感</h3><div class="desc">送禮給自己 / 收禮的人 — 主打情緒 · 直式 9:16 · 約 18 秒</div><div class="grid"><div class="card r-card">
+<div class="card-head"><span class="badge sec">0–3 秒</span><h3>A1 · 禮盒緊閉定鏡</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><rect x="25.0" y="40.0" width="110" height="120" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="25.0" y="97" width="110" height="6" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="77" y="40.0" width="6" height="120" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="74" cy="100" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="86" cy="100" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><line x1="15" y1="25" x2="50" y2="60" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="71" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">俯拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">正俯拍 90° / 直式 9:16</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「今天，想對自己好一點」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">前 1 秒最關鍵・盒子置中・桌面留白・自然光由側打入</span></div>
+</div>
+</div>
+<div class="card r-card">
+<div class="card-head"><span class="badge sec">3–7 秒</span><h3>A2 · 拉緞帶掀蓋</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><rect x="25.0" y="48.0" width="110" height="112" rx="4" fill="#F4E9DB" stroke="#6D2E46" stroke-width="1"/><rect x="21.0" y="34.0" width="118" height="14" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8" transform="rotate(-8 80 40.0)"/><circle cx="48.666666666666664" cy="78.5" r="10.026666666666667" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.5"/><circle cx="80.0" cy="78.5" r="10.026666666666667" fill="#E8B280" stroke="#9E7A55" stroke-width="0.5"/><circle cx="111.33333333333333" cy="78.5" r="10.026666666666667" fill="#9CB47A" stroke="#9E7A55" stroke-width="0.5"/><circle cx="48.666666666666664" cy="127.5" r="10.026666666666667" fill="#A99BC5" stroke="#9E7A55" stroke-width="0.5"/><circle cx="80.0" cy="127.5" r="10.026666666666667" fill="#D4A574" stroke="#9E7A55" stroke-width="0.5"/><circle cx="111.33333333333333" cy="127.5" r="10.026666666666667" fill="#6D2E46" stroke="#9E7A55" stroke-width="0.5"/><path d="M130,70 Q120.4,65.8 107.6,70 Q98,74.2 110.8,84 Q123.6,81.2 130,75.6 Z" fill="#E5C2A0" stroke="#9E7A55" stroke-width="0.5"/><line x1="15" y1="25" x2="50" y2="60" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="71" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">俯拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">略斜俯 80°</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「一盒，六種顏色的心情」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">動作放慢 0.5x・緞帶滑落瞬間最美・連拍 3 次取最好</span></div>
+</div>
+</div>
+<div class="card r-card">
+<div class="card-head"><span class="badge sec">7–11 秒</span><h3>A3 · 六顆排列入鏡</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><rect x="20.0" y="35.0" width="120" height="130" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="24.0" y="39.0" width="112" height="122" rx="2" fill="#F4E9DB" stroke="#9E7A55" stroke-width="0.4"/><circle cx="45.33333333333333" cy="71.5" r="11.093333333333332" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.5"/><circle cx="80.0" cy="71.5" r="11.093333333333332" fill="#E8B280" stroke="#9E7A55" stroke-width="0.5"/><circle cx="114.66666666666666" cy="71.5" r="11.093333333333332" fill="#9CB47A" stroke="#9E7A55" stroke-width="0.5"/><circle cx="45.33333333333333" cy="128.5" r="11.093333333333332" fill="#A99BC5" stroke="#9E7A55" stroke-width="0.5"/><circle cx="80.0" cy="128.5" r="11.093333333333332" fill="#D4A574" stroke="#9E7A55" stroke-width="0.5"/><circle cx="114.66666666666666" cy="128.5" r="11.093333333333332" fill="#6D2E46" stroke="#9E7A55" stroke-width="0.5"/><line x1="15" y1="25" x2="50" y2="60" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="71" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">俯拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">正俯拍 90°</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「玫瑰・開心果・伯爵茶…」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">顏色全入鏡・別過曝・手機水平・對焦中間顆</span></div>
+</div>
+</div>
+<div class="card r-card">
+<div class="card-head"><span class="badge sec">11–15 秒</span><h3>A4 · 手剝開露內餡</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><path d="M45.0,100 a35.0,27.0 0 0 1 70,0 Z" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.6"/><rect x="45.0" y="100" width="70" height="10.799999999999999" fill="#B07A47" stroke="#9E7A55" stroke-width="0.4"/><path d="M45.0,110.8 a35.0,27.0 0 0 0 70,0 Z" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.6"/><path d="M40,90 Q49.0,85.8 61.0,90 Q70,94.2 58.0,104 Q46.0,101.2 40,95.6 Z" fill="#E5C2A0" stroke="#9E7A55" stroke-width="0.5"/><line x1="20" y1="25" x2="55" y2="60" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="20" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="141" y="19" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="150" cy="25" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="164" y="28" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">特寫</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">特寫 / 微仰 10°</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「外殼一咬，就知道是手工」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">鏡頭貼近 10cm・對焦裂紋・內餡略拉絲最動人</span></div>
+</div>
+</div>
+<div class="card r-card">
+<div class="card-head"><span class="badge sec">15–18 秒</span><h3>A5 · 收尾帶品牌</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><path d="M35.0,82.5 L117.0,76.5 L125.0,131.5 L43.0,137.5 Z" fill="#4a1f30" stroke="#4a1f30" stroke-width="0.6"/><path d="M35.0,82.5 L43.0,137.5 L125.0,131.5 L117.0,76.5 Z" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.6"/><rect x="53.0" y="78.5" width="6" height="57" fill="#B08D57" opacity="0.95" transform="skewY(8)"/><ellipse cx="70.66666666666667" cy="88" rx="9.333333333333334" ry="6.0" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="89.33333333333333" cy="88" rx="9.333333333333334" ry="6.0" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><circle cx="80" cy="88" r="3" fill="#C9A66B"/><text x="80" y="160" text-anchor="middle" fill="#6D2E46" font-size="10" font-family="-apple-system,sans-serif" font-weight="600">溫點 WarmPlace</text><line x1="15" y1="25" x2="50" y2="60" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="71" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">斜俯</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">斜俯 60°</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「送禮，先想到你」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">最後 1 秒留品牌・字卡置中下・引導『私訊訂購 / 連結在主頁』</span></div>
+</div>
+</div></div></div>
+<div class="reels-group"><h3>Reels B · 手工工藝</h3><div class="desc">職人手作 / 新鮮現做 — 主打信任 · 直式 9:16 · 約 18 秒</div><div class="grid"><div class="card r-card">
+<div class="card-head"><span class="badge sec">0–3 秒</span><h3>B1 · 麵糊擠入烤模</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><rect x="20" y="80" width="120" height="50" rx="4" fill="#5C4A3A" stroke="#9E7A55" stroke-width="0.5"/><rect x="32" y="92" width="22" height="16" rx="3" fill="#3C2A20"/><rect x="34" y="95" width="18" height="10" rx="2" fill="#D4A574" opacity="0.8"/><rect x="32" y="114" width="22" height="16" rx="3" fill="#3C2A20"/><rect x="34" y="117" width="18" height="10" rx="2" fill="#D4A574" opacity="0.8"/><rect x="60" y="92" width="22" height="16" rx="3" fill="#3C2A20"/><rect x="62" y="95" width="18" height="10" rx="2" fill="#D4A574" opacity="0.8"/><rect x="60" y="114" width="22" height="16" rx="3" fill="#3C2A20"/><rect x="62" y="117" width="18" height="10" rx="2" fill="#D4A574" opacity="0.8"/><rect x="88" y="92" width="22" height="16" rx="3" fill="#3C2A20"/><rect x="90" y="95" width="18" height="10" rx="2" fill="#D4A574" opacity="0.8"/><rect x="88" y="114" width="22" height="16" rx="3" fill="#3C2A20"/><rect x="90" y="117" width="18" height="10" rx="2" fill="#D4A574" opacity="0.8"/><rect x="116" y="92" width="22" height="16" rx="3" fill="#3C2A20"/><rect x="118" y="95" width="18" height="10" rx="2" fill="#D4A574" opacity="0.8"/><rect x="116" y="114" width="22" height="16" rx="3" fill="#3C2A20"/><rect x="118" y="117" width="18" height="10" rx="2" fill="#D4A574" opacity="0.8"/><path d="M70,30 L90,30 L100,80 L60,80 Z" fill="#F4E9DB" stroke="#9E7A55" stroke-width="0.6"/><ellipse cx="80" cy="82" rx="3" ry="6" fill="#D4A574"/><line x1="15" y1="25" x2="45" y2="55" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="141" y="24" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="150" cy="30" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="164" y="33" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">俯拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">微俯 80°</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「每一塊，都是當天烤的」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">拍下擠袋擠出瞬間・對焦麵糊落入・手不入鏡或只露半手</span></div>
+</div>
+</div>
+<div class="card r-card">
+<div class="card-head"><span class="badge sec">3–6 秒</span><h3>B2 · 烤箱裡的金黃</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><rect x="20" y="30" width="120" height="130" rx="6" fill="#1C1213" stroke="#B08D57" stroke-width="1"/><rect x="32" y="42" width="96" height="100" rx="3" fill="#3C2A20" stroke="#B08D57" stroke-width="0.4"/><rect x="38" y="56" width="84" height="20" fill="#5C4A3A" stroke="#9E7A55" stroke-width="0.3"/><rect x="42" y="59" width="16" height="14" rx="2" fill="#D4A574"/><rect x="62" y="59" width="16" height="14" rx="2" fill="#D4A574"/><rect x="82" y="59" width="16" height="14" rx="2" fill="#D4A574"/><rect x="102" y="59" width="16" height="14" rx="2" fill="#D4A574"/><rect x="38" y="84" width="84" height="20" fill="#5C4A3A" stroke="#9E7A55" stroke-width="0.3"/><rect x="42" y="87" width="16" height="14" rx="2" fill="#D4A574"/><rect x="62" y="87" width="16" height="14" rx="2" fill="#D4A574"/><rect x="82" y="87" width="16" height="14" rx="2" fill="#D4A574"/><rect x="102" y="87" width="16" height="14" rx="2" fill="#D4A574"/><rect x="38" y="112" width="84" height="20" fill="#5C4A3A" stroke="#9E7A55" stroke-width="0.3"/><rect x="42" y="115" width="16" height="14" rx="2" fill="#D4A574"/><rect x="62" y="115" width="16" height="14" rx="2" fill="#D4A574"/><rect x="82" y="115" width="16" height="14" rx="2" fill="#D4A574"/><rect x="102" y="115" width="16" height="14" rx="2" fill="#D4A574"/><rect x="32" y="42" width="96" height="100" rx="3" fill="#F5D580" opacity="0.15"/><rect x="141" y="74" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="150" cy="80" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="164" y="83" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">正拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">平視正拍</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「180 度烘 18 分鐘」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">拍時點亮烤箱燈・對焦最上層・別貼太近避免反光</span></div>
+</div>
+</div>
+<div class="card r-card">
+<div class="card-head"><span class="badge sec">6–10 秒</span><h3>B3 · 出爐冒煙</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><rect x="20" y="80" width="120" height="60" fill="#3C2A20"/><line x1="20" y1="84" x2="140" y2="84" stroke="#B08D57" stroke-width="0.5" opacity="0.5"/><line x1="20" y1="96" x2="140" y2="96" stroke="#B08D57" stroke-width="0.5" opacity="0.5"/><line x1="20" y1="108" x2="140" y2="108" stroke="#B08D57" stroke-width="0.5" opacity="0.5"/><line x1="20" y1="120" x2="140" y2="120" stroke="#B08D57" stroke-width="0.5" opacity="0.5"/><line x1="20" y1="132" x2="140" y2="132" stroke="#B08D57" stroke-width="0.5" opacity="0.5"/><rect x="18.0" y="86.0" width="24" height="18" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="24.0" y1="89.0" x2="24.0" y2="101.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="30.0" y1="89.0" x2="30.0" y2="101.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="36.0" y1="89.0" x2="36.0" y2="101.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="18.0" y="116.0" width="24" height="18" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="24.0" y1="119.0" x2="24.0" y2="131.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="30.0" y1="119.0" x2="30.0" y2="131.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="36.0" y1="119.0" x2="36.0" y2="131.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="48.0" y="86.0" width="24" height="18" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="54.0" y1="89.0" x2="54.0" y2="101.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="60.0" y1="89.0" x2="60.0" y2="101.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="66.0" y1="89.0" x2="66.0" y2="101.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="48.0" y="116.0" width="24" height="18" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="54.0" y1="119.0" x2="54.0" y2="131.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="60.0" y1="119.0" x2="60.0" y2="131.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="66.0" y1="119.0" x2="66.0" y2="131.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="78.0" y="86.0" width="24" height="18" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="84.0" y1="89.0" x2="84.0" y2="101.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="90.0" y1="89.0" x2="90.0" y2="101.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="96.0" y1="89.0" x2="96.0" y2="101.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="78.0" y="116.0" width="24" height="18" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="84.0" y1="119.0" x2="84.0" y2="131.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="90.0" y1="119.0" x2="90.0" y2="131.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="96.0" y1="119.0" x2="96.0" y2="131.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="108.0" y="86.0" width="24" height="18" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="114.0" y1="89.0" x2="114.0" y2="101.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="120.0" y1="89.0" x2="120.0" y2="101.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="126.0" y1="89.0" x2="126.0" y2="101.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><rect x="108.0" y="116.0" width="24" height="18" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="114.0" y1="119.0" x2="114.0" y2="131.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="120.0" y1="119.0" x2="120.0" y2="131.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="126.0" y1="119.0" x2="126.0" y2="131.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><path d="M50,75 q3,-10 0,-20" fill="none" stroke="#F4E9DB" stroke-width="1.2" opacity="0.6"/><path d="M80,72 q3,-8 0,-22" fill="none" stroke="#F4E9DB" stroke-width="1.2" opacity="0.5"/><path d="M110,75 q3,-10 0,-18" fill="none" stroke="#F4E9DB" stroke-width="1.2" opacity="0.55"/><rect x="141" y="44" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="150" cy="50" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="164" y="53" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">斜俯</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">斜俯 60°</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「現烤、現包、現出貨」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">拍 30 秒內趁熱・對焦冒煙處・背景越暗越能看見蒸氣</span></div>
+</div>
+</div>
+<div class="card r-card">
+<div class="card-head"><span class="badge sec">10–14 秒</span><h3>B4 · 手工裝盒</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><rect x="30.0" y="65.0" width="100" height="60" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="34.0" y="69.0" width="92" height="52" rx="2" fill="#F4E9DB" stroke="#9E7A55" stroke-width="0.4"/><circle cx="52.0" cy="95.0" r="8.96" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.5"/><circle cx="80.0" cy="95.0" r="8.96" fill="#E8B280" stroke="#9E7A55" stroke-width="0.5"/><circle cx="108.0" cy="95.0" r="8.96" fill="#9CB47A" stroke="#9E7A55" stroke-width="0.5"/><path d="M45,70 Q54.0,65.8 66.0,70 Q75,74.2 63.0,84 Q51.0,81.2 45,75.6 Z" fill="#E5C2A0" stroke="#9E7A55" stroke-width="0.5"/><rect x="40.0" y="59.0" width="16" height="12" rx="3" fill="#D4A574" stroke="#9E7A55" stroke-width="0.6"/><line x1="44.0" y1="62.0" x2="44.0" y2="68.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="48.0" y1="62.0" x2="48.0" y2="68.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="52.0" y1="62.0" x2="52.0" y2="68.0" stroke="#9E7A55" stroke-width="0.5" opacity="0.55"/><line x1="15" y1="25" x2="50" y2="50" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="71" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">俯拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">正俯拍 90°</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「一塊一塊放，不批量」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">拍下手指放入瞬間・對焦放入點・節奏放慢</span></div>
+</div>
+</div>
+<div class="card r-card">
+<div class="card-head"><span class="badge sec">14–18 秒</span><h3>B5 · 緞帶綁結＋品牌</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><path d="M30.0,82.5 L122.0,76.5 L130.0,131.5 L38.0,137.5 Z" fill="#4a1f30" stroke="#4a1f30" stroke-width="0.6"/><path d="M30.0,82.5 L38.0,137.5 L130.0,131.5 L122.0,76.5 Z" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.6"/><rect x="48.0" y="78.5" width="6" height="57" fill="#B08D57" opacity="0.95" transform="skewY(8)"/><path d="M40,85 Q49.0,80.8 61.0,85 Q70,89.2 58.0,99 Q46.0,96.2 40,90.6 Z" fill="#E5C2A0" stroke="#9E7A55" stroke-width="0.5"/><path d="M120,85 Q111.0,80.8 99.0,85 Q90,89.2 102.0,99 Q114.0,96.2 120,90.6 Z" fill="#E5C2A0" stroke="#9E7A55" stroke-width="0.5"/><ellipse cx="70.0" cy="88" rx="10.0" ry="6.0" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="90.0" cy="88" rx="10.0" ry="6.0" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><circle cx="80" cy="88" r="3" fill="#C9A66B"/><line x1="20" y1="25" x2="55" y2="55" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="20" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="71" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">略斜俯</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">斜俯 60°</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「溫點 WarmPlace · 職人手作」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">拍緞帶拉緊瞬間・對焦結點・最後留品牌字卡 1.5 秒</span></div>
+</div>
+</div></div></div>
+<div class="reels-group"><h3>Reels C · 送禮場景</h3><div class="desc">婚禮 / 企業 / 節日 — 主打銷售場景 · 直式 9:16 · 約 18 秒</div><div class="grid"><div class="card r-card">
+<div class="card-head"><span class="badge sec">0–3 秒</span><h3>C1 · 婚禮喜餅排陣</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><rect x="10" y="40" width="140" height="140" fill="#F4E9DB" opacity="0.4"/><rect x="20.0" y="70.0" width="60" height="40" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="20.0" y="87" width="60" height="6" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="47" y="70.0" width="6" height="40" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="44" cy="90" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="56" cy="90" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="80.0" y="70.0" width="60" height="40" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="80.0" y="87" width="60" height="6" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="107" y="70.0" width="6" height="40" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="104" cy="90" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="116" cy="90" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="20.0" y="120.0" width="60" height="40" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="20.0" y="137" width="60" height="6" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="47" y="120.0" width="6" height="40" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="44" cy="140" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="56" cy="140" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="80.0" y="120.0" width="60" height="40" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="80.0" y="137" width="60" height="6" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="107" y="120.0" width="6" height="40" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="104" cy="140" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="116" cy="140" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="30" cy="70" rx="3.5" ry="2" fill="#D88AA0" opacity="0.7"/><ellipse cx="150" cy="75" rx="3.5" ry="2" fill="#D88AA0" opacity="0.7"/><ellipse cx="85" cy="55" rx="3.5" ry="2" fill="#D88AA0" opacity="0.7"/><ellipse cx="135" cy="170" rx="3.5" ry="2" fill="#D88AA0" opacity="0.7"/><ellipse cx="40" cy="180" rx="3.5" ry="2" fill="#D88AA0" opacity="0.7"/><line x1="15" y1="20" x2="45" y2="50" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="20" r="3" fill="#F5D580" opacity="0.55"/><rect x="71" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">俯拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">正俯拍 90°</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「你的人生大日子，從一份體面的喜餅開始」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">用白色桌巾或大理石紋・撒少許玫瑰花瓣・避免色溫偏黃</span></div>
+</div>
+</div>
+<div class="card r-card">
+<div class="card-head"><span class="badge sec">3–7 秒</span><h3>C2 · 手寫卡＋禮盒</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><path d="M40.0,65.0 L122.0,59.0 L130.0,109.0 L48.0,115.0 Z" fill="#4a1f30" stroke="#4a1f30" stroke-width="0.6"/><path d="M40.0,65.0 L48.0,115.0 L130.0,109.0 L122.0,59.0 Z" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.6"/><rect x="58.0" y="61.0" width="6" height="52" fill="#B08D57" opacity="0.95" transform="skewY(8)"/><ellipse cx="76.33333333333333" cy="70" rx="8.666666666666666" ry="5.0" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="93.66666666666667" cy="70" rx="8.666666666666666" ry="5.0" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><circle cx="85" cy="70" r="3" fill="#C9A66B"/><rect x="20" y="120" width="80" height="50" rx="2" fill="#FFFFFF" stroke="#9E7A55" stroke-width="0.4" transform="rotate(-6 60 145)"/><line x1="28" y1="132" x2="92" y2="132" stroke="#3C2A20" stroke-width="0.6" opacity="0.45" transform="rotate(-6 60 145)"/><line x1="28" y1="142" x2="92" y2="142" stroke="#3C2A20" stroke-width="0.6" opacity="0.45" transform="rotate(-6 60 145)"/><line x1="28" y1="152" x2="92" y2="152" stroke="#3C2A20" stroke-width="0.6" opacity="0.45" transform="rotate(-6 60 145)"/><line x1="15" y1="25" x2="45" y2="55" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="71" y="12" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="18" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="21" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">斜俯</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">斜俯 70°</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「心意，不只在盒子裡」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">白卡寫一句話最動人・對焦卡片字・手寫優於印刷</span></div>
+</div>
+</div>
+<div class="card r-card">
+<div class="card-head"><span class="badge sec">7–11 秒</span><h3>C3 · 企業送禮疊盒</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><path d="M25.0,121.0 L127.0,115.0 L135.0,153.0 L33.0,159.0 Z" fill="#4a1f30" stroke="#4a1f30" stroke-width="0.6"/><path d="M25.0,121.0 L33.0,159.0 L135.0,153.0 L127.0,115.0 Z" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.6"/><rect x="43.0" y="117.0" width="6" height="40" fill="#B08D57" opacity="0.95" transform="skewY(8)"/><path d="M30.0,82.5 L122.0,76.5 L130.0,111.5 L38.0,117.5 Z" fill="#4a1f30" stroke="#4a1f30" stroke-width="0.6"/><path d="M30.0,82.5 L38.0,117.5 L130.0,111.5 L122.0,76.5 Z" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.6"/><rect x="48.0" y="78.5" width="6" height="37" fill="#B08D57" opacity="0.95" transform="skewY(8)"/><path d="M35.0,49.0 L117.0,43.0 L125.0,75.0 L43.0,81.0 Z" fill="#4a1f30" stroke="#4a1f30" stroke-width="0.6"/><path d="M35.0,49.0 L43.0,81.0 L125.0,75.0 L117.0,43.0 Z" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.6"/><rect x="53.0" y="45.0" width="6" height="34" fill="#B08D57" opacity="0.95" transform="skewY(8)"/><ellipse cx="72.0" cy="50" rx="8.0" ry="5.0" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="88.0" cy="50" rx="8.0" ry="5.0" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><circle cx="80" cy="50" r="3" fill="#C9A66B"/><line x1="15" y1="25" x2="45" y2="55" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="131" y="24" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="140" cy="30" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="154" y="33" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">平拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">平視略仰 5°</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「客戶記得的，是你的用心」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">三盒堆疊呈金字塔・拍出量感・背景深色更突顯金邊</span></div>
+</div>
+</div>
+<div class="card r-card">
+<div class="card-head"><span class="badge sec">11–15 秒</span><h3>C4 · 收禮人開蓋</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><circle cx="80" cy="60" r="22" fill="#F0CDA3" stroke="#9E7A55" stroke-width="0.5"/><path d="M75,62 q5,5 10,0" fill="none" stroke="#3C2A20" stroke-width="1"/><circle cx="74" cy="56" r="1.5" fill="#3C2A20"/><circle cx="86" cy="56" r="1.5" fill="#3C2A20"/><rect x="35.0" y="108.0" width="90" height="52" rx="4" fill="#F4E9DB" stroke="#6D2E46" stroke-width="1"/><rect x="31.0" y="94.0" width="98" height="14" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8" transform="rotate(-8 80 100.0)"/><circle cx="55.333333333333336" cy="123.5" r="6.08" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.5"/><circle cx="80.0" cy="123.5" r="6.08" fill="#E8B280" stroke="#9E7A55" stroke-width="0.5"/><circle cx="104.66666666666667" cy="123.5" r="6.08" fill="#9CB47A" stroke="#9E7A55" stroke-width="0.5"/><circle cx="55.333333333333336" cy="142.5" r="6.08" fill="#A99BC5" stroke="#9E7A55" stroke-width="0.5"/><circle cx="80.0" cy="142.5" r="6.08" fill="#D4A574" stroke="#9E7A55" stroke-width="0.5"/><circle cx="104.66666666666667" cy="142.5" r="6.08" fill="#6D2E46" stroke="#9E7A55" stroke-width="0.5"/><path d="M40,130 Q49.0,125.8 61.0,130 Q70,134.2 58.0,144 Q46.0,141.2 40,135.6 Z" fill="#E5C2A0" stroke="#9E7A55" stroke-width="0.5"/><path d="M120,130 Q111.0,125.8 99.0,130 Q90,134.2 102.0,144 Q114.0,141.2 120,135.6 Z" fill="#E5C2A0" stroke="#9E7A55" stroke-width="0.5"/><line x1="15" y1="25" x2="45" y2="55" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/><circle cx="15" cy="25" r="3" fill="#F5D580" opacity="0.55"/><rect x="141" y="64" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="150" cy="70" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="164" y="73" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">平拍</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">平視</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「看見對方眼睛亮起來的那一刻」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">拍真人時對焦表情・先請對方專注盒子不看鏡頭・拍 3 取最自然</span></div>
+</div>
+</div>
+<div class="card r-card">
+<div class="card-head"><span class="badge sec">15–18 秒</span><h3>C5 · 場景拼貼＋品牌收尾</h3></div>
+<div class="frame-wrap"><svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="light-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#F5D580"/></marker>
+<marker id="ang-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#B08D57"/></marker>
+</defs><rect x="0" y="0" width="160" height="200" fill="#F4E9DB" stroke="#B08D57" stroke-width="1.2"/><rect x="114" y="6" width="40" height="16" rx="3" fill="#6D2E46"/><text x="134" y="17" text-anchor="middle" fill="#F4E9DB" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">9:16</text><rect x="10" y="20" width="68" height="80" fill="#3C2A20" stroke="#B08D57" stroke-width="0.4"/><rect x="19.0" y="35.0" width="50" height="50" rx="4" fill="#6D2E46" stroke="#4a1f30" stroke-width="0.8"/><rect x="19.0" y="57" width="50" height="6" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="41" y="35.0" width="6" height="50" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="38" cy="60" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="50" cy="60" rx="7" ry="4" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><rect x="82" y="20" width="68" height="80" fill="#3C2A20" stroke="#B08D57" stroke-width="0.4"/><circle cx="116" cy="60" r="18" fill="#D88AA0" stroke="#9E7A55" stroke-width="0.6"/><circle cx="111.5" cy="54.6" r="4.5" fill="#FFFFFF" opacity="0.45"/><rect x="10" y="104" width="68" height="80" fill="#3C2A20" stroke="#B08D57" stroke-width="0.4"/><ellipse cx="34.0" cy="144" rx="10.0" ry="7.0" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><ellipse cx="54.0" cy="144" rx="10.0" ry="7.0" fill="#B08D57" stroke="#C9A66B" stroke-width="0.5"/><circle cx="44" cy="144" r="3" fill="#C9A66B"/><rect x="82" y="104" width="68" height="80" fill="#3C2A20" stroke="#B08D57" stroke-width="0.4"/><text x="116" y="148" text-anchor="middle" fill="#B08D57" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">溫點</text><text x="116" y="160" text-anchor="middle" fill="#F4E9DB" font-size="6.5" font-family="-apple-system,sans-serif">WarmPlace</text><rect x="71" y="6" width="18" height="12" rx="2" fill="#6D2E46" stroke="#B08D57" stroke-width="0.6"/><circle cx="80" cy="12" r="3.2" fill="none" stroke="#B08D57" stroke-width="0.8"/><text x="94" y="15" fill="#F4E9DB" font-size="8" font-family="-apple-system,sans-serif">拼貼</text></svg></div>
+<div class="specs">
+<div class="spec-row"><span class="k">鏡位</span><span class="v">拼貼（後製合成）</span></div>
+<div class="spec-row"><span class="k">字卡</span><span class="v quote">「婚禮・企業・節日・想念你的時候」</span></div>
+<div class="spec-row tips"><span class="k">拍攝</span><span class="v">後製剪 4 格拼貼・品牌字卡停 1.5 秒・引導『私訊訂購』</span></div>
+</div>
+</div></div></div>
+
+
+</div>
+</body>
+</html>
