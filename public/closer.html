@@ -67,13 +67,14 @@
       <span style="font-size:13px;">回覆模式：</span>
       <div class="seg" id="modeseg">
         <button data-mode="draft" class="on">📝 草稿</button>
-        <button data-mode="semi">✋ 半自動</button>
-        <button data-mode="full">⚡ 全自動</button>
+        <button data-mode="semi">🔒 半自動</button>
+        <button data-mode="full">🔒 全自動</button>
       </div>
       <span class="note" id="modenote">草稿模式：HANA 只寫草稿，你自己複製去貼。</span>
     </div>
     <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
       <button class="go" id="scan" onclick="scan()">🔍 掃描對話</button>
+      <button class="mini" id="batchbtn" onclick="batchDraft()" style="display:none;">✍️ 一鍵幫所有🔥快成交寫草稿</button>
       <button class="mini" onclick="optimize()">🧠 立刻自我優化</button>
       <span class="note" id="pbnote"></span>
     </div>
@@ -96,7 +97,7 @@ async function loadMode(){
   }catch(e){}
 }
 function setModeNote(mode){
-  const t = mode==='draft' ? '草稿模式：HANA 只寫草稿，你自己複製去貼。最安全。'
+  const t = mode==='draft' ? '📝 草稿模式：HANA 幫你判斷成交+寫好回覆 → 你按「複製」貼到 FB/IG。SaleSmartly 唯讀無法自動發。'
         : mode==='semi' ? '半自動：之後可開通「按確認才發」。目前仍只產草稿（發送功能未啟用）。'
         : '全自動：之後可開通「自動回客人」。目前仍只產草稿（發送功能未啟用）。';
   $('modenote').textContent = t;
@@ -104,6 +105,12 @@ function setModeNote(mode){
 document.querySelectorAll('#modeseg button').forEach(b=>{
   b.onclick = async()=>{
     const mode=b.dataset.mode;
+    if(mode!=='draft'){
+      alert('⚠️ SaleSmartly 的 API 是唯讀的，沒有發送功能；IG 的 Meta 發送權限也未開通。\n\n所以「半自動/全自動」目前無法真的發送。HANA 維持草稿模式 — 請用「📋 複製回覆」貼到你的 FB / IG 對話。\n\n（之後若要做 FB 限定的 Meta 直連自動發，再跟我說。）');
+      document.querySelectorAll('#modeseg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='draft'));
+      setModeNote('draft');
+      return;
+    }
     document.querySelectorAll('#modeseg button').forEach(x=>x.classList.toggle('on',x===b));
     setModeNote(mode);
     try{ await fetch('/api/closer/settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode})}); }catch(e){}
@@ -145,7 +152,8 @@ async function scan(){
         <div class="last">最後一句：${esc(o.last_text)||'(無)'}</div>
         <div class="draftbox"></div>
       </div>`).join('');
-    $('status').textContent='✅ 找到 '+j.conversations.length+' 通對話。點「寫成交草稿」讓 HANA 幫你回。';
+    const hotN=(j.counts&&j.counts.hot)||0; document.getElementById('batchbtn').style.display = hotN>0 ? 'inline-block' : 'none';
+    $('status').textContent='✅ 找到 '+j.conversations.length+' 通對話'+(hotN>0?'（🔥快成交 '+hotN+' 通，可一鍵全寫）':'')+'。';
   }catch(e){ $('status').textContent='❌ '+e.message; }
   finally{ $('scan').disabled=false; }
 }
@@ -184,6 +192,15 @@ async function sendReply(b, id){
   }catch(e){ b.disabled=false; b.textContent='✅ 確認發送給客人'; alert('❌ '+e.message); }
 }
 
+async function batchDraft(){
+  const hotBtns=[...document.querySelectorAll('.conv')].filter(c=>/🔥/.test(c.querySelector('.who')?.innerText||'')).map(c=>c.querySelector('.mini'));
+  if(!hotBtns.length){ alert('沒有快成交的對話'); return; }
+  document.getElementById('batchbtn').disabled=true;
+  $('status').textContent='✍️ HANA 正在幫 '+hotBtns.length+' 通快成交對話寫草稿…（一通約 20 秒，請稍候）';
+  for(const b of hotBtns){ const id=b.closest('.conv').dataset.id; await draft(b,id); }
+  document.getElementById('batchbtn').disabled=false;
+  $('status').textContent='✅ 全部快成交草稿都寫好了，往下捲看每一通。';
+}
 loadMode(); loadPlaybook();
 </script>
 </body>
