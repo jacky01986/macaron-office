@@ -225,6 +225,43 @@ router.post('/settings', express.json(), (req, res) => {
   res.json({ ok: true, ...setSettings({ mode }), note: mode === 'draft' ? '草稿模式' : (mode + ' 模式已記錄，但實際自動發送功能尚未啟用(需後續開通)') });
 });
 
+// 發送：把訊息送回給客人 (透過 SaleSmartly → 落回 FB/IG 對話)
+async function sendMessage(chat_user_id, text) {
+  if (!sm || !sm.apiCall) throw new Error('salesmartly apiCall 不可用');
+  const params = { chat_user_id, message_type: 'text', msg_type: 'text', content: text, text: text };
+  return sm.apiCall('/api/v2/send-message', params, 'POST');
+}
+const SENTLOG_FILE = path.join(DATA_DIR, 'closer-sent.json');
+function logSent(rec) {
+  const log = loadJSON(SENTLOG_FILE, { sent: [] });
+  log.sent.unshift({ ...rec, at: new Date().toISOString() });
+  if (log.sent.length > 500) log.sent = log.sent.slice(0, 500);
+  saveJSON(SENTLOG_FILE, log);
+}
+router.post('/send', express.json(), async (req, res) => {
+  try {
+    const body = req.body || {};
+    const chat_user_id = body.chat_user_id, text = body.text;
+    if (!chat_user_id || !text || !String(text).trim()) return res.status(400).json({ ok: false, error: 'chat_user_id 與 text 必填' });
+    const mode = getSettings().mode;
+    if (mode === 'draft') return res.status(403).json({ ok: false, error: '目前是草稿模式未開放發送。請先切到半自動再按確認發送。' });
+    const r = await sendMessage(chat_user_id, String(text).trim());
+    logSent({ chat_user_id, text: String(text).trim().slice(0, 300), mode, ok: true });
+    res.json({ ok: true, sent: true, mode, sales_response: r });
+  } catch (e) {
+    try { logSent({ chat_user_id: (req.body || {}).chat_user_id, ok: false, error: e.message }); } catch (e2) {}
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+router.get('/send-probe', async (req, res) => {
+  try {
+    const r = await sendMessage('__probe_invalid_target__', '');
+    res.json({ ok: true, note: '端點存在且接受呼叫', probe_response: r });
+  } catch (e) {
+    res.json({ ok: false, note: '從錯誤訊息看端點是否存在/缺哪些參數', probe_error: e.message });
+  }
+});
+router.get('/sent', (req, res) => res.json({ ok: true, ...loadJSON(SENTLOG_FILE, { sent: [] }) }));
 router.get('/playbook', (req, res) => res.json({ ok: true, ...getPlaybook() }));
 router.post('/optimize', async (req, res) => {
   try { res.json(await selfOptimize({ days: 3 })); }
