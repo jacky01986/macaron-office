@@ -113,7 +113,7 @@ async function run(){
       body: JSON.stringify({ count, brief })
     }).then(r=>r.json());
     if(!j.ok) throw new Error(j.error||'unknown');
-    $('out').innerHTML = j.html + '<p style="margin-top:18px;font-size:12px;color:rgba(252,246,245,.5);">— '+(j.based_on_scout?'基於 SCOUT 全球市場調查':'（無 SCOUT 情報，依品牌常識發想）')+' · '+count+' 支</p>';
+    $('out').innerHTML = j.html + '<p style="margin-top:18px;font-size:12px;color:rgba(252,246,245,.5);">— '+(j.based_on_scout?'基於 SCOUT 全球市場調查':'（無 SCOUT 情報，依品牌常識發想）')+' · '+count+' 支</p>' + (j.shots_css||'') + (j.shots_html ? '<h4 style="color:var(--gold);border-bottom:1px solid rgba(176,141,87,.3);padding-bottom:6px;margin:22px 0 10px;">📸 DIRECTOR 拍攝示意（依本支腳本生成）</h4>' + j.shots_html : '');
     $('result').style.display = 'block';
     $('status').textContent = '✅ 完成';
     $('result').scrollIntoView({ behavior:'smooth' });

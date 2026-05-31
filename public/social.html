@@ -255,10 +255,12 @@ async function loadDrafts() {
                        <input class="pub-image" type="url" placeholder="圖片 URL（選填，有圖會變成圖文貼文）" style="flex:1;min-width:140px;padding:6px 8px;background:var(--dark-2);border:1px solid var(--burgundy-dark);color:var(--ivory);border-radius:4px;font-size:12px;font-family:inherit;">
                        <input class="pub-link" type="url" placeholder="附帶連結（選填）" style="flex:1;min-width:140px;padding:6px 8px;background:var(--dark-2);border:1px solid var(--burgundy-dark);color:var(--ivory);border-radius:4px;font-size:12px;font-family:inherit;">
                      </div>`}
+                <button class="sd-btn" data-pack="${escapeHtml(p.id)}" data-idx="${d.index}" style="background:transparent;color:#B08D57;border:1px solid #B08D57;padding:6px 10px;border-radius:4px;font-size:12px;cursor:pointer;">📸 拍攝示意</button>
                 ${p.status === 'published' && p.publishedIndex === d.index ? '<span style="color:var(--green);font-size:12px;">✅ 此版已發布</span>' : `
                   <button class="pub-btn" data-pack="${escapeHtml(p.id)}" data-idx="${d.index}" data-platform="${escapeHtml(p.platform)}">📤 發布</button>
                 `}
               </div>
+              <div class="shot-box" style="margin-top:8px;"></div>
             </div>
           `).join('')}
         </div>
@@ -273,12 +275,38 @@ async function loadDrafts() {
         if (wc) wc.textContent = t.value.length + ' 字';
       });
     });
+    // 📸 拍攝示意按鈕
+    document.querySelectorAll('.sd-btn').forEach(b => {
+      b.addEventListener('click', () => generateShots(b));
+    });
     // 發布按鈕
     document.querySelectorAll('.pub-btn').forEach(b => {
       b.addEventListener('click', () => publish(b));
     });
   } catch (e) {
     $('drafts-area').innerHTML = '<div class="empty">無法載入草稿：' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+async function generateShots(btn) {
+  const card = btn.closest('.draft-card');
+  const box = card.querySelector('.shot-box');
+  const caption = card.querySelector('.cap-input').value.trim();
+  if (!caption) { toast('文案空，無法生成'); return; }
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = '🎨 DIRECTOR 思考中...';
+  box.innerHTML = '<div style="font-size:12px;color:#B08D57;">📸 DIRECTOR 正在依本篇文案設計拍攝示意…（10-25 秒）</div>';
+  try {
+    const res = await fetch('/api/shot-director/from-copy', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ copy: caption, mode: 'social', count: 3 }),
+    });
+    const d = await res.json();
+    if (!d.ok) throw new Error(d.error || '失敗');
+    box.innerHTML = (d.css || '') + '<div style="font-size:12px;color:#B08D57;margin-bottom:6px;">📸 依本篇文案生成的拍攝示意：</div>' + (d.html || '');
+  } catch (e) {
+    box.innerHTML = '<div style="color:#e76b6b;font-size:12px;">❌ ' + escapeHtml(e.message) + '</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
   }
 }
 

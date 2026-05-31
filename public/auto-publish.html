@@ -320,6 +320,7 @@ async function loadDrafts() {
             <span>🕐 ${fmtTime(d.created_at)}</span>
             ${d.published_at ? '<span>📤 ' + fmtTime(d.published_at) + '</span>' : ''}
           </div>
+          ${d.shots_html ? '<details style="margin-top:10px;"><summary style="color:#B08D57;font-size:12px;cursor:pointer;font-weight:600;">📸 DIRECTOR 拍攝示意（依本篇文案生成 · 點開查看）</summary>' + (d.shots_css||'') + '<div style="margin-top:8px;">' + d.shots_html + '</div></details>' : ''}
         </div>
         ${d.status !== 'published' ? `
         <div class="actions">
