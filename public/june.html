@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>📋 JUNE 專案總管 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{ --burgundy:#6D2E46; --burgundy-dark:#4a1f30; --gold:#B08D57; --dark:#1C1213; --dark-2:#2a1a1d; --ivory:#FCF6F5; --green:#3fb27f; --red:#d05a6e; --amber:#cda35a; }
+  *{ box-sizing:border-box; }
+  body{ font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; background:var(--dark); color:var(--ivory); margin:0; padding:0 0 60px; }
+  .wrap{ padding:16px; max-width:960px; margin:0 auto; }
+  h1{ font-size:21px; margin:0 0 4px; color:var(--gold); }
+  .sub{ color:rgba(252,246,245,.7); font-size:13px; margin-bottom:14px; }
+  .card{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .card h3{ margin:0 0 10px; font-size:15px; color:var(--gold); }
+  label{ display:block; font-size:13px; margin:8px 0 4px; color:rgba(252,246,245,.85); }
+  textarea,select,input[type=text],input[type=date]{ width:100%; background:var(--dark); border:1px solid var(--burgundy); color:var(--ivory); border-radius:6px; padding:9px 10px; font-size:14px; font-family:inherit; }
+  textarea{ min-height:56px; resize:vertical; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .row > div{ flex:1; min-width:120px; }
+  button.go{ background:linear-gradient(135deg,var(--burgundy),var(--burgundy-dark)); color:var(--ivory); border:1px solid var(--gold); padding:10px 20px; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+  button.go:disabled{ opacity:.5; }
+  button.mini{ background:transparent; color:var(--gold); border:1px solid var(--gold); padding:5px 10px; border-radius:6px; font-size:12px; cursor:pointer; }
+  button.del{ color:#d05a6e; border-color:#d05a6e; }
+  .intel-pill{ display:inline-block; padding:4px 10px; border-radius:12px; font-size:12px; background:rgba(63,178,127,.15); color:var(--green); border:1px solid rgba(63,178,127,.4); }
+  .intel-pill.warn{ background:rgba(176,141,87,.15); color:var(--gold); border-color:rgba(176,141,87,.4); }
+  .ai{ font-size:13px; line-height:1.7; }
+  .ai h4{ color:var(--gold); border-bottom:1px solid rgba(176,141,87,.3); padding-bottom:5px; margin:16px 0 8px; }
+  .ai table.data{ border-collapse:collapse; width:100%; font-size:12px; }
+  .ai table.data th,.ai table.data td{ border:1px solid rgba(176,141,87,.3); padding:5px 7px; text-align:left; }
+  .ai .tldr{ background:rgba(176,141,87,.12); border-left:3px solid var(--gold); padding:8px 10px; border-radius:4px; }
+  .actitem{ font-size:12px; padding:6px 8px; border:1px solid rgba(176,141,87,.2); border-radius:6px; margin-bottom:5px; }
+  .task{ display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid rgba(176,141,87,.2); border-radius:8px; margin-bottom:6px; font-size:13px; flex-wrap:wrap; }
+  .task.ov{ border-color:rgba(208,90,110,.6); }
+  .task .t-title{ flex:1; min-width:120px; }
+  .task .meta{ font-size:11px; color:rgba(252,246,245,.55); }
+  .seg{ display:inline-flex; border:1px solid var(--burgundy); border-radius:6px; overflow:hidden; }
+  .seg button{ background:var(--dark); color:rgba(252,246,245,.6); border:0; padding:4px 8px; font-size:11px; cursor:pointer; }
+  .seg button.on{ background:var(--burgundy); color:var(--ivory); }
+  .counts{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+  .pill{ padding:4px 9px; border-radius:12px; font-size:12px; border:1px solid rgba(176,141,87,.35); }
+  #status{ font-size:13px; color:var(--gold); margin:8px 0; }
+  .empty{ color:rgba(252,246,245,.5); font-size:13px; }
+</style>
+<link rel="stylesheet" href="/macaron-shared.css">
+</head>
+<body>
+<style>@media all { .macaron-topnav.in-iframe { display:none !important; } }</style>
+<script>(function(){ try{ if(window.parent!==window){ var n=document.querySelector('.macaron-topnav'); if(n)n.classList.add('in-iframe'); else document.addEventListener('DOMContentLoaded',function(){var x=document.querySelector('.macaron-topnav'); if(x)x.classList.add('in-iframe');}); } }catch(e){} })();</script>
+<style>
+.macaron-topnav{ background:linear-gradient(135deg,#6B4226,#8B5A33); padding:8px 16px; display:flex; gap:8px; align-items:center; overflow-x:auto; white-space:nowrap; }
+.macaron-topnav strong{ color:#FAF7F2; font-size:14px; margin-right:8px; }
+.macaron-topnav a{ padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; background:#FAF7F2; color:#6B4226; }
+</style>
+<div class="macaron-topnav">
+  <strong>溫點 WarmPlace</strong>
+  <a href="/">🏠 主控台</a>
+  <a href="/content-hub.html">📚 內容中心</a>
+  <a href="/customer-hub.html">👥 客戶中心</a>
+  <a href="/ads-hub.html">📊 廣告中心</a>
+  <a href="/market-intel.html">🔍 市場情報</a>
+  <a href="/teachers.html">🏪 門店戰報</a>
+</div>
+
+<div class="wrap">
+  <h1>📋 JUNE 專案總管</h1>
+  <p class="sub">JUNE = AI 行銷專案總管。她<strong>讀 SCOUT 全球市場調查 + 行動建議</strong>，排成有時程/負責人/相依的可執行專案，再用看板追蹤進度。源頭是市場調查，不憑空排。</p>
+
+  <!-- SCOUT 依據 -->
+  <div class="card">
+    <h3>🔍 規劃依據（來自 SCOUT 行動建議）</h3>
+    <div id="intel-status"><span class="intel-pill warn">⏳ 讀取 SCOUT 情報中…</span></div>
+    <div id="actions" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- 排專案 -->
+  <div class="card">
+    <h3>🗓 排一個專案</h3>
+    <div class="row">
+      <div style="flex:2;">
+        <label>專案主題（留空 = JUNE 從 SCOUT 行動建議挑最該先做的排）</label>
+        <textarea id="goal" placeholder="例：Q3 推雙奏禮盒上市 / 母親節檔期 / 企業送禮 B2B 開發"></textarea>
+      </div>
+      <div style="max-width:120px;">
+        <label>週數</label>
+        <select id="weeks"><option>4</option><option>2</option><option>6</option><option>8</option></select>
+      </div>
+    </div>
+    <div style="margin-top:10px;"><button class="go" id="gen" onclick="plan()">📋 JUNE 排專案</button></div>
+  </div>
+
+  <div id="status"></div>
+  <div class="card" id="result" style="display:none;"><div id="out" class="ai"></div><div style="margin-top:10px;"><button class="mini" onclick="copyOut()">📋 複製專案計畫</button></div></div>
+
+  <!-- 任務看板 -->
+  <div class="card">
+    <h3>✅ 任務看板（時程控管）</h3>
+    <div class="row" style="align-items:flex-end;">
+      <div style="flex:2;"><label>任務</label><input type="text" id="ti" placeholder="例：CAMILLE 寫雙奏禮盒商品頁文案"></div>
+      <div><label>負責人</label><input type="text" id="to" placeholder="CAMILLE"></div>
+      <div style="max-width:150px;"><label>截止日</label><input type="date" id="td"></div>
+      <div style="max-width:120px;"><button class="go" onclick="addTask()">➕ 加任務</button></div>
+    </div>
+    <div class="counts" id="counts" style="margin-top:12px;"></div>
+    <div id="board"></div>
+  </div>
+</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+async function loadIntel(){
+  try{ const j=await fetch('/api/june/scout-actions').then(r=>r.json());
+    if(j.has_intel){
+      $('intel-status').innerHTML='<span class="intel-pill">✅ 已連上 SCOUT 行動建議'+(j.scout_run?'（'+String(j.scout_run).slice(0,10)+'）':'')+'</span>';
+      const items=j.action_items||[];
+      $('actions').innerHTML = items.length ? items.map((a,i)=>'<div class="actitem"><strong>'+(i+1)+'. '+esc(a.title||a)+'</strong>'+(a.detail?'<br><span class="meta">'+esc(String(a.detail).slice(0,120))+'</span>':'')+'</div>').join('') : '<div class="empty">SCOUT 暫無行動建議</div>';
+    }else{
+      $('intel-status').innerHTML='<span class="intel-pill warn">⚠️ 還沒有 SCOUT 行動建議 — 請先到市場情報跑 SCOUT，JUNE 才有依據</span>';
+    }
+  }catch(e){ $('intel-status').innerHTML='<span class="intel-pill warn">⚠️ '+e.message+'</span>'; }
+}
+
+async function plan(){
+  const goal=$('goal').value.trim(); const weeks=Number($('weeks').value);
+  $('gen').disabled=true; $('result').style.display='none';
+  $('status').textContent='📋 JUNE 正在讀市場調查、排專案時程…（約 30–50 秒）';
+  try{
+    const j=await fetch('/api/june/plan',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({goal,weeks})}).then(r=>r.json());
+    if(!j.ok) throw new Error(j.error||'失敗');
+    $('out').innerHTML=j.html+'<p style="margin-top:12px;font-size:12px;color:rgba(252,246,245,.5);">'+(j.based_on_scout?'✅ 基於 SCOUT 全球市場調查':'⚠️ 無 SCOUT 情報')+' · '+j.weeks+' 週</p>';
+    $('result').style.display='block'; $('status').textContent='✅ 完成'; $('result').scrollIntoView({behavior:'smooth'});
+  }catch(e){ $('status').textContent='❌ '+e.message; }
+  finally{ $('gen').disabled=false; }
+}
+function copyOut(){ navigator.clipboard.writeText($('out').innerText).then(()=>{ $('status').textContent='✅ 已複製專案計畫'; }).catch(()=>alert('請手動選取')); }
+
+async function loadBoard(){
+  try{ const j=await fetch('/api/june/board').then(r=>r.json());
+    const c=j.counts||{};
+    $('counts').innerHTML='<span class="pill">待辦 '+(c.todo||0)+'</span><span class="pill" style="color:var(--amber)">進行 '+(c.doing||0)+'</span><span class="pill" style="color:var(--green)">完成 '+(c.done||0)+'</span><span class="pill" style="color:var(--red)">🚩 落後 '+(c.overdue||0)+'</span>';
+    if(!j.tasks||!j.tasks.length){ $('board').innerHTML='<div class="empty">還沒有任務。排完專案後，把關鍵任務加進來追蹤。</div>'; return; }
+    $('board').innerHTML=j.tasks.map(t=>'<div class="task'+(t.overdue?' ov':'')+'"><span class="t-title">'+(t.status==='done'?'<s>':'')+esc(t.title)+(t.status==='done'?'</s>':'')+(t.overdue?' 🚩':'')+'</span>'
+      +'<span class="meta">'+(t.owner?'👤'+esc(t.owner)+' ':'')+(t.due?'📅'+esc(t.due):'')+'</span>'
+      +'<span class="seg">'+['todo','doing','done'].map(s=>'<button class="'+(t.status===s?'on':'')+'" onclick="setStatus(\''+t.id+'\',\''+s+'\')">'+({todo:'待辦',doing:'進行',done:'完成'}[s])+'</button>').join('')+'</span>'
+      +'<button class="mini del" onclick="delTask(\''+t.id+'\')">刪</button></div>').join('');
+  }catch(e){ $('board').innerHTML='<div class="empty">'+e.message+'</div>'; }
+}
+async function addTask(){
+  const title=$('ti').value.trim(); if(!title){ alert('請填任務'); return; }
+  await fetch('/api/june/task',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title,owner:$('to').value.trim(),due:$('td').value})});
+  $('ti').value=''; $('to').value=''; $('td').value=''; loadBoard();
+}
+async function setStatus(id,s){ await fetch('/api/june/task/'+id+'/status',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({status:s})}); loadBoard(); }
+async function delTask(id){ if(!confirm('刪除這個任務？'))return; await fetch('/api/june/task/'+id,{method:'DELETE'}); loadBoard(); }
+
+loadIntel(); loadBoard();
+</script>
+</body>
+</html>
