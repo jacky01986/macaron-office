@@ -48,7 +48,16 @@ const DEFS = '<defs><marker id="light-arrow" markerWidth="6" markerHeight="6" re
 
 // ───── 原始繪圖 ─────
 function frame(w, h, ratio) {
+  // 外框 (奶油紙底色)
   let s = `<rect x="0" y="0" width="${w}" height="${h}" fill="${C.CREAM}" stroke="${C.GOLD}" stroke-width="1.2"/>`;
+  // 內框細線（添加層次感）
+  s += `<rect x="3" y="3" width="${w-6}" height="${h-6}" fill="none" stroke="${C.GOLD}" stroke-width="0.35" opacity="0.5"/>`;
+  // 安全範圍記號 (4 角小 L)
+  const cs = 6;
+  s += `<path d="M3,${cs+6} L3,3 L${cs+6},3" fill="none" stroke="${C.GOLD}" stroke-width="0.6" opacity="0.7"/>`;
+  s += `<path d="M${w-cs-6},3 L${w-3},3 L${w-3},${cs+6}" fill="none" stroke="${C.GOLD}" stroke-width="0.6" opacity="0.7"/>`;
+  s += `<path d="M3,${h-cs-6} L3,${h-3} L${cs+6},${h-3}" fill="none" stroke="${C.GOLD}" stroke-width="0.6" opacity="0.7"/>`;
+  s += `<path d="M${w-cs-6},${h-3} L${w-3},${h-3} L${w-3},${h-cs-6}" fill="none" stroke="${C.GOLD}" stroke-width="0.6" opacity="0.7"/>`;
   if (ratio) {
     s += `<rect x="${w-46}" y="6" width="40" height="16" rx="3" fill="${C.BURG}"/>`;
     s += `<text x="${w-26}" y="17" text-anchor="middle" fill="${C.CREAM}" font-size="9" font-family="-apple-system,sans-serif" font-weight="600">${ratio}</text>`;
@@ -56,32 +65,77 @@ function frame(w, h, ratio) {
   return s;
 }
 function macaron_top(cx, cy, r, color) {
-  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.6"/>` +
-    `<circle cx="${cx-r*0.25}" cy="${cy-r*0.3}" r="${r*0.25}" fill="${C.WHITE}" opacity="0.45"/>`;
+  // scalloped 腳邊（環狀小圓點，模擬馬卡龍標誌性的「腳」）
+  let feet = '';
+  const n = 14;
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI * 2 * i) / n;
+    const fx = cx + Math.cos(a) * r;
+    const fy = cy + Math.sin(a) * r;
+    feet += `<circle cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="${(r*0.13).toFixed(1)}" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.3" opacity="0.95"/>`;
+  }
+  return feet +
+    `<circle cx="${cx}" cy="${cy}" r="${r*0.92}" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.5"/>` +
+    `<ellipse cx="${cx-r*0.28}" cy="${cy-r*0.32}" rx="${r*0.32}" ry="${r*0.22}" fill="${C.WHITE}" opacity="0.42"/>` +
+    `<circle cx="${cx-r*0.18}" cy="${cy-r*0.22}" r="${r*0.08}" fill="${C.WHITE}" opacity="0.7"/>`;
 }
 function macaron_side(cx, cy, w, h, color) {
   const half = w/2;
-  return `<path d="M${cx-half},${cy} a${half},${h*0.45} 0 0 1 ${w},0 Z" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.6"/>` +
-    `<rect x="${cx-half}" y="${cy}" width="${w}" height="${h*0.18}" fill="${C.CARAMEL}" stroke="${C.SOFT_LINE}" stroke-width="0.4"/>` +
-    `<path d="M${cx-half},${cy+h*0.18} a${half},${h*0.45} 0 0 0 ${w},0 Z" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.6"/>`;
+  // 上殼
+  let s = `<path d="M${cx-half},${cy} a${half},${h*0.45} 0 0 1 ${w},0 Z" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.5"/>`;
+  // 上殼高光
+  s += `<path d="M${cx-half*0.6},${cy-h*0.15} a${half*0.5},${h*0.25} 0 0 1 ${w*0.4},${-h*0.05}" fill="none" stroke="${C.WHITE}" stroke-width="0.8" opacity="0.55"/>`;
+  // 上殼底部「腳邊」小波紋
+  for (let i = 0; i < 6; i++) {
+    const x = cx - half + (w * (i + 0.5) / 6);
+    s += `<circle cx="${x.toFixed(1)}" cy="${cy}" r="${(h*0.06).toFixed(1)}" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.2" opacity="0.9"/>`;
+  }
+  // 內餡 (奶油色, 有質地)
+  s += `<rect x="${cx-half}" y="${cy+h*0.02}" width="${w}" height="${h*0.16}" fill="${C.CARAMEL}" opacity="0.92"/>`;
+  s += `<line x1="${cx-half+1}" y1="${cy+h*0.10}" x2="${cx+half-1}" y2="${cy+h*0.10}" stroke="${C.WHITE}" stroke-width="0.4" opacity="0.5"/>`;
+  s += `<rect x="${cx-half}" y="${cy+h*0.02}" width="${w}" height="${h*0.16}" fill="none" stroke="${C.SOFT_LINE}" stroke-width="0.4"/>`;
+  // 下殼底波紋
+  for (let i = 0; i < 6; i++) {
+    const x = cx - half + (w * (i + 0.5) / 6);
+    s += `<circle cx="${x.toFixed(1)}" cy="${(cy+h*0.18).toFixed(1)}" r="${(h*0.06).toFixed(1)}" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.2" opacity="0.9"/>`;
+  }
+  // 下殼
+  s += `<path d="M${cx-half},${cy+h*0.18} a${half},${h*0.45} 0 0 0 ${w},0 Z" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.5"/>`;
+  return s;
 }
 function financier_top(cx, cy, w, h) {
-  let s = `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="3" fill="${C.BISCUIT}" stroke="${C.SOFT_LINE}" stroke-width="0.6"/>`;
+  // 主體
+  let s = `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="3" fill="${C.BISCUIT}" stroke="${C.SOFT_LINE}" stroke-width="0.5"/>`;
+  // 金邊高光
+  s += `<rect x="${cx-w/2+0.6}" y="${cy-h/2+0.6}" width="${w-1.2}" height="${h*0.18}" rx="2" fill="${C.WHITE}" opacity="0.2"/>`;
+  // 凹槽 (3 條金黃比奶皇深一點)
   for (let i = 1; i < 4; i++) {
     const x = cx - w/2 + (w*i/4);
-    s += `<line x1="${x}" y1="${cy-h/2+3}" x2="${x}" y2="${cy+h/2-3}" stroke="${C.SOFT_LINE}" stroke-width="0.5" opacity="0.55"/>`;
+    s += `<line x1="${x}" y1="${cy-h/2+3}" x2="${x}" y2="${cy+h/2-3}" stroke="${C.CARAMEL}" stroke-width="0.8" opacity="0.7"/>`;
+    s += `<line x1="${x-0.6}" y1="${cy-h/2+3}" x2="${x-0.6}" y2="${cy+h/2-3}" stroke="${C.WHITE}" stroke-width="0.3" opacity="0.45"/>`;
   }
+  // 底部陰影輪廓
+  s += `<rect x="${cx-w/2}" y="${cy+h*0.32}" width="${w}" height="${h*0.18}" rx="2" fill="${C.SOFT_LINE}" opacity="0.18"/>`;
   return s;
 }
 function box_top(cx, cy, w, h, state = 'closed', rows = 2, cols = 3, paletteName = 'classic') {
   const palette = pal(paletteName);
   let s = '';
   if (state === 'closed') {
-    s += `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="4" fill="${C.BURG}" stroke="${C.BURG_DK}" stroke-width="0.8"/>`;
-    s += `<rect x="${cx-w/2}" y="${cy-3}" width="${w}" height="6" fill="${C.GOLD}" stroke="${C.GOLD_SOFT}" stroke-width="0.5"/>`;
-    s += `<rect x="${cx-3}" y="${cy-h/2}" width="6" height="${h}" fill="${C.GOLD}" stroke="${C.GOLD_SOFT}" stroke-width="0.5"/>`;
-    s += `<ellipse cx="${cx-6}" cy="${cy}" rx="7" ry="4" fill="${C.GOLD}" stroke="${C.GOLD_SOFT}" stroke-width="0.5"/>`;
-    s += `<ellipse cx="${cx+6}" cy="${cy}" rx="7" ry="4" fill="${C.GOLD}" stroke="${C.GOLD_SOFT}" stroke-width="0.5"/>`;
+    // 盒身陰影底
+    s += `<rect x="${cx-w/2+2}" y="${cy-h/2+3}" width="${w}" height="${h}" rx="4" fill="${C.BURG_DK}" opacity="0.5"/>`;
+    // 盒身
+    s += `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="4" fill="${C.BURG}" stroke="${C.BURG_DK}" stroke-width="0.6"/>`;
+    // 盒蓋高光線
+    s += `<rect x="${cx-w/2+1}" y="${cy-h/2+1}" width="${w-2}" height="${h*0.14}" rx="3" fill="${C.WHITE}" opacity="0.08"/>`;
+    // 橫向緞帶
+    s += `<rect x="${cx-w/2}" y="${cy-4}" width="${w}" height="8" fill="${C.GOLD}" stroke="${C.GOLD_SOFT}" stroke-width="0.4"/>`;
+    s += `<rect x="${cx-w/2}" y="${cy-3.5}" width="${w}" height="2" fill="${C.WHITE}" opacity="0.32"/>`;
+    // 直向緞帶
+    s += `<rect x="${cx-4}" y="${cy-h/2}" width="8" height="${h}" fill="${C.GOLD}" stroke="${C.GOLD_SOFT}" stroke-width="0.4"/>`;
+    s += `<rect x="${cx-3.5}" y="${cy-h/2}" width="2" height="${h}" fill="${C.WHITE}" opacity="0.32"/>`;
+    // 中心蝴蝶結 (用 ribbon_bow 元件)
+    s += ribbon_bow(cx, cy, 26, 11);
   } else if (state === 'half') {
     s += `<rect x="${cx-w/2}" y="${cy-h/2+8}" width="${w}" height="${h-8}" rx="4" fill="${C.CREAM}" stroke="${C.BURG}" stroke-width="1"/>`;
     s += `<rect x="${cx-w/2-4}" y="${cy-h/2-6}" width="${w+8}" height="14" rx="4" fill="${C.BURG}" stroke="${C.BURG_DK}" stroke-width="0.8" transform="rotate(-8 ${cx} ${cy-h/2})"/>`;
@@ -92,13 +146,38 @@ function box_top(cx, cy, w, h, state = 'closed', rows = 2, cols = 3, paletteName
       s += `<circle cx="${cxx}" cy="${cyy}" r="${Math.min(cw,ch)*0.32}" fill="${palette[(r*cols+c)%palette.length]}" stroke="${C.SOFT_LINE}" stroke-width="0.5"/>`;
     }
   } else { // open
-    s += `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="4" fill="${C.BURG}" stroke="${C.BURG_DK}" stroke-width="0.8"/>`;
-    s += `<rect x="${cx-w/2+4}" y="${cy-h/2+4}" width="${w-8}" height="${h-8}" rx="2" fill="${C.CREAM}" stroke="${C.SOFT_LINE}" stroke-width="0.4"/>`;
+    // 盒身陰影
+    s += `<rect x="${cx-w/2+2}" y="${cy-h/2+3}" width="${w}" height="${h}" rx="4" fill="${C.BURG_DK}" opacity="0.5"/>`;
+    // 盒身外殼
+    s += `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="4" fill="${C.BURG}" stroke="${C.BURG_DK}" stroke-width="0.6"/>`;
+    // 內襯紙
+    s += `<rect x="${cx-w/2+3}" y="${cy-h/2+3}" width="${w-6}" height="${h-6}" rx="2" fill="${C.CREAM}" stroke="${C.SOFT_LINE}" stroke-width="0.4"/>`;
+    // 格子分隔線
     const cw = (w-16)/cols, ch = (h-16)/rows;
+    for (let c = 1; c < cols; c++) {
+      const lx = cx - w/2 + 8 + cw*c;
+      s += `<line x1="${lx}" y1="${cy-h/2+5}" x2="${lx}" y2="${cy+h/2-5}" stroke="${C.SOFT_LINE}" stroke-width="0.4" opacity="0.4"/>`;
+    }
+    for (let r = 1; r < rows; r++) {
+      const ly = cy - h/2 + 8 + ch*r;
+      s += `<line x1="${cx-w/2+5}" y1="${ly}" x2="${cx+w/2-5}" y2="${ly}" stroke="${C.SOFT_LINE}" stroke-width="0.4" opacity="0.4"/>`;
+    }
+    // 馬卡龍 (用精緻版)
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
       const cxx = cx - w/2 + 8 + cw*(c+0.5);
       const cyy = cy - h/2 + 8 + ch*(r+0.5);
-      s += `<circle cx="${cxx}" cy="${cyy}" r="${Math.min(cw,ch)*0.32}" fill="${palette[(r*cols+c)%palette.length]}" stroke="${C.SOFT_LINE}" stroke-width="0.5"/>`;
+      const rr = Math.min(cw,ch)*0.34;
+      const col = palette[(r*cols+c)%palette.length];
+      // mini scalloped feet
+      const fn = 10;
+      for (let i = 0; i < fn; i++) {
+        const a = (Math.PI * 2 * i) / fn;
+        const fx = cxx + Math.cos(a) * rr;
+        const fy = cyy + Math.sin(a) * rr;
+        s += `<circle cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="${(rr*0.14).toFixed(1)}" fill="${col}" opacity="0.92"/>`;
+      }
+      s += `<circle cx="${cxx}" cy="${cyy}" r="${(rr*0.92).toFixed(1)}" fill="${col}" stroke="${C.SOFT_LINE}" stroke-width="0.4"/>`;
+      s += `<ellipse cx="${(cxx-rr*0.28).toFixed(1)}" cy="${(cyy-rr*0.32).toFixed(1)}" rx="${(rr*0.3).toFixed(1)}" ry="${(rr*0.2).toFixed(1)}" fill="${C.WHITE}" opacity="0.42"/>`;
     }
   }
   return s;
@@ -109,25 +188,69 @@ function box_side(cx, cy, w, h) {
     `<rect x="${cx-w/2+18}" y="${cy-h/2-4}" width="6" height="${h+2}" fill="${C.GOLD}" opacity="0.95" transform="skewY(8)"/>`;
 }
 function ribbon_bow(cx, cy, w = 22, h = 10) {
-  return `<ellipse cx="${cx-w/3}" cy="${cy}" rx="${w/3}" ry="${h/2}" fill="${C.GOLD}" stroke="${C.GOLD_SOFT}" stroke-width="0.5"/>` +
-    `<ellipse cx="${cx+w/3}" cy="${cy}" rx="${w/3}" ry="${h/2}" fill="${C.GOLD}" stroke="${C.GOLD_SOFT}" stroke-width="0.5"/>` +
-    `<circle cx="${cx}" cy="${cy}" r="3" fill="${C.GOLD_SOFT}"/>`;
+  // 兩條垂下的緞帶尾
+  let s = `<path d="M${cx-2},${cy+h/2} L${cx-w*0.45},${cy+h*1.8} L${cx-w*0.25},${cy+h*1.6} Z" fill="${C.GOLD}" stroke="${C.GOLD_SOFT}" stroke-width="0.4" opacity="0.95"/>`;
+  s += `<path d="M${cx+2},${cy+h/2} L${cx+w*0.45},${cy+h*1.8} L${cx+w*0.25},${cy+h*1.6} Z" fill="${C.GOLD}" stroke="${C.GOLD_SOFT}" stroke-width="0.4" opacity="0.95"/>`;
+  // 蝴蝶結左右環 (帶高光)
+  s += `<ellipse cx="${cx-w/3}" cy="${cy}" rx="${w/3}" ry="${h/2}" fill="${C.GOLD}" stroke="${C.GOLD_SOFT}" stroke-width="0.5"/>`;
+  s += `<ellipse cx="${cx-w/3}" cy="${cy-h*0.1}" rx="${w/3*0.65}" ry="${h*0.2}" fill="${C.WHITE}" opacity="0.35"/>`;
+  s += `<ellipse cx="${cx+w/3}" cy="${cy}" rx="${w/3}" ry="${h/2}" fill="${C.GOLD}" stroke="${C.GOLD_SOFT}" stroke-width="0.5"/>`;
+  s += `<ellipse cx="${cx+w/3}" cy="${cy-h*0.1}" rx="${w/3*0.65}" ry="${h*0.2}" fill="${C.WHITE}" opacity="0.35"/>`;
+  // 中心節
+  s += `<ellipse cx="${cx}" cy="${cy}" rx="${w*0.13}" ry="${h*0.55}" fill="${C.GOLD_SOFT}" stroke="${C.SOFT_LINE}" stroke-width="0.3"/>`;
+  s += `<rect x="${cx-w*0.05}" y="${cy-h*0.25}" width="${w*0.1}" height="${h*0.15}" fill="${C.WHITE}" opacity="0.4"/>`;
+  return s;
 }
 function hand(x, y, side = 'right', w = 36, h = 16) {
   const color = C.SKIN;
+  const dir = side === 'right' ? -1 : 1;
+  // 手掌主體 (從手腕收窄到手指張開)
+  let s = '';
+  // 手腕
+  s += `<rect x="${x + dir*0.05*w - (side==='right'?w*0.1:0)}" y="${y+h*0.15}" width="${w*0.18}" height="${h*0.7}" rx="2" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.4"/>`;
+  // 手掌
   if (side === 'right') {
-    return `<path d="M${x},${y} Q${x-w*0.3},${y-h*0.3} ${x-w*0.7},${y} Q${x-w},${y+h*0.3} ${x-w*0.6},${y+h} Q${x-w*0.2},${y+h*0.8} ${x},${y+h*0.4} Z" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.5"/>`;
+    s += `<path d="M${x-w*0.05},${y-h*0.05} Q${x-w*0.45},${y-h*0.1} ${x-w*0.7},${y+h*0.1} Q${x-w*0.85},${y+h*0.4} ${x-w*0.7},${y+h*0.75} Q${x-w*0.4},${y+h*1.0} ${x-w*0.05},${y+h*0.95} Z" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.4"/>`;
+    // 4 根手指分隔
+    for (let i = 0; i < 3; i++) {
+      const fx = x - w*0.7 + i*w*0.05;
+      const fy = y + h*0.2 + i*h*0.18;
+      s += `<line x1="${fx}" y1="${fy}" x2="${fx-w*0.06}" y2="${fy}" stroke="${C.SOFT_LINE}" stroke-width="0.5" opacity="0.5"/>`;
+    }
+    // 大拇指
+    s += `<ellipse cx="${x-w*0.1}" cy="${y-h*0.15}" rx="${w*0.08}" ry="${h*0.18}" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.4" transform="rotate(-25 ${x-w*0.1} ${y-h*0.15})"/>`;
+  } else {
+    s += `<path d="M${x+w*0.05},${y-h*0.05} Q${x+w*0.45},${y-h*0.1} ${x+w*0.7},${y+h*0.1} Q${x+w*0.85},${y+h*0.4} ${x+w*0.7},${y+h*0.75} Q${x+w*0.4},${y+h*1.0} ${x+w*0.05},${y+h*0.95} Z" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.4"/>`;
+    for (let i = 0; i < 3; i++) {
+      const fx = x + w*0.7 - i*w*0.05;
+      const fy = y + h*0.2 + i*h*0.18;
+      s += `<line x1="${fx}" y1="${fy}" x2="${fx+w*0.06}" y2="${fy}" stroke="${C.SOFT_LINE}" stroke-width="0.5" opacity="0.5"/>`;
+    }
+    s += `<ellipse cx="${x+w*0.1}" cy="${y-h*0.15}" rx="${w*0.08}" ry="${h*0.18}" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.4" transform="rotate(25 ${x+w*0.1} ${y-h*0.15})"/>`;
   }
-  return `<path d="M${x},${y} Q${x+w*0.3},${y-h*0.3} ${x+w*0.7},${y} Q${x+w},${y+h*0.3} ${x+w*0.6},${y+h} Q${x+w*0.2},${y+h*0.8} ${x},${y+h*0.4} Z" fill="${color}" stroke="${C.SOFT_LINE}" stroke-width="0.5"/>`;
+  return s;
 }
 function light_arrow(x1, y1, x2, y2) {
   return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#F5D580" stroke-width="1.4" stroke-dasharray="2.5,2" marker-end="url(#light-arrow)"/>` +
     `<circle cx="${x1}" cy="${y1}" r="3" fill="#F5D580" opacity="0.55"/>`;
 }
 function camera_label(x, y, label = '俯拍') {
-  return `<rect x="${x-9}" y="${y-6}" width="18" height="12" rx="2" fill="${C.BURG}" stroke="${C.GOLD}" stroke-width="0.6"/>` +
-    `<circle cx="${x}" cy="${y}" r="3.2" fill="none" stroke="${C.GOLD}" stroke-width="0.8"/>` +
-    `<text x="${x+14}" y="${y+3}" fill="${C.CREAM}" font-size="8" font-family="-apple-system,sans-serif">${label}</text>`;
+  let s = '';
+  // 機身 (深酒紅)
+  s += `<rect x="${x-10}" y="${y-7}" width="20" height="13" rx="2.5" fill="${C.BURG}" stroke="${C.GOLD}" stroke-width="0.6"/>`;
+  // 頂部凸 (取景器)
+  s += `<rect x="${x-3}" y="${y-9}" width="6" height="3" rx="1" fill="${C.BURG}" stroke="${C.GOLD}" stroke-width="0.5"/>`;
+  // 鏡頭外環
+  s += `<circle cx="${x}" cy="${y}" r="4" fill="${C.BURG_DK}" stroke="${C.GOLD}" stroke-width="0.6"/>`;
+  // 鏡頭玻璃
+  s += `<circle cx="${x}" cy="${y}" r="2.8" fill="${C.INK}" stroke="${C.GOLD_SOFT}" stroke-width="0.3"/>`;
+  s += `<circle cx="${x-1}" cy="${y-1}" r="1" fill="${C.GOLD_SOFT}" opacity="0.6"/>`;
+  // 閃光燈
+  s += `<circle cx="${x+7}" cy="${y-4}" r="1.2" fill="${C.GOLD}"/>`;
+  s += `<rect x="${x-9}" y="${y-3}" width="2" height="1.5" fill="${C.GOLD_SOFT}" opacity="0.7"/>`;
+  // 角度標籤
+  s += `<text x="${x+16}" y="${y+3}" fill="${C.CREAM}" font-size="8" font-family="-apple-system,sans-serif" font-weight="600">${label}</text>`;
+  return s;
 }
 function coffee_cup(cx, cy, w = 22, h = 18) {
   return `<ellipse cx="${cx}" cy="${cy-h/2}" rx="${w/2}" ry="${w/6}" fill="${C.INK}" stroke="${C.SOFT_LINE}" stroke-width="0.4"/>` +
@@ -135,23 +258,56 @@ function coffee_cup(cx, cy, w = 22, h = 18) {
     `<path d="M${cx+w/2-1},${cy-2} q6,0 4,8 q-2,3 -6,1" fill="none" stroke="${C.SOFT_LINE}" stroke-width="0.8"/>`;
 }
 function petal(x, y, color = C.ROSE) {
-  return `<ellipse cx="${x}" cy="${y}" rx="3.5" ry="2" fill="${color}" opacity="0.7"/>`;
+  // 三瓣小花
+  let s = `<g transform="translate(${x} ${y})">`;
+  s += `<ellipse cx="0" cy="-2.4" rx="1.6" ry="2.8" fill="${color}" opacity="0.85" transform="rotate(0)"/>`;
+  s += `<ellipse cx="0" cy="-2.4" rx="1.6" ry="2.8" fill="${color}" opacity="0.85" transform="rotate(120)"/>`;
+  s += `<ellipse cx="0" cy="-2.4" rx="1.6" ry="2.8" fill="${color}" opacity="0.85" transform="rotate(240)"/>`;
+  s += `<circle cx="0" cy="0" r="0.9" fill="${C.GOLD}" opacity="0.9"/>`;
+  s += '</g>';
+  return s;
 }
 function petals(positions = [], color = C.ROSE) {
   return positions.map(([x, y]) => petal(x, y, color)).join('');
 }
 function card(cx, cy, w = 80, h = 50, angle = -6) {
   let s = `<g transform="rotate(${angle} ${cx} ${cy})">`;
-  s += `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="2" fill="${C.WHITE}" stroke="${C.SOFT_LINE}" stroke-width="0.4"/>`;
-  for (let i = 0; i < 3; i++) s += `<line x1="${cx-w/2+8}" y1="${cy-h/2+12+i*10}" x2="${cx+w/2-8}" y2="${cy-h/2+12+i*10}" stroke="${C.INK}" stroke-width="0.6" opacity="0.45"/>`;
+  // 紙張陰影
+  s += `<rect x="${cx-w/2+1}" y="${cy-h/2+2}" width="${w}" height="${h}" rx="2" fill="${C.SOFT_LINE}" opacity="0.25"/>`;
+  // 卡片
+  s += `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="2" fill="${C.WHITE}" stroke="${C.SOFT_LINE}" stroke-width="0.5"/>`;
+  // 卡片邊角小裝飾
+  s += `<line x1="${cx-w/2+4}" y1="${cy-h/2+4}" x2="${cx-w/2+10}" y2="${cy-h/2+4}" stroke="${C.GOLD}" stroke-width="0.6"/>`;
+  s += `<line x1="${cx+w/2-10}" y1="${cy+h/2-4}" x2="${cx+w/2-4}" y2="${cy+h/2-4}" stroke="${C.GOLD}" stroke-width="0.6"/>`;
+  // 手寫感波浪線
+  for (let i = 0; i < 3; i++) {
+    const y = cy - h/2 + 14 + i*10;
+    const x1 = cx - w/2 + 8;
+    const x2 = cx + w/2 - 8;
+    s += `<path d="M${x1},${y} q${(x2-x1)*0.2},-1.5 ${(x2-x1)*0.4},0 t${(x2-x1)*0.4},0 t${(x2-x1)*0.2},0" fill="none" stroke="${C.INK}" stroke-width="0.8" opacity="0.55"/>`;
+  }
   s += '</g>';
   return s;
 }
 function person_head(cx, cy, r = 22) {
-  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${C.FACE}" stroke="${C.SOFT_LINE}" stroke-width="0.5"/>` +
-    `<path d="M${cx-5},${cy+2} q5,5 10,0" fill="none" stroke="${C.INK}" stroke-width="1"/>` +
-    `<circle cx="${cx-6}" cy="${cy-4}" r="1.5" fill="${C.INK}"/>` +
-    `<circle cx="${cx+6}" cy="${cy-4}" r="1.5" fill="${C.INK}"/>`;
+  let s = '';
+  // 頭髮（後方）
+  s += `<path d="M${cx-r},${cy} a${r},${r*1.05} 0 0 1 ${r*2},0 L${cx+r*1.05},${cy+r*0.6} L${cx-r*1.05},${cy+r*0.6} Z" fill="${C.INK}" opacity="0.95"/>`;
+  // 臉
+  s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${C.FACE}" stroke="${C.SOFT_LINE}" stroke-width="0.4"/>`;
+  // 瀏海
+  s += `<path d="M${cx-r*0.85},${cy-r*0.3} Q${cx-r*0.3},${cy-r*1.05} ${cx+r*0.2},${cy-r*0.4} Q${cx+r*0.6},${cy-r*0.7} ${cx+r*0.95},${cy-r*0.1}" fill="${C.INK}" stroke="${C.INK}" stroke-width="0.4"/>`;
+  // 腮紅
+  s += `<ellipse cx="${cx-r*0.55}" cy="${cy+r*0.18}" rx="${r*0.2}" ry="${r*0.12}" fill="${C.ROSE}" opacity="0.35"/>`;
+  s += `<ellipse cx="${cx+r*0.55}" cy="${cy+r*0.18}" rx="${r*0.2}" ry="${r*0.12}" fill="${C.ROSE}" opacity="0.35"/>`;
+  // 眼睛
+  s += `<ellipse cx="${cx-r*0.32}" cy="${cy-r*0.12}" rx="1.6" ry="2.2" fill="${C.INK}"/>`;
+  s += `<ellipse cx="${cx+r*0.32}" cy="${cy-r*0.12}" rx="1.6" ry="2.2" fill="${C.INK}"/>`;
+  s += `<circle cx="${cx-r*0.28}" cy="${cy-r*0.18}" r="0.6" fill="${C.WHITE}"/>`;
+  s += `<circle cx="${cx+r*0.36}" cy="${cy-r*0.18}" r="0.6" fill="${C.WHITE}"/>`;
+  // 微笑
+  s += `<path d="M${cx-r*0.22},${cy+r*0.2} Q${cx},${cy+r*0.4} ${cx+r*0.22},${cy+r*0.2}" fill="none" stroke="${C.INK}" stroke-width="0.9" stroke-linecap="round"/>`;
+  return s;
 }
 function brand_strip(cx, cy, w = 160, h = 22, label = '溫點 WarmPlace') {
   return `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" fill="${C.BURG}" stroke="${C.GOLD}" stroke-width="0.5"/>` +
