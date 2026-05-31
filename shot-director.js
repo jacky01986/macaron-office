@@ -299,7 +299,7 @@ const DIRECTOR_PROMPT = `你是 溫點 WarmPlace 的 AI 拍攝指導 (Shot Direc
 3. include / exclude 各 2-3 條，要具體可執行。
 4. tips 寫手機可重現的技術參數（對焦點、距離、白平衡、人像模式等）。
 5. 文案如果情緒是「儀式感」就用半開蓋+手入鏡；如果是「量感」就堆疊或排陣；如果是「送禮對象」就帶人像/手寫卡。
-6. **嚴格只輸出 JSON**（無註解、無 markdown）。schema：
+6. **只輸出純 JSON**（一個物件就好，第一個字元是左大括號，最後一個字元是右大括號。絕對不要用 markdown 三個反引號包裝、不要任何說明文字、不要 markdown）。schema：
    {"shots": [{"name":"...", "ratio":"1:1|4:5|1.91:1|9:16", "angle":"...", "light":"...", "elements":[...], "include":["..."], "exclude":["..."], "tips":"...", "sec":"0–3 秒（reels模式才有）", "copy":"字卡文字（reels模式才有）"}]}`;
 
 async function callDirector({ copy, mode = 'social', count = 3 }) {
@@ -318,14 +318,30 @@ async function callDirector({ copy, mode = 'social', count = 3 }) {
     messages: [{ role: 'user', content: user }],
   });
   const raw = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
-  // 嘗試從輸出抓 JSON
+  // 嘗試從輸出抓 JSON (處理 markdown code fence / 前後雜訊)
   let json = null;
-  try { json = JSON.parse(raw); }
-  catch {
+  let cleaned = raw.trim();
+  // 1. 剝 markdown code fence
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+  // 2. 直接 parse
+  try { json = JSON.parse(cleaned); } catch {}
+  // 3. 抓最外層 {...}
+  if (!json) {
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start !== -1 && end > start) {
+      try { json = JSON.parse(cleaned.slice(start, end + 1)); } catch {}
+    }
+  }
+  // 4. 全文 regex 抓 JSON 片段
+  if (!json) {
     const m = raw.match(/\{[\s\S]*\}/);
     if (m) { try { json = JSON.parse(m[0]); } catch {} }
   }
-  if (!json || !Array.isArray(json.shots)) throw new Error('DIRECTOR 輸出非預期 JSON');
+  if (!json || !Array.isArray(json.shots)) {
+    console.error('[shot-director] raw response preview:', raw.slice(0, 300));
+    throw new Error('DIRECTOR 輸出非預期 JSON');
+  }
   return json;
 }
 
