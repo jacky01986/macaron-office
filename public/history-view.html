@@ -67,7 +67,7 @@
 
 <div class="wrap">
   <h1>📚 歷史紀錄</h1>
-  <p class="sub">每次 AI 員工生成的內容都會自動記錄在這裡。點左側任一筆，右邊就會顯示完整內容。最多保留 500 筆。</p>
+  <p class="sub">每次 AI 員工生成的內容都會自動記錄在這裡。點左側任一筆，右邊就會顯示完整內容。保留 10 天，10 天後自動清除。</p>
 
   <div class="toolbar">
     <label>篩選功能：</label>
@@ -112,14 +112,14 @@ async function loadFunctions(){
 
 async function loadList(){
   const fn = $('filter').value;
-  const url = '/api/history/list?limit=200' + (fn ? '&fn=' + fn : '');
+  const apiUrl = '/api/history/list?limit=200' + (fn ? '&fn=' + fn : '');
   $('left').innerHTML = '<div style="padding:20px;color:rgba(252,246,245,.5);text-align:center;">載入中…</div>';
   try {
-    const j = await fetch(url).then(r=>r.json());
+    const j = await fetch(apiUrl).then(r=>r.json());
     const items = j.items || [];
     $('meta').textContent = '共 ' + items.length + ' 筆';
     if (!items.length) {
-      $('left').innerHTML = '<div style="padding:40px 20px;color:rgba(252,246,245,.5);text-align:center;">還沒有紀錄。等 AI 員工開始生成就會出現在這裡。</div>';
+      $('left').innerHTML = '<div style="padding:40px 20px;color:rgba(252,246,245,.5);text-align:center;">還沒有紀錄。等 AI 員工開始生成就會出現在這裡（保留 10 天）。</div>';
       return;
     }
     $('left').innerHTML = items.map(it => '<div class="item" data-id="'+it.id+'" onclick="openItem(\''+it.id+'\')">'
@@ -128,8 +128,8 @@ async function loadList(){
       + (it.snippet ? '<div class="snippet">'+escapeHtml(it.snippet)+'…</div>' : '')
       + '</div>').join('');
     // 嘗試從 URL ?id= 直接開
-    const url = new URL(location.href);
-    const qid = url.searchParams.get('id');
+    const pageUrl = new URL(location.href);
+    const qid = pageUrl.searchParams.get('id');
     if (qid) openItem(qid);
   } catch (e) {
     $('left').innerHTML = '<div style="padding:20px;color:#e76b6b;text-align:center;">❌ '+e.message+'</div>';
