@@ -40,6 +40,12 @@ function getMarketIntelTail() {
   let tail = '';
   if (_scoutCache) tail += '\n\n=== SCOUT 全球市場調查 + DISTILL 行動建議 (做任何決策/內容前，請優先參考這裡) ===\n' + _scoutCache + '\n=== SCOUT 結束 ===\n';
   if (_marketIntelCache) tail += '\n\n=== 今日台灣即時市場情報 ===\n' + _marketIntelCache + '\n=== 情報結束 ===\n';
+  // 加上團隊集體記憶（從過去 10 天對話消化而來）
+  try {
+    const memMod = require('./memory');
+    const memTail = memMod.getMemoryTail();
+    if (memTail) tail += memTail;
+  } catch {}
   return tail;
 }
 

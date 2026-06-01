@@ -1500,6 +1500,7 @@ try { require('./closer').registerCron(cron); } catch (e) { console.error('[clos
 try { require('./mira').registerCron(cron); } catch (e) { console.error('[mira cron]', e.message); }
 try { require('./june').registerCron(cron); } catch (e) { console.error('[june cron]', e.message); }
 try { require('./history').registerCron(cron); } catch (e) { console.error('[history cron]', e.message); }
+try { require('./memory').registerCron(cron); } catch (e) { console.error('[memory cron]', e.message); }
 if (scout && typeof scout.registerCronJobs === 'function') scout.registerCronJobs(cron);
 if (aiTeamContent && typeof aiTeamContent.registerCronJobs === 'function') aiTeamContent.registerCronJobs(cron);
 cron.schedule("0 9 * * 1", () => {
@@ -4705,6 +4706,10 @@ catch (e) { console.error('[sola] mount failed:', e.message); }
 // === HISTORY 歷史紀錄路由 ===
 try { app.use('/api/history', require('./history')); console.log('[history] history route mounted at /api/history'); }
 catch (e) { console.error('[history] mount failed:', e.message); }
+
+// === MEMORY 集體記憶路由 ===
+try { app.use('/api/memory', require('./memory')); console.log('[memory] memory route mounted at /api/memory'); }
+catch (e) { console.error('[memory] mount failed:', e.message); }
 
 // === DIRECTOR 拍攝指導路由 ===
 try { app.use('/api/shot-director', require('./shot-director')); console.log('[shot-director] DIRECTOR route mounted at /api/shot-director'); }
