@@ -9,7 +9,48 @@ const router = express.Router();
 
 const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 const EXPORT_DIR = path.join(DATA_DIR, 'exports');
-const CJK_FONT = '/app/fonts/NotoSansTC-Regular.ttf';
+// 字型優先順序：Docker build 預下載 → 持久 disk → 啟動時補抓
+const CJK_FONT_DOCKER = '/app/fonts/NotoSansTC-Regular.ttf';
+const CJK_FONT_DISK = (process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data')) + '/fonts/NotoSansTC-Regular.ttf';
+function getCjkFontPath() {
+  if (fs.existsSync(CJK_FONT_DOCKER)) return CJK_FONT_DOCKER;
+  if (fs.existsSync(CJK_FONT_DISK)) return CJK_FONT_DISK;
+  return null;
+}
+let _fontFetchPromise = null;
+async function ensureCjkFont() {
+  if (getCjkFontPath()) return getCjkFontPath();
+  if (_fontFetchPromise) return _fontFetchPromise;
+  _fontFetchPromise = (async () => {
+    try {
+      // 多個 fallback URL，從 CDN 抓 NotoSansTC 字型
+      const urls = [
+        'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/TTF/TraditionalChinese/NotoSansCJKtc-Regular.ttf',
+        'https://github.com/googlefonts/noto-cjk/raw/main/Sans/TTF/TraditionalChinese/NotoSansCJKtc-Regular.ttf',
+        'https://fonts.gstatic.com/s/notosanstc/v36/-nF7OG829Oofr2wohFbTp9iFOSsLA_ZJ1g.ttf',
+      ];
+      const fontDir = path.dirname(CJK_FONT_DISK);
+      try { fs.mkdirSync(fontDir, { recursive: true }); } catch {}
+      for (const u of urls) {
+        try {
+          console.log('[files] fetching CJK font from ' + u);
+          const r = await fetch(u);
+          if (!r.ok) continue;
+          const buf = Buffer.from(await r.arrayBuffer());
+          if (buf.length < 1024 * 100) continue; // <100KB 大概有問題
+          fs.writeFileSync(CJK_FONT_DISK, buf);
+          console.log('[files] CJK font saved ' + (buf.length / 1024).toFixed(0) + ' KB → ' + CJK_FONT_DISK);
+          return CJK_FONT_DISK;
+        } catch (e) { console.warn('[files] font url failed:', u, e.message); }
+      }
+      return null;
+    } catch (e) { console.error('[files] ensureCjkFont:', e.message); return null; }
+  })();
+  return _fontFetchPromise;
+}
+// 服務啟動時就嘗試抓
+setTimeout(() => { ensureCjkFont().catch(()=>{}); }, 2000);
+
 
 function ensureDir() { try { if (!fs.existsSync(EXPORT_DIR)) fs.mkdirSync(EXPORT_DIR, { recursive: true }); } catch {} }
 function safeName(s) { return String(s || 'doc').replace(/[^一-龥\w\-_]/g, '_').slice(0, 60); }
@@ -77,38 +118,51 @@ async function generateXlsx({ title, sheets }) {
 // ─────────── 3. PDF (.pdf) ───────────
 async function generatePdf({ title, sections }) {
   ensureDir();
+  // 嘗試確保 CJK 字型存在
+  let fontPath = getCjkFontPath();
+  if (!fontPath) {
+    try { fontPath = await ensureCjkFont(); } catch {}
+  }
+  if (!fontPath) {
+    // CJK 字型不可用 — 回 error 讓 FILES 改用 Word
+    return { ok: false, error: 'PDF 中文字型不可用 (Render 環境字型抓取失敗)。請改用 generate_docx 產 Word，或讓 Sam 用 Word 另存 PDF。', fallback_suggested: 'generate_docx' };
+  }
   const PDFDocument = require('pdfkit');
-  const doc = new PDFDocument({ size: 'A4', margins: { top: 50, bottom: 50, left: 60, right: 60 }, info: { Title: title || '文件', Author: '溫點 WarmPlace AI' } });
-  // 中文字型
-  let cjkOK = false;
-  try { if (fs.existsSync(CJK_FONT)) { doc.registerFont('cjk', CJK_FONT); cjkOK = true; } } catch {}
-  const fontMain = cjkOK ? 'cjk' : 'Helvetica';
-
   const filename = newFilename(title || 'document', 'pdf');
   const outPath = path.join(EXPORT_DIR, filename);
-  const stream = fs.createWriteStream(outPath);
-  doc.pipe(stream);
-
-  if (title) {
-    doc.font(fontMain).fontSize(22).fillColor('#6D2E46').text(String(title), { align: 'left' });
-    doc.moveDown(0.8);
-  }
-  for (const sec of (sections || [])) {
-    if (sec.heading) {
-      doc.font(fontMain).fontSize(15).fillColor('#B08D57').text(String(sec.heading));
-      doc.moveDown(0.4);
+  try {
+    const doc = new PDFDocument({ size: 'A4', margins: { top: 50, bottom: 50, left: 60, right: 60 }, info: { Title: title || '文件', Author: '溫點 WarmPlace AI' } });
+    doc.registerFont('cjk', fontPath);
+    const stream = fs.createWriteStream(outPath);
+    doc.pipe(stream);
+    if (title) {
+      doc.font('cjk').fontSize(22).fillColor('#6D2E46').text(String(title), { align: 'left' });
+      doc.moveDown(0.8);
     }
-    const body = String(sec.body || sec.text || '');
-    doc.font(fontMain).fontSize(11).fillColor('#1C1213').text(body, { align: 'left', lineGap: 4 });
-    doc.moveDown(0.8);
+    for (const sec of (sections || [])) {
+      if (sec.heading) {
+        doc.font('cjk').fontSize(15).fillColor('#B08D57').text(String(sec.heading));
+        doc.moveDown(0.4);
+      }
+      const body = String(sec.body || sec.text || '');
+      doc.font('cjk').fontSize(11).fillColor('#1C1213').text(body, { align: 'left', lineGap: 4 });
+      doc.moveDown(0.8);
+    }
+    if (!sections || !sections.length) {
+      doc.font('cjk').fontSize(11).text('（無內容）');
+    }
+    doc.end();
+    await new Promise((res, rej) => { stream.on('finish', res); stream.on('error', rej); });
+    const stat = fs.statSync(outPath);
+    if (stat.size < 500) {
+      try { fs.unlinkSync(outPath); } catch {}
+      return { ok: false, error: 'PDF 產出檔案異常小 ('+stat.size+' bytes)' };
+    }
+    return { ok: true, filename, url: publicUrl(filename), bytes: stat.size, cjk_font: true };
+  } catch (e) {
+    try { fs.unlinkSync(outPath); } catch {}
+    return { ok: false, error: 'PDF 生成失敗：' + e.message + '。請改用 generate_docx。' };
   }
-  if (!sections || !sections.length) {
-    doc.font(fontMain).fontSize(11).text('（無內容）');
-  }
-  doc.end();
-  await new Promise(res => stream.on('finish', res));
-  const stat = fs.statSync(outPath);
-  return { ok: true, filename, url: publicUrl(filename), bytes: stat.size, cjk_font: cjkOK };
 }
 
 // ─────────── 4. PowerPoint (.pptx) ───────────
