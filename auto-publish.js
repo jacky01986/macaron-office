@@ -5,7 +5,7 @@
 //   3. 早安簡報 / Telegram 列出來等你 1ok / 1no
 //   4. 每 5 分鐘 cron 檢查 decisions.history → 已 1ok 的 → 自動發佈
 //
-// ⚙️ 2026-05 政策調整 (Jeffrey 要求):
+// ⚙️ 2026-05 政策調整 (Sam 要求):
 //   - FB 自動發文「整個關閉」: 即使你回 2ok 也不會自動貼 FB, 只保留草稿等你手動發
 //   - 夜間 / 週末不自動發: 只有台北時間「週一~週五 09:00-18:00」才會自動發佈
 //   - 這兩個閘門都只擋「發佈」, 不擋「產草稿+Telegram 預覽」
@@ -189,6 +189,7 @@ async function generateAndQueueDrafts() {
       }
     } catch (e) { console.error('[auto-publish] shot-director failed:', e.message); }
 
+    try { const H = require('./history'); H.record({ fn:'AUTO', title: platform + ' 自動草稿 · ' + String(caption||'').slice(0,40), html: '<h4>'+platform+' 自動發文草稿</h4><div style="white-space:pre-wrap">'+String(caption||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</div>'+(draft.image_url?'<p>🖼 <a href="'+draft.image_url+'" target="_blank">圖片</a></p>':''), text: String(caption||'').slice(0,2000), meta: { platform, draftId: draft.id, image_url: draft.image_url } }); } catch(e){ console.error('[history auto]', e.message); }
     generated.push(draft);
     if (decisions && decisions.addPending) {
       try {

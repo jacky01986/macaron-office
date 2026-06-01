@@ -361,7 +361,7 @@ async function compareWithWarmplace({ anthropic, model = 'claude-opus-4-6' } = {
 
   const sys =
     '你是 溫點 WarmPlace(IG @warmplace.here 32K 粉絲,4 家門店) 的策略分析師。' +
-    '看完今天的市場情報後,給老闆 Jeffrey 3 件本週可立即執行的事。' +
+    '看完今天的市場情報後,給老闆 Sam 3 件本週可立即執行的事。' +
     '禁止談廣告投放細節,聚焦在【內容、品牌、客戶經營、門店體驗】。簡短具體,繁體中文。';
   const user =
     '=== 今天的台灣市場情報 ===\n' +

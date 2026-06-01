@@ -1131,7 +1131,7 @@ app.post("/api/orchestrate", async (req, res) => {
     // ───────── Phase 1: Director planning ─────────
     send("phase", { phase: "planning", text: `👑 ${director.name} 正在分析任務並規劃分工…` });
 
-    const planningPrompt = `Jeffrey 剛交付以下任務：
+    const planningPrompt = `Sam 剛交付以下任務：
 
 「${task}」
 
@@ -1205,7 +1205,7 @@ ${workers.map(w => `- ${w.id} · ${w.name} · ${w.role}：${w.bio}`).join("\n")}
           system: liveSystem,
           messages: [{
             role: "user",
-            content: `行銷總監 VICTOR 已將以下任務分派給你：\n\n「${assignment.task}」\n\n背景：Jeffrey 原本交付的任務是「${task}」。\n請聚焦於你被分派的範圍，產出可立即使用的內容。`
+            content: `行銷總監 VICTOR 已將以下任務分派給你：\n\n「${assignment.task}」\n\n背景：Sam 原本交付的任務是「${task}」。\n請聚焦於你被分派的範圍，產出可立即使用的內容。`
           }],
         });
         let full = "";
@@ -1236,7 +1236,7 @@ ${workers.map(w => `- ${w.id} · ${w.name} · ${w.role}：${w.bio}`).join("\n")}
 
     const consolidationPrompt = `你剛剛將以下任務分派給專員平行執行：
 
-【Jeffrey 原始任務】
+【Sam 原始任務】
 ${task}
 
 【你的策略】
@@ -1245,7 +1245,7 @@ ${plan.strategy}
 【各專員成果】
 ${consolidationParts}
 
-請以行銷總監身份，將以上專員成果整合成一份給 Jeffrey 的高層級決策報告。
+請以行銷總監身份，將以上專員成果整合成一份給 Sam 的高層級決策報告。
 
 **輸出結構（嚴格按順序）：**
 
@@ -1258,7 +1258,7 @@ ${consolidationParts}
 每位專員只摘要 2–3 個核心要點（不要重複貼原文）。用 <ul><li> 排版。
 
 ④ <div class="action-box">
-  <h4>✅ JEFFREY 本週待辦清單</h4>
+  <h4>✅ SAM 本週待辦清單</h4>
   <p style="font-size:13px;opacity:0.85;">以下是你「本人」必須親自做的事（專員已經做的不要列在這）：</p>
   <ol class="action-list">
     <li><strong>[DEADLINE]</strong> 具體行動描述（為何要做、需要多久、做完交給誰）</li>
@@ -1289,7 +1289,7 @@ ${consolidationParts}
 **規則：**
 - 全程使用 HTML 排版，可用 <h4>、<p>、<ul><li>、<ol><li>、<strong>、<em>、<table class="data">、以及上述 class
 - 字數 900–1500 字
-- 待辦清單裡的事必須是 Jeffrey 本人可執行的（例如：確認預算、聯絡 KOL、上傳素材、批准文案），絕對不要把專員已經做完的事列進去
+- 待辦清單裡的事必須是 Sam 本人可執行的（例如：確認預算、聯絡 KOL、上傳素材、批准文案），絕對不要把專員已經做完的事列進去
 - 決策請示必須提供具體選項，不要只問「要不要做」這種是非題`;
 
     const finalStream = await anthropic.messages.stream({
@@ -1505,7 +1505,7 @@ if (scout && typeof scout.registerCronJobs === 'function') scout.registerCronJob
 if (aiTeamContent && typeof aiTeamContent.registerCronJobs === 'function') aiTeamContent.registerCronJobs(cron);
 cron.schedule("0 9 * * 1", () => {
   runScheduledTask("victor",
-    "請產出本週的《團隊週策略簡報》：本週主軸、各專員的重點任務、預算分配、風險預警、3 個需要 Jeffrey 決策的問題。",
+    "請產出本週的《團隊週策略簡報》：本週主軸、各專員的重點任務、預算分配、風險預警、3 個需要 Sam 決策的問題。",
     "weekly-strategy-brief");
 }, { timezone: CRON_TZ });
 
@@ -1617,7 +1617,7 @@ async function runEmpBrain(key, label) {
 }
 
 // 每 4 小時掃 CPL，超 NT$500 警報，超 NT$800 自動暫停
-// ⚙️ 2026-05 Jeffrey 要求關閉 Telegram CPL 警示。預設關閉。
+// ⚙️ 2026-05 Sam 要求關閉 Telegram CPL 警示。預設關閉。
 //    想重新打開就設環境變數 CPL_WATCHDOG=on
 if ((process.env.CPL_WATCHDOG || 'off').toLowerCase() === 'on') {
   cron.schedule('0 */4 * * *', async () => {
@@ -2871,7 +2871,9 @@ app.post('/api/geo/generate-content', express.json(), async (req, res) => {
   if (!geo) return res.status(500).json({ ok: false, error: 'geo module not loaded' });
   try {
     const { platformIdx, courseIdx, customQuery } = req.body || {};
-    res.json(await geo.generateContent({ platformIdx, courseIdx, customQuery }));
+    const out = await geo.generateContent({ platformIdx, courseIdx, customQuery });
+    try { const H = require('./history'); const txt = (out && (out.content||out.text||'')) || ''; H.record({ fn:'GIA', title: 'GEO 內容 · ' + (out&&(out.platform||out.subject||'')||'').slice(0,40), html: '<pre style="white-space:pre-wrap">'+String(txt).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</pre>', text: String(txt).slice(0,2000), meta: { platformIdx, courseIdx, customQuery } }); } catch(e){ console.error('[history gia content]', e.message); }
+    res.json(out);
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 app.get('/api/geo/competitor-comparison', async (req, res) => {
@@ -2883,7 +2885,9 @@ app.post('/api/geo/generate-longform', express.json(), async (req, res) => {
   if (!geo) return res.status(500).json({ ok: false, error: 'geo module not loaded' });
   try {
     const { contentType = 'wikipedia', topic = '', subjectIdx = 0, type = 'course' } = req.body || {};
-    res.json(await geo.generateLongFormContent({ contentType, topic, subjectIdx, type }));
+    const out = await geo.generateLongFormContent({ contentType, topic, subjectIdx, type });
+    try { const H = require('./history'); const txt = (out && (out.content||out.text||'')) || ''; const tt = topic || (out&&out.subject) || contentType; H.record({ fn:'GIA', title: 'GEO 長文 · ' + contentType + ' · ' + String(tt).slice(0,40), html: '<pre style="white-space:pre-wrap">'+String(txt).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</pre>', text: String(txt).slice(0,2000), meta: { contentType, topic, subjectIdx, type } }); } catch(e){ console.error('[history gia longform]', e.message); }
+    res.json(out);
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
@@ -3960,7 +3964,7 @@ app.get('/api/ai-team/dashboard', async (req, res) => {
 
 
 // ============================================================
-// 🤖 Telegram AI Agent — Jeffrey 在 Telegram 上問問題,VICTOR 帶整個 AI 團隊回答
+// 🤖 Telegram AI Agent — Sam 在 Telegram 上問問題,VICTOR 帶整個 AI 團隊回答
 // ============================================================
 // Persistent Telegram conversation memory — saved to disk so survives Render restarts
 const TG_DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || require('path').join(__dirname, 'data');
@@ -4310,10 +4314,10 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
 1. SaleSmartly 客戶對話:Meta Messenger / IG DM / LINE 訊息統一,過去 7 天對話統計 + Top 10 客戶問題 + 最新 5 通對話的完整訊息內容
 2. Meta 廣告數據:過去 7 天花費 + IG/FB 最新 5 篇貼文表現(讚數、留言數)
 3. 客戶分群:VIP / 活躍 / 新客 / 流失風險 各幾人
-4. 決策歷史:最近 8 件 Jeffrey 拍板 + 5 件待決策
+4. 決策歷史:最近 8 件 Sam 拍板 + 5 件待決策
 5. 市場情報:全台馬卡龍 / 費南雪新聞 + 對手最新廣告(法朋、亞尼克、Paul、Ladurée、Pierre Hermé)
 
-當 Jeffrey 問「分析對話 / 為什麼沒成交 / 客人在問什麼 / 流失客人多少」這類問題,**第一優先看 meta_inbox_fb 跟 meta_inbox_ig 兩個欄位** (從 Meta Graph API 直接讀回的 FB Messenger + IG DM 真實對話, 不是 placeholder)。引用具體客戶名 + 客戶說的原句當證據。**絕對禁止說「我無法存取 Meta 對話」「請把對話貼給我」這類話 — 你已經能讀到了**。如果 meta_inbox_fb 是空陣列, 才能說「目前沒有客戶對話可分析」。\n\n【你的工作模式 — 你是 AI Agent,不是建議生成器】\n你的目標是【幫 Jeffrey 解決問題、產出可立即使用的交付物】,不是給「建議」。\n\n**判斷請求類型,直接給對應交付物:**\n\n① 問題型 → 給【今天做 / 本週做 / 本月做】三層具體行動 + 指名負責員工\n② 內容型(寫文案/Reels 腳本) → 【直接產 3-5 版可立即複製貼上的成品】,不要先講想法再寫\n③ 規劃型(行事曆) → 【直接出表格】:日期 / 平台 / 主題 / 文案 / 視覺需求\n④ 分析型(現在數據怎樣?) → 引用即時數據,3 個觀察 + 1 個關鍵問題給 Jeffrey 拍板\n⑤ 決策型(該不該做 X?) → 直接給【做 / 不做】+ 量化理由(預估金額、leads、GMV)+ 風險\n\n**你有對話記憶** — 你看得到過去的對話,延續討論,不要重複問已經回答的問題。\n**遇資料不足** — 直接告訴 Jeffrey 缺什麼數據 + 怎麼補上,不要瞎掰。\n\n【絕對禁止】\n- 廣告投放細節(老闆要求,只談客戶經營/內容/門店/品牌)\n- 課程、報名、學員、教學、紋繡、美容(這些是舊業態)\n- 「以下幾個建議供參考」「希望對你有幫助」這類客套話\n- 給範圍式建議(「可以考慮...」)應改成決策建議(「建議做 X,不要做 Y,因為 ...」)\n\n回答用繁體中文,可用 emoji 但不要太多。`;
+當 Sam 問「分析對話 / 為什麼沒成交 / 客人在問什麼 / 流失客人多少」這類問題,**第一優先看 meta_inbox_fb 跟 meta_inbox_ig 兩個欄位** (從 Meta Graph API 直接讀回的 FB Messenger + IG DM 真實對話, 不是 placeholder)。引用具體客戶名 + 客戶說的原句當證據。**絕對禁止說「我無法存取 Meta 對話」「請把對話貼給我」這類話 — 你已經能讀到了**。如果 meta_inbox_fb 是空陣列, 才能說「目前沒有客戶對話可分析」。\n\n【你的工作模式 — 你是 AI Agent,不是建議生成器】\n你的目標是【幫 Sam 解決問題、產出可立即使用的交付物】,不是給「建議」。\n\n**判斷請求類型,直接給對應交付物:**\n\n① 問題型 → 給【今天做 / 本週做 / 本月做】三層具體行動 + 指名負責員工\n② 內容型(寫文案/Reels 腳本) → 【直接產 3-5 版可立即複製貼上的成品】,不要先講想法再寫\n③ 規劃型(行事曆) → 【直接出表格】:日期 / 平台 / 主題 / 文案 / 視覺需求\n④ 分析型(現在數據怎樣?) → 引用即時數據,3 個觀察 + 1 個關鍵問題給 Sam 拍板\n⑤ 決策型(該不該做 X?) → 直接給【做 / 不做】+ 量化理由(預估金額、leads、GMV)+ 風險\n\n**你有對話記憶** — 你看得到過去的對話,延續討論,不要重複問已經回答的問題。\n**遇資料不足** — 直接告訴 Sam 缺什麼數據 + 怎麼補上,不要瞎掰。\n\n【絕對禁止】\n- 廣告投放細節(老闆要求,只談客戶經營/內容/門店/品牌)\n- 課程、報名、學員、教學、紋繡、美容(這些是舊業態)\n- 「以下幾個建議供參考」「希望對你有幫助」這類客套話\n- 給範圍式建議(「可以考慮...」)應改成決策建議(「建議做 X,不要做 Y,因為 ...」)\n\n回答用繁體中文,可用 emoji 但不要太多。`;
 
     const c = anthropic;
     if (!c) { await sendTelegram(chatId, '❌ ANTHROPIC_API_KEY 未設,VICTOR 不在線'); return; }
@@ -4324,7 +4328,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     const VICTOR_TOOLS = [
       {
         name: 'delegate_to_employee',
-        description: '指派任務給 AI 團隊成員 (CAMILLE 寫文案/CAMILLE 寫部落格/ARIA 視覺方向/DEX 數據分析/NOVA 品牌策略/MILO KOL 合作). 員工會用自己的 system prompt 完整產出, 你拿到後可整合回應給 Jeffrey.',
+        description: '指派任務給 AI 團隊成員 (CAMILLE 寫文案/CAMILLE 寫部落格/ARIA 視覺方向/DEX 數據分析/NOVA 品牌策略/MILO KOL 合作). 員工會用自己的 system prompt 完整產出, 你拿到後可整合回應給 Sam.',
         input_schema: {
           type: 'object',
           properties: {
@@ -4337,7 +4341,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
       },
       {
         name: 'generate_social_draft',
-        description: '透過 auto-publish 系統產生 IG 或 FB 貼文草稿, 自動放進 queue. 不會直接發, 等 Jeffrey 在後台 approve. 用於 Jeffrey 說「產一篇/出一篇/放草稿」的時候.',
+        description: '透過 auto-publish 系統產生 IG 或 FB 貼文草稿, 自動放進 queue. 不會直接發, 等 Sam 在後台 approve. 用於 Sam 說「產一篇/出一篇/放草稿」的時候.',
         input_schema: {
           type: 'object',
           properties: {
@@ -4349,7 +4353,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
       },
       {
         name: 'fetch_conversation_detail',
-        description: '抓 SaleSmartly 上某個客戶的完整對話歷史 (Meta Messenger / IG DM / LINE). 用於 Jeffrey 想看某個特定客人卡在哪.',
+        description: '抓 SaleSmartly 上某個客戶的完整對話歷史 (Meta Messenger / IG DM / LINE). 用於 Sam 想看某個特定客人卡在哪.',
         input_schema: {
           type: 'object',
           properties: {
@@ -4361,17 +4365,17 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
       },
       {
         name: 'run_market_intel_scan',
-        description: '立即觸發市場情報掃描 (Google News 馬卡龍/費南雪新聞 + FB Ads Library 對手廣告). 用於 Jeffrey 想立刻看最新對手動態, 不等明早 06:00 cron.',
+        description: '立即觸發市場情報掃描 (Google News 馬卡龍/費南雪新聞 + FB Ads Library 對手廣告). 用於 Sam 想立刻看最新對手動態, 不等明早 06:00 cron.',
         input_schema: { type: 'object', properties: {} }
       },
       {
         name: 'record_decision',
-        description: '把 Jeffrey 明確拍板的決策記到歷史. 例如 Jeffrey 說「我決定 X」, 你就 call 這個記下. 不要主動猜測, 必須 Jeffrey 明確說「決定/拍板/就這樣」才 call.',
+        description: '把 Sam 明確拍板的決策記到歷史. 例如 Sam 說「我決定 X」, 你就 call 這個記下. 不要主動猜測, 必須 Sam 明確說「決定/拍板/就這樣」才 call.',
         input_schema: {
           type: 'object',
           properties: {
             title: { type: 'string', description: '決策標題, 簡短一句' },
-            decision: { type: 'string', description: 'Jeffrey 的決定內容' },
+            decision: { type: 'string', description: 'Sam 的決定內容' },
             note: { type: 'string', description: '備註 (選填)' }
           },
           required: ['title', 'decision']
@@ -4379,7 +4383,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
       },
       {
         name: 'web_search',
-        description: '搜索網路即時資訊 (用 Google News 後台). 用於 Jeffrey 問新聞、節慶、流行話題、競品最近動態這類即時資訊. 自動帶馬卡龍 / 費南雪 / 韓系甜點 相關背景做篩選.',
+        description: '搜索網路即時資訊 (用 Google News 後台). 用於 Sam 問新聞、節慶、流行話題、競品最近動態這類即時資訊. 自動帶馬卡龍 / 費南雪 / 韓系甜點 相關背景做篩選.',
         input_schema: {
           type: 'object',
           properties: {
@@ -4391,7 +4395,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
       },
       {
         name: 'query_ai_team_data',
-        description: '查詢 AI 團隊累積的特定數據 (客戶分群明細/Top 客戶問題/最近廣告數據/IG 高互動貼文). 用於 Jeffrey 想看某個特定面向的細節, 預設 context 沒給的時候.',
+        description: '查詢 AI 團隊累積的特定數據 (客戶分群明細/Top 客戶問題/最近廣告數據/IG 高互動貼文). 用於 Sam 想看某個特定面向的細節, 預設 context 沒給的時候.',
         input_schema: {
           type: 'object',
           properties: {
@@ -4427,7 +4431,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
             const ap = require('./auto-publish');
             if (!ap || !ap.generateAndQueueDrafts) return { error: 'auto-publish not available' };
             const r = await ap.generateAndQueueDrafts({ platforms: [input.platform] });
-            return { ok: true, drafts_created: (r && r.drafts && r.drafts.length) || 0, note: '草稿已進 queue, Jeffrey 請到 /auto-publish.html 後台 approve' };
+            return { ok: true, drafts_created: (r && r.drafts && r.drafts.length) || 0, note: '草稿已進 queue, Sam 請到 /auto-publish.html 後台 approve' };
           }
           case 'fetch_conversation_detail': {
             const ss = require('./salesmartly');
@@ -4443,7 +4447,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
           case 'record_decision': {
             const d = require('./decisions');
             if (!d || !d.addPending) return { error: 'decisions module not available' };
-            const r = await d.addPending({ title: input.title, recommendation: input.decision, source: 'victor-telegram', metadata: { note: input.note || '', decided_by: 'Jeffrey', decided_at: new Date().toISOString() } });
+            const r = await d.addPending({ title: input.title, recommendation: input.decision, source: 'victor-telegram', metadata: { note: input.note || '', decided_by: 'Sam', decided_at: new Date().toISOString() } });
             return { ok: true, decision_id: r && r.id, note: '已記入決策歷史' };
           }
           case 'web_search': {
@@ -4525,7 +4529,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
       const ig = (liveData && liveData.meta_inbox_ig) || [];
       if (fb.length > 0 || ig.length > 0) {
         const blocks = [];
-        blocks.push('[系統介接] Jeffrey 這邊, 我用程式從 FB Messenger + IG DM 把今天的對話自動抓給你, 接下來會問你問題, 請以這些對話為依據:');
+        blocks.push('[系統介接] Sam 這邊, 我用程式從 FB Messenger + IG DM 把今天的對話自動抓給你, 接下來會問你問題, 請以這些對話為依據:');
         const formatConv = (conv, label) => {
           if (!conv || conv.length === 0) return;
           blocks.push('\n=== ' + label + ' (' + conv.length + ' 通真實對話) ===');

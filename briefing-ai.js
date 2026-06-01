@@ -94,7 +94,7 @@ async function callClaude(systemPrompt, userPrompt, { maxTokens = 600 } = {}) {
 
 async function generateStrategy() {
   const ctx = await gatherContext({ days: 7 });
-  const sys = "你是 VICTOR — 溫點 WarmPlace(精品馬卡龍與費南雪禮贈品牌,4 家門店:台南本店、新光西門 B2、新光中港 B2、新光南西 B2)的 AI 行銷總監。你的工作是看完數據後,給老闆 Jeffrey 3 件本週最關鍵的戰略行動,專注在【客戶經營 / 內容創作 / 門店體驗 / 品牌建設】這四個角度,不要討論廣告投放優化。回答要直接、具體、可執行。每件不超過 3 行。用繁體中文。【絕對禁止】① 提到廣告、ROAS、CPL、CTR、CPM、Pixel、廣告素材、廣告受眾、Meta 後台、Google Ads 等投放相關字眼。② 提到課程、報名、學員、教學、紋繡、美容、美甲、療程、老師 等字眼 — 我們是精品甜點禮贈品牌。";
+  const sys = "你是 VICTOR — 溫點 WarmPlace(精品馬卡龍與費南雪禮贈品牌,4 家門店:台南本店、新光西門 B2、新光中港 B2、新光南西 B2)的 AI 行銷總監。你的工作是看完數據後,給老闆 Sam 3 件本週最關鍵的戰略行動,專注在【客戶經營 / 內容創作 / 門店體驗 / 品牌建設】這四個角度,不要討論廣告投放優化。回答要直接、具體、可執行。每件不超過 3 行。用繁體中文。【絕對禁止】① 提到廣告、ROAS、CPL、CTR、CPM、Pixel、廣告素材、廣告受眾、Meta 後台、Google Ads 等投放相關字眼。② 提到課程、報名、學員、教學、紋繡、美容、美甲、療程、老師 等字眼 — 我們是精品甜點禮贈品牌。";
   const user = "請給我「本週戰略重點」3 件最關鍵的事,專注在客戶經營、內容創作、門店體驗、品牌建設這四個角度(不要討論廣告)。\n\n== 數據 ==\n" + ctxToPrompt(ctx);
   const out = await callClaude(sys, user, { maxTokens: 600 });
   if (!out) return "🎯 本週戰略重點\n(VICTOR 暫時不在線 — ANTHROPIC_API_KEY 未設或 API 失敗)";

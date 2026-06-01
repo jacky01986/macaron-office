@@ -18,7 +18,7 @@ const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'dat
 const BOARD_FILE = path.join(DATA_DIR, 'june-board.json');
 const MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-6';
 
-const TEAM = 'VICTOR(總監/決策)、LEON(廣告投放)、CAMILLE(文案/SEO)、ARIA(視覺)、DEX(數據)、NOVA(社群/公關)、MILO(KOL)、RINA(短影音)、HANA(私訊成交)、MIRA(門市教育)、Jeffrey(老闆/拍板)、店長(門市執行)';
+const TEAM = 'VICTOR(總監/決策)、LEON(廣告投放)、CAMILLE(文案/SEO)、ARIA(視覺)、DEX(數據)、NOVA(社群/公關)、MILO(KOL)、RINA(短影音)、HANA(私訊成交)、MIRA(門市教育)、Sam(老闆/拍板)、店長(門市執行)';
 
 let client = null;
 function getClient() {
@@ -56,7 +56,7 @@ function junePrompt() {
 2. 你只負責規劃與追蹤，不親自寫文案/投廣告 — 指派給對的人。
 3. 百貨櫃點(新光三越四櫃)有檔期節奏，行銷要對齊。
 4. 每件任務都要：負責人 + 起訖時間(用 Day N 相對天)+ 相依關係 + 交付物 + 完成定義。
-5. 標出「需要 Jeffrey 拍板的決策點」與「風險」。
+5. 標出「需要 Sam 拍板的決策點」與「風險」。
 
 【可指派的團隊】${TEAM}
 
@@ -65,7 +65,7 @@ function junePrompt() {
 <h4>🎯 目標與成功指標</h4> (可量化 KPI)
 <h4>🗓 專案時程</h4> <table class="data"> 欄位：階段、任務、負責人、Day N 起訖、相依、交付物
 <h4>🚩 里程碑</h4>
-<h4>❓ 需要 Jeffrey 拍板</h4> (1-3 個二選一)
+<h4>❓ 需要 Sam 拍板</h4> (1-3 個二選一)
 <h4>⚠️ 風險與備案</h4>
 <h4>📌 對應的市場依據</h4> (明確引用 SCOUT/DISTILL 哪幾條)
 用繁體中文，不要客套話。`;

@@ -29,11 +29,11 @@ function ensureDir() { try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR
 function loadJSON(f, fb) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return fb; } }
 function saveJSON(f, o) { ensureDir(); try { fs.writeFileSync(f, JSON.stringify(o, null, 2)); return true; } catch (e) { console.error('[memory] save', e.message); return false; } }
 
-const MEMORY_PROMPT = `你是 溫點 WarmPlace 的「集體記憶整理員」。職責：把過去 10 天 Jeffrey（老闆）跟 AI 員工之間的所有問答 / 對話 / 生成內容，消化成讓全體員工都能學到的「團隊記憶」。
+const MEMORY_PROMPT = `你是 溫點 WarmPlace 的「集體記憶整理員」。職責：把過去 10 天 Sam（老闆）跟 AI 員工之間的所有問答 / 對話 / 生成內容，消化成讓全體員工都能學到的「團隊記憶」。
 
 你的工作：
 1. 讀完所有對話與生成紀錄
-2. 找出反覆出現的模式：常被問什麼、Jeffrey 在意什麼、做過什麼決策、不喜歡什麼用詞
+2. 找出反覆出現的模式：常被問什麼、Sam 在意什麼、做過什麼決策、不喜歡什麼用詞
 3. 提煉出「下次該怎麼做」的具體做法
 4. 標出每位員工該特別記得的個性化備忘錄
 
