@@ -660,6 +660,7 @@ Brief：${brief}
     const arr = loadDrafts();
     arr.push(record);
     saveDrafts(arr);
+    try { const H = require('./history'); H.record({ fn:'NOVA', title: platform + ' 草稿 · ' + brief.slice(0,40), html: (record.drafts||[]).map(d=>'<h4>'+d.style+'</h4><p>'+String(d.caption).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])).replace(/\n/g,'<br>')+'</p>').join(''), text: (record.drafts||[]).map(d=>d.style+': '+d.caption).join(' / ').slice(0,2000), meta:{ platform, count, draftId: record.id } }); } catch(e) { console.error('[history nova]', e.message); }
     res.json(record);
   } catch (err) {
     console.error("[generate-draft]", err);
@@ -1455,6 +1456,7 @@ autoPublish.registerCronJobs(cron);
 try { require('./closer').registerCron(cron); } catch (e) { console.error('[closer cron]', e.message); }
 try { require('./mira').registerCron(cron); } catch (e) { console.error('[mira cron]', e.message); }
 try { require('./june').registerCron(cron); } catch (e) { console.error('[june cron]', e.message); }
+try { require('./history').registerCron(cron); } catch (e) { console.error('[history cron]', e.message); }
 if (scout && typeof scout.registerCronJobs === 'function') scout.registerCronJobs(cron);
 if (aiTeamContent && typeof aiTeamContent.registerCronJobs === 'function') aiTeamContent.registerCronJobs(cron);
 cron.schedule("0 9 * * 1", () => {
@@ -4541,6 +4543,20 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     history.push({ role: 'assistant', content: reply });
     tgSaveHistory(chatId, history);
 
+    // 記錄到統一歷史
+    try {
+      const H = require('./history');
+      const userQ = (history.find(h=>h.role==='user') || {}).content || '';
+      const qText = typeof userQ === 'string' ? userQ : JSON.stringify(userQ);
+      H.record({
+        fn: 'VICTOR',
+        title: 'Telegram 對話 · ' + qText.slice(0,40),
+        html: '<h4>你問：</h4><p style="white-space:pre-wrap">'+qText.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</p><h4>VICTOR 回覆：</h4><p style="white-space:pre-wrap">'+String(reply).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</p>',
+        text: qText.slice(0,500) + ' → ' + String(reply).slice(0,1000),
+        meta: { source: 'telegram', chatId }
+      });
+    } catch(e) { console.error('[history victor-tg]', e.message); }
+
     await sendTelegram(chatId, reply);
   } catch (err) {
     console.error('[/api/telegram/webhook]', err);
@@ -4642,6 +4658,10 @@ catch (e) { console.error('[june] mount failed:', e.message); }
 // === SOLA 官網營運路由 ===
 try { app.use('/api/sola', require('./sola')); console.log('[sola] SOLA route mounted at /api/sola'); }
 catch (e) { console.error('[sola] mount failed:', e.message); }
+
+// === HISTORY 歷史紀錄路由 ===
+try { app.use('/api/history', require('./history')); console.log('[history] history route mounted at /api/history'); }
+catch (e) { console.error('[history] mount failed:', e.message); }
 
 // === DIRECTOR 拍攝指導路由 ===
 try { app.use('/api/shot-director', require('./shot-director')); console.log('[shot-director] DIRECTOR route mounted at /api/shot-director'); }

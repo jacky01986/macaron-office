@@ -82,6 +82,7 @@ async function generatePlan({ goal = '', weeks = 4 } = {}) {
     + '\n\n嚴格依照你系統設定的輸出格式，每個任務都要有負責人、Day N 起訖、相依、交付物，並在最後明確標出對應哪幾條市場依據。';
   const r = await c.messages.create({ model: MODEL, max_tokens: 3500, system: junePrompt(), messages: [{ role: 'user', content: user }] });
   const html = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  try { const H = require('./history'); H.record({ fn:'JUNE', title: '專案規劃 · '+weeks+' 週' + (goal?' · '+goal.slice(0,50):''), html, text: html.replace(/<[^>]+>/g,' ').slice(0,2000), meta:{ weeks, scout_run: intel.run } }); } catch(e) { console.error('[history june]', e.message); }
   return { ok: true, weeks, goal: goal || '(由 JUNE 從 SCOUT 行動建議挑選)', html, based_on_scout: intel.has, scout_run: intel.run };
 }
 

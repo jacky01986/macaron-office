@@ -96,6 +96,7 @@ router.post('/generate', express.json({ limit: '256kb' }), async (req, res) => {
       messages: [{ role: 'user', content: user }],
     });
     const html = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+    try { const H = require('./history'); H.record({ fn:'RINA', title: 'Reels 企劃 · '+count+' 支' + (userBrief?' · '+userBrief.slice(0,40):''), html, text: html.replace(/<[^>]+>/g,' ').slice(0,2000), meta:{ count, scout_run: intel.run } }); } catch(e) { console.error('[history reels]', e.message); }
     res.json({ ok: true, html, count, based_on_scout: intel.has, scout_run: intel.run });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });

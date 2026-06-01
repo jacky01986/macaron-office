@@ -141,6 +141,7 @@ async function generate({ type = 'greeting', store = '全門店', brief = '' } =
     + '\n\n=== 網路教育內容參考 (輔助) ===\n' + web + scoutTail();
   const r = await c.messages.create({ model: MODEL, max_tokens: 3500, system: miraPrompt(playbook), messages: [{ role: 'user', content: user }] });
   const html = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  try { const H = require('./history'); H.record({ fn:'MIRA', title: (t&&t.label?t.label:'門市教材') + (store?' · '+store:''), html, text: html.replace(/<[^>]+>/g,' ').slice(0,2000), meta:{ type, store } }); } catch(e) { console.error('[history mira]', e.message); }
   return { ok: true, type, type_label: t.label, store, html, used_kb_docs: loadKB().docs.length };
 }
 

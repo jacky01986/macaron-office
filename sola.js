@@ -69,6 +69,7 @@ async function generate({ type = 'product', product = '', brief = '' } = {}) {
     + t.ask + (brief ? '\n\n額外要求：' + brief.slice(0, 400) : '');
   const r = await c.messages.create({ model: MODEL, max_tokens: 3200, system: solaPrompt(intel.text), messages: [{ role: 'user', content: user }] });
   const html = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  try { const H = require('./history'); H.record({ fn:'SOLA', title: t.label + (t.needProduct?' · '+(product||'6 入馬卡龍禮盒'):''), html, text: html.replace(/<[^>]+>/g,' ').slice(0,2000), meta:{ type, scout_run: intel.run } }); } catch(e) { console.error('[history sola]', e.message); }
   return { ok: true, type, type_label: t.label, product: t.needProduct ? (product || '6 入馬卡龍禮盒') : null, html, based_on_scout: intel.has, scout_run: intel.run };
 }
 

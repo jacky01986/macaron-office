@@ -185,6 +185,7 @@ async function draftFor(chat_user_id) {
     messages: [{ role: 'user', content: '以下是一通真實客人對話，請你以成交為目標，寫一則「我們」該回的成交草稿：\n\n' + convoText + scoutTail() }],
   });
   const html = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  try { const H = require('./history'); H.record({ fn:'HANA', title: '私訊草稿 · ' + chat_user_id.slice(-8), html: '<pre style="white-space:pre-wrap">'+String(html).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</pre>', text: String(html).slice(0,2000), meta:{ chat_user_id } }); } catch(e) { console.error('[history hana]', e.message); }
   return { ok: true, chat_user_id, html, mode: getSettings().mode };
 }
 

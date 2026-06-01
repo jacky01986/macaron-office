@@ -531,7 +531,9 @@ async function generateShotsFor({ copy, mode = 'social', count = 3 } = {}) {
   if (!copy || !copy.trim()) throw new Error('copy 必填');
   const out = await callDirector({ copy, mode, count });
   const cards = (out.shots || []).map((s, i) => isReelsShot(s, mode) ? renderReelsCard(s, i) : renderProductCard(s, i)).join('\n');
-  return { ok: true, shots: out.shots, html: '<div class="sd-grid">' + cards + '</div>', css: CARD_CSS };
+  const html = '<div class="sd-grid">' + cards + '</div>';
+  try { const H = require('./history'); H.record({ fn:'DIRECTOR', title: (mode==='reels'?'分鏡示意':'拍攝示意') + ' · ' + copy.replace(/<[^>]+>/g,' ').slice(0,40), html: (CARD_CSS||'') + html, text: (out.shots||[]).map(x=>x.name||'').join(' / ').slice(0,500), meta:{ mode, shots: (out.shots||[]).length } }); } catch(e) { console.error('[history director]', e.message); }
+  return { ok: true, shots: out.shots, html, css: CARD_CSS };
 }
 function isReelsShot(s, mode) { return mode === 'reels' || s.ratio === '9:16' || s.sec || s.copy; }
 
