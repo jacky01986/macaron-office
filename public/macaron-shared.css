@@ -217,3 +217,74 @@ input:focus, textarea:focus, select:focus {
   color: var(--ivory) !important;
   border-color: var(--burgundy-dark) !important;
 }
+
+
+/* ──────────────────────────────────────────────
+   v3 對比強制 — 解決動態生成元素「字被背景吃掉」
+   ────────────────────────────────────────────── */
+
+/* 任何 inline style 寫淺色背景的元素，其所有子孫文字一律強制 ivory */
+[style*="background: white"] *,
+[style*="background:white"] *,
+[style*="background: #fff"] *,
+[style*="background:#fff"] *,
+[style*="background: #FFF"] *,
+[style*="background:#FFF"] *,
+[style*="background: #FAF"] *,
+[style*="background:#FAF"] *,
+[style*="background: #FCF"] *,
+[style*="background:#FCF"] *,
+[style*="background: #FFF8"] *,
+[style*="background:#FFF8"] *,
+[style*="background: #FFF4"] *,
+[style*="background:#FFF4"] *,
+[style*="background: #f9f5"] *,
+[style*="background:#f9f5"] *,
+[style*="background-color: white"] *,
+[style*="background-color:white"] *,
+[style*="background-color: #fff"] *,
+[style*="background-color:#fff"] *,
+[style*="background-color: #FCF"] *,
+[style*="background-color:#FCF"] * {
+  color: var(--ivory) !important;
+}
+
+/* 補上 ivory/cream 也算淺底 — 一併強制變深底 */
+[style*="background: #FCF6F5"],
+[style*="background:#FCF6F5"],
+[style*="background: #fcf6f5"],
+[style*="background:#fcf6f5"],
+[style*="background-color: #FCF6F5"],
+[style*="background-color:#FCF6F5"] {
+  background: var(--dark-2) !important;
+  color: var(--ivory) !important;
+}
+
+/* AI 動態產 HTML 常見 inline color 偏淺棕/淡金，在深底會看不見 — 強制升亮 */
+[style*="color: #6B4226"],
+[style*="color:#6B4226"],
+[style*="color: #6D2E46"],
+[style*="color:#6D2E46"],
+[style*="color: #8B5A33"],
+[style*="color:#8B5A33"],
+[style*="color: #B08D57"],
+[style*="color:#B08D57"] {
+  color: #E8C896 !important;
+}
+
+/* 通用 fallback — body 直接子 div 沒指定背景的，繼承深底 */
+body > div:not([style*="background"]):not(.macaron-topnav):not(.tabbar) > p,
+body > div:not([style*="background"]):not(.macaron-topnav):not(.tabbar) > h1,
+body > div:not([style*="background"]):not(.macaron-topnav):not(.tabbar) > h2,
+body > div:not([style*="background"]):not(.macaron-topnav):not(.tabbar) > h3,
+body > div:not([style*="background"]):not(.macaron-topnav):not(.tabbar) > h4 {
+  color: var(--ivory) !important;
+}
+
+/* AI 員工產的詩意句 — 加 text-shadow 拉對比保險 */
+.poetic, .brand-line, .quote, blockquote {
+  color: var(--ivory) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,.5);
+  font-size: 16px;
+  line-height: 1.7;
+}
