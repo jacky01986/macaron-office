@@ -133,8 +133,13 @@ async function generatePdf({ title, sections }) {
   try {
     const doc = new PDFDocument({ size: 'A4', margins: { top: 50, bottom: 50, left: 60, right: 60 }, info: { Title: title || '文件', Author: '溫點 WarmPlace AI' } });
     doc.registerFont('cjk', fontPath);
-    const stream = fs.createWriteStream(outPath);
-    doc.pipe(stream);
+    // 收集 PDF 到 memory buffer (避免 stream write 失敗留 0KB 檔)
+    const chunks = [];
+    doc.on('data', c => chunks.push(c));
+    const endPromise = new Promise((res, rej) => {
+      doc.on('end', res);
+      doc.on('error', rej);
+    });
     if (title) {
       doc.font('cjk').fontSize(22).fillColor('#6D2E46').text(String(title), { align: 'left' });
       doc.moveDown(0.8);
@@ -152,13 +157,14 @@ async function generatePdf({ title, sections }) {
       doc.font('cjk').fontSize(11).text('（無內容）');
     }
     doc.end();
-    await new Promise((res, rej) => { stream.on('finish', res); stream.on('error', rej); });
-    const stat = fs.statSync(outPath);
-    if (stat.size < 500) {
-      try { fs.unlinkSync(outPath); } catch {}
-      return { ok: false, error: 'PDF 產出檔案異常小 ('+stat.size+' bytes)' };
+    await endPromise;
+    const buf = Buffer.concat(chunks);
+    if (buf.length < 500) {
+      return { ok: false, error: 'PDF buffer 異常小 ('+buf.length+' bytes)。可能字型問題' };
     }
-    return { ok: true, filename, url: publicUrl(filename), bytes: stat.size, cjk_font: true };
+    // 只在成功時才寫檔
+    fs.writeFileSync(outPath, buf);
+    return { ok: true, filename, url: publicUrl(filename), bytes: buf.length, cjk_font: true };
   } catch (e) {
     try { fs.unlinkSync(outPath); } catch {}
     return { ok: false, error: 'PDF 生成失敗：' + e.message + '。請改用 generate_docx。' };
