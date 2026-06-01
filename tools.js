@@ -223,17 +223,55 @@ const TOOL_DEFINITIONS = {
       required: ["segment", "text"]
     }
   },
+
+  // ── ③ 真實對話讀取 (給 HANA/RINA 學語氣) ──
+  fetch_conversation_detail: {
+    category: "read",
+    description: "抓 SaleSmartly 上某個客戶的完整對話歷史 (Meta Messenger/IG DM/LINE). HANA 用來學 Sam 的回覆語氣; RINA 用來找客戶常問的痛點當 Reels 題材.",
+    input_schema: {
+      type: "object",
+      properties: {
+        user_id: { type: "string", description: "SaleSmartly chat_user_id, 若不知道留空可拿最近 5 筆" },
+        limit: { type: "number", description: "抓多少則訊息, 預設 30" }
+      }
+    }
+  },
+  // ── ⑤ 專案經理派工 (給 JUNE) ──
+  delegate_to_employee: {
+    category: "read",
+    description: "把子任務派給其他 AI 員工 (CAMILLE/NOVA/ARIA/DEX/RINA/HANA/SOLA/MIRA). 員工會用自己的 system prompt 跑一輪, 你拿到後再整合. 用於 JUNE 排專案、VICTOR 分派.",
+    input_schema: {
+      type: "object",
+      properties: {
+        employee: { type: "string", description: "員工代號小寫, 例如 camille/nova/rina" },
+        task: { type: "string", description: "明確任務描述, 含背景與想要的產出" }
+      },
+      required: ["employee", "task"]
+    }
+  },
+  // ── ① web_search marker — asAnthropicTools 會轉成 Anthropic 原生 server-tool ──
+  web_search: {
+    category: "native",
+    description: "Anthropic 原生 web_search (不在 executeReadTool 處理, 由 model server-side 自動跑)",
+    input_schema: { type: "object", properties: {} }
+  },
 };
 
 // 把 tool definition 轉成 Anthropic Tool Use API 格式
 function asAnthropicTools(toolNames) {
   return toolNames
     .filter(n => TOOL_DEFINITIONS[n])
-    .map(n => ({
-      name: n,
-      description: TOOL_DEFINITIONS[n].description,
-      input_schema: TOOL_DEFINITIONS[n].input_schema,
-    }));
+    .map(n => {
+      // ① 原生 web_search → Anthropic server-tool 格式
+      if (n === 'web_search' || TOOL_DEFINITIONS[n].category === 'native') {
+        return { type: 'web_search_20250305', name: 'web_search', max_uses: 4 };
+      }
+      return {
+        name: n,
+        description: TOOL_DEFINITIONS[n].description,
+        input_schema: TOOL_DEFINITIONS[n].input_schema,
+      };
+    });
 }
 
 function isWriteTool(name) {

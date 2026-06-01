@@ -65,6 +65,17 @@ const FORMAT_ENFORCEMENT = `
 
 async function maybeAugmentSystemPrompt(emp) {
   let baseSystem = emp.systemPrompt + FORMAT_ENFORCEMENT;
+  // ② 多輪記憶: 從 history.js 撈最近 5 筆 (同員工)
+  try {
+    const H = require('./history');
+    const fnMap = { victor:'VICTOR', leon:'CAMILLE', camille:'CAMILLE', aria:'CAMILLE', dex:'DEX', nova:'NOVA', milo:'CAMILLE', rina:'RINA', hana:'HANA', mira:'MIRA', june:'JUNE', sola:'SOLA' };
+    const fn = fnMap[(emp.id||'').toLowerCase()] || 'VICTOR';
+    const recent = H.list({ limit: 5, fn });
+    if (recent && recent.length) {
+      const lines = recent.map((r,i) => '['+(i+1)+'] '+r.title+' — '+ (r.snippet||'').slice(0,120));
+      baseSystem += '\n\n=== 📚 你最近 5 次跟 Sam 的對話 (延續討論, 不要重複問已答過的) ===\n' + lines.join('\n') + '\n=== 記憶結束 ===\n';
+    }
+  } catch {}
   if (!META_AWARE_EMPLOYEES.has(emp.id) || !meta.tokenOk()) return baseSystem;
   try {
     const metaBlock = await meta.buildCoachDataBlock();
@@ -855,6 +866,37 @@ async function executeReadTool(name, input) {
         else out.google = { notConfigured: true };
       } catch(e) { out.google = { error: e.message }; }
       return out;
+    }
+    case "fetch_conversation_detail": {
+      try {
+        const ss = require('./salesmartly');
+        if (input.user_id) {
+          if (ss && ss.listMessages) {
+            const r = await ss.listMessages(input.user_id, { page_size: input.limit || 30 });
+            return r;
+          }
+          return { error: 'salesmartly not available' };
+        }
+        // 沒給 user_id → 回最近 5 個有對話的客戶 + 各 5 則
+        const msgs = customers.loadMessages(DATA_DIR);
+        const list = customers.aggregateCustomers(msgs, customers.loadCustomerProfiles(DATA_DIR));
+        const top5 = list.sort((a,b)=>(b.frequency||0)-(a.frequency||0)).slice(0,5);
+        return top5.map(c => ({ userId: c.userId, userName: c.userName, lastMessages: (c.messages||[]).slice(0,5).map(m=>({ text:m.text, ts:m.timestamp, intent:m.intent, replied:m.replied, replyText:m.replyText })) }));
+      } catch(e) { return { error: e.message }; }
+    }
+    case "delegate_to_employee": {
+      try {
+        const tgt = String(input.employee||'').toLowerCase();
+        const subEmp = EMPLOYEES[tgt];
+        if (!subEmp) return { error: '未知員工: ' + tgt + ' (可用: ' + Object.keys(EMPLOYEES).join(',') + ')' };
+        const subSystem = await maybeAugmentSystemPrompt(subEmp);
+        const r = await anthropic.messages.create({
+          model: MODEL, max_tokens: 2000, system: subSystem,
+          messages: [{ role: 'user', content: String(input.task||'').slice(0, 4000) }]
+        });
+        const txt = (r.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+        return { delegated_to: subEmp.name, output: txt.slice(0, 6000) };
+      } catch(e) { return { error: e.message }; }
     }
     default:
       return { error: "unknown tool: " + name };
