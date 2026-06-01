@@ -249,6 +249,19 @@ const TOOL_DEFINITIONS = {
       required: ["employee", "task"]
     }
   },
+
+  // ── (1) 讀自家 FB + IG 歷史貼文 + 互動數 (學成功公式) ──
+  get_meta_posts: {
+    category: "read",
+    description: "抓 溫點 WarmPlace 自己 FB Page + IG 最近 N 篇貼文 + 互動數 (讚/留言/分享). 用來分析哪種文案/視覺/題材成效最好, 學成功公式. 寫新內容前先 call 一次.",
+    input_schema: {
+      type: "object",
+      properties: {
+        platform: { type: "string", enum: ["fb", "ig", "both"], description: "fb=只 FB, ig=只 IG, both=兩個都拿" },
+        limit: { type: "number", description: "每平台抓幾篇, 預設 10" }
+      }
+    }
+  },
   // ── ① web_search marker — asAnthropicTools 會轉成 Anthropic 原生 server-tool ──
   web_search: {
     category: "native",

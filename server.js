@@ -65,11 +65,17 @@ const FORMAT_ENFORCEMENT = `
 
 async function maybeAugmentSystemPrompt(emp) {
   let baseSystem = emp.systemPrompt + FORMAT_ENFORCEMENT;
-  // ② 多輪記憶: 從 history.js 撈最近 5 筆 (同員工)
+  // ② 多輪記憶 + (2) 昨日教訓
   try {
     const H = require('./history');
     const fnMap = { victor:'VICTOR', leon:'CAMILLE', camille:'CAMILLE', aria:'CAMILLE', dex:'DEX', nova:'NOVA', milo:'CAMILLE', rina:'RINA', hana:'HANA', mira:'MIRA', june:'JUNE', sola:'SOLA' };
     const fn = fnMap[(emp.id||'').toLowerCase()] || 'VICTOR';
+    // (2) 昨日教訓 — 從 self-eval 注入
+    try {
+      const se = require('./self-eval');
+      const tail = se.getLessonFor(fn);
+      if (tail) baseSystem += tail;
+    } catch {}
     const recent = H.list({ limit: 5, fn });
     if (recent && recent.length) {
       const lines = recent.map((r,i) => '['+(i+1)+'] '+r.title+' — '+ (r.snippet||'').slice(0,120));
@@ -884,6 +890,20 @@ async function executeReadTool(name, input) {
         return top5.map(c => ({ userId: c.userId, userName: c.userName, lastMessages: (c.messages||[]).slice(0,5).map(m=>({ text:m.text, ts:m.timestamp, intent:m.intent, replied:m.replied, replyText:m.replyText })) }));
       } catch(e) { return { error: e.message }; }
     }
+    case "get_meta_posts": {
+      try {
+        const lim = input.limit || 10;
+        const plat = input.platform || 'both';
+        const out = {};
+        if (plat === 'fb' || plat === 'both') {
+          try { out.fb = await meta.getFbPagePosts({ limit: lim }); } catch(e) { out.fb = { error: e.message }; }
+        }
+        if (plat === 'ig' || plat === 'both') {
+          try { out.ig = await meta.getIgMedia({ limit: lim }); } catch(e) { out.ig = { error: e.message }; }
+        }
+        return out;
+      } catch(e) { return { error: e.message }; }
+    }
     case "delegate_to_employee": {
       try {
         const tgt = String(input.employee||'').toLowerCase();
@@ -1542,6 +1562,12 @@ try { require('./closer').registerCron(cron); } catch (e) { console.error('[clos
 try { require('./mira').registerCron(cron); } catch (e) { console.error('[mira cron]', e.message); }
 try { require('./june').registerCron(cron); } catch (e) { console.error('[june cron]', e.message); }
 try { require('./history').registerCron(cron); } catch (e) { console.error('[history cron]', e.message); }
+// ── (2) self-eval 每晚 22:00 ──
+try {
+  const selfEval = require('./self-eval');
+  if (selfEval && selfEval.registerCron) selfEval.registerCron(cron);
+} catch(e) { console.warn('[self-eval] init', e.message); }
+
 try { require('./memory').registerCron(cron); } catch (e) { console.error('[memory cron]', e.message); }
 if (scout && typeof scout.registerCronJobs === 'function') scout.registerCronJobs(cron);
 if (aiTeamContent && typeof aiTeamContent.registerCronJobs === 'function') aiTeamContent.registerCronJobs(cron);
