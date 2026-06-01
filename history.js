@@ -34,6 +34,7 @@ const FN = {
   VICTOR:   { icon: '👑', label: 'VICTOR · 總監決策',   color: '#6D2E46' },
   DEX:      { icon: '📊', label: 'DEX · 數據報表',     color: '#5C4A3A' },
   AUTO:     { icon: '🤖', label: '自動發文草稿',       color: '#7B6650' },
+  FILES:    { icon: '📁', label: 'FILES · 檔案生成',     color: '#7B6650' },
 };
 
 function purgeOld(s) {

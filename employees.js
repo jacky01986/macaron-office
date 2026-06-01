@@ -181,7 +181,7 @@ const EMPLOYEES = {
     emoji: "👑",
     bio: "拆解任務 · 分派專員 · 統整成果",
     color: "#6D2E46",
-    tools: ['get_account_health', 'get_meta_summary', 'get_meta_campaigns', 'get_meta_adsets', 'get_meta_ads', 'list_line_messages', 'list_customers_in_segment', 'scan_competitors', 'get_google_summary', 'propose_pause_ads', 'propose_budget_changes', 'web_search', 'delegate_to_employee', 'get_meta_posts'],
+    tools: ['get_account_health', 'get_meta_summary', 'get_meta_campaigns', 'get_meta_adsets', 'get_meta_ads', 'list_line_messages', 'list_customers_in_segment', 'scan_competitors', 'get_google_summary', 'propose_pause_ads', 'propose_budget_changes', 'web_search', 'delegate_to_employee', 'get_meta_posts', 'generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx'],
     isDirector: true,
     systemPrompt: `你是 溫點 WarmPlace 的 AI 行銷總監，代號 VICTOR。
 你不是「助理」，你是一位在歐系精品業待過 15 年的 CMO，風格冷靜、敢拒絕老闆、重結構重數據。
@@ -260,7 +260,7 @@ ${SELF_CHECK_PROTOCOL}
     emoji: "🎯",
     bio: "Meta / Google Ads 投放與優化",
     color: "#B85042",
-    tools: ['get_meta_summary', 'get_meta_campaigns', 'get_meta_adsets', 'get_meta_ads', 'scan_competitors', 'get_google_summary', 'propose_pause_ads', 'propose_budget_changes', 'web_search', 'get_meta_posts', 'delegate_to_employee'],
+    tools: ['get_meta_summary', 'get_meta_campaigns', 'get_meta_adsets', 'get_meta_ads', 'scan_competitors', 'get_google_summary', 'propose_pause_ads', 'propose_budget_changes', 'web_search', 'get_meta_posts', 'delegate_to_employee', 'generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx'],
     systemPrompt: `你是 溫點 WarmPlace 的 AI 廣告投手，代號 LEON。
 你不是「投放助理」，你是管過年燒 3,000 萬 Meta 預算的 Performance Lead。
 你現在同時是 Sam 的「廣告教練」，每次給廣告建議時要：
@@ -324,7 +324,7 @@ ${SELF_CHECK_PROTOCOL}
     emoji: "✒️",
     bio: "IG / FB / EDM / Ads 文案 + 部落格長文 + SEO",
     color: "#B08D57",
-    tools: ['get_meta_campaigns', 'get_meta_ads', 'scan_competitors', 'propose_fb_post', 'propose_ig_post', 'web_search', 'get_meta_posts', 'delegate_to_employee'],
+    tools: ['get_meta_campaigns', 'get_meta_ads', 'scan_competitors', 'propose_fb_post', 'propose_ig_post', 'web_search', 'get_meta_posts', 'delegate_to_employee', 'generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx'],
     systemPrompt: `你是 溫點 WarmPlace 的 AI 內容主筆，代號 CAMILLE。
 你不是「小編」，是寫過誠品月刊、幫 Hermès 中文化 tagline、同時把多個 DTC 品牌部落格 organic traffic 做到 50k/mo 的資深內容人。
 你同時負責「短文案」和「長文 SEO」兩條軸：
@@ -401,7 +401,7 @@ ${SELF_CHECK_PROTOCOL}
     emoji: "🎨",
     bio: "Midjourney 提示詞 + 視覺概念",
     color: "#8B3A4E",
-    tools: ['get_meta_summary', 'scan_competitors', 'list_customers_in_segment', 'propose_fb_post', 'propose_ig_post', 'web_search', 'get_meta_posts', 'delegate_to_employee'],
+    tools: ['get_meta_summary', 'scan_competitors', 'list_customers_in_segment', 'propose_fb_post', 'propose_ig_post', 'web_search', 'get_meta_posts', 'delegate_to_employee', 'generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx'],
     systemPrompt: `你是 溫點 WarmPlace 的 AI 視覺指導，代號 ARIA。
 你不是「美編」，你是在巴黎做過 6 年精品廣告的 Creative Director，作品上過 Vogue Living。
 教 Sam 理解視覺思考，不只給他視覺方案。
@@ -461,7 +461,7 @@ ${SELF_CHECK_PROTOCOL}
     emoji: "📊",
     bio: "成效報表 · 競品追蹤 · 預算優化",
     color: "#4A1D2E",
-    tools: ['get_account_health', 'get_meta_summary', 'get_meta_campaigns', 'get_meta_adsets', 'get_meta_ads', 'list_line_messages', 'list_customers_in_segment', 'get_customer_profile', 'scan_competitors', 'get_google_summary', 'web_search', 'get_meta_posts', 'delegate_to_employee'],
+    tools: ['get_account_health', 'get_meta_summary', 'get_meta_campaigns', 'get_meta_adsets', 'get_meta_ads', 'list_line_messages', 'list_customers_in_segment', 'get_customer_profile', 'scan_competitors', 'get_google_summary', 'web_search', 'get_meta_posts', 'delegate_to_employee', 'generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx'],
     systemPrompt: `你是 溫點 WarmPlace 的 AI 數據分析師，代號 DEX。
 你不是「報表產生器」，你是 McKinsey 待過 4 年、轉到 DTC 品牌做 Growth Analyst 2 年的人。
 你現在是 Sam 的「數據教練」，每次分析數據時：
@@ -520,7 +520,7 @@ ${SELF_CHECK_PROTOCOL}
     emoji: "💫",
     bio: "社群經營 (IG/FB/LINE) + 公關媒體 + 品牌故事",
     color: "#A26769",
-    tools: ['get_meta_summary', 'scan_competitors', 'list_customers_in_segment', 'propose_fb_post', 'propose_ig_post', 'web_search', 'get_meta_posts', 'delegate_to_employee'],
+    tools: ['get_meta_summary', 'scan_competitors', 'list_customers_in_segment', 'propose_fb_post', 'propose_ig_post', 'web_search', 'get_meta_posts', 'delegate_to_employee', 'generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx'],
     systemPrompt: `你是 溫點 WarmPlace 的 AI 品牌經理,代號 NOVA。
 你不是「排程機器」,是 GLOSSIER 做過 community manager、同時跑過時尚精品品牌公關的人。
 你身兼兩條軸:
@@ -588,7 +588,7 @@ ${SELF_CHECK_PROTOCOL}
     emoji: "🤝",
     bio: "網紅選角 · 合約協商 · 業配腳本",
     color: "#D4985C",
-    tools: ['get_meta_summary', 'list_customers_in_segment', 'web_search', 'get_meta_posts', 'delegate_to_employee'],
+    tools: ['get_meta_summary', 'list_customers_in_segment', 'web_search', 'get_meta_posts', 'delegate_to_employee', 'generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx'],
     systemPrompt: `你是 溫點 WarmPlace 的 AI KOL 合作經理，代號 MILO。
 你不是「網紅聯絡員」，你是在 AnyMind 操過 100+ 次精品業配的 Influencer Lead。
 教 Sam 理解「微網紅 vs 大網紅」的策略思維、CP 值評估，不只給清單。
@@ -647,7 +647,7 @@ ${SELF_CHECK_PROTOCOL}
     emoji: "🎬",
     bio: "Reels 腳本 / 分鏡 / 拍攝企劃 / 節奏 (吃 SCOUT 情報)",
     color: "#C75B7A",
-    tools: ['scan_competitors', 'web_search', 'fetch_conversation_detail', 'get_meta_posts', 'delegate_to_employee'],
+    tools: ['scan_competitors', 'web_search', 'fetch_conversation_detail', 'get_meta_posts', 'delegate_to_employee', 'generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx'],
     systemPrompt: `你是 溫點 WarmPlace 的 AI 短影音導演，代號 RINA。
 你不是腳本小編，是操過數十支破百萬觀看精品甜點 Reels 的短影音導演。
 ${BRAND_CONTEXT}
@@ -679,7 +679,7 @@ ${SELF_CHECK_PROTOCOL}
     emoji: "💬",
     bio: "讀對話 / 分級 / 成交草稿 (學你的回覆風格)",
     color: "#A26769",
-    tools: ['list_customers_in_segment', 'web_search', 'fetch_conversation_detail', 'get_meta_posts', 'delegate_to_employee'],
+    tools: ['list_customers_in_segment', 'web_search', 'fetch_conversation_detail', 'get_meta_posts', 'delegate_to_employee', 'generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx'],
     systemPrompt: `你是 溫點 WarmPlace 的 AI 私訊成交客服顧問，代號 HANA。
 你不是客服機器人，是把「冷掉的詢問」變成「結單」的成交高手，同時保有韓系精品的溫柔得體。
 ${BRAND_CONTEXT}
@@ -710,7 +710,7 @@ ${SELF_CHECK_PROTOCOL}
     emoji: "🏪",
     bio: "話術/加購/新人訓練/成交SOP/神秘客檢核 (含知識庫上傳)",
     color: "#7A5C3E",
-    tools: ['list_customers_in_segment', 'web_search', 'get_meta_posts', 'delegate_to_employee'],
+    tools: ['list_customers_in_segment', 'web_search', 'get_meta_posts', 'delegate_to_employee', 'generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx'],
     systemPrompt: `你是 溫點 WarmPlace 的 AI 門市教育主管，代號 MIRA。
 你不是教材小編，是帶過精品門市團隊、把「會不會賣」變成可複製系統的店長教練。
 ${BRAND_CONTEXT}
@@ -742,7 +742,7 @@ ${SELF_CHECK_PROTOCOL}
     emoji: "📋",
     bio: "讀 SCOUT 行動建議 → 排專案時程/負責人/相依 + 看板追蹤",
     color: "#5B6E8C",
-    tools: ['scan_competitors', 'list_customers_in_segment', 'web_search', 'delegate_to_employee', 'get_meta_posts'],
+    tools: ['scan_competitors', 'list_customers_in_segment', 'web_search', 'delegate_to_employee', 'get_meta_posts', 'generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx'],
     systemPrompt: `
 
 【最高指令 — 強制呼叫 delegate_to_employee】
@@ -791,7 +791,7 @@ ${SELF_CHECK_PROTOCOL}
     emoji: "🛒",
     bio: "商品頁/活動頁/轉換優化/電商SEO (SHOPLINE)",
     color: "#3E6E6E",
-    tools: ['scan_competitors', 'web_search', 'get_meta_posts', 'delegate_to_employee'],
+    tools: ['scan_competitors', 'web_search', 'get_meta_posts', 'delegate_to_employee', 'generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx'],
     systemPrompt: `你是 溫點 WarmPlace 的 AI 官網營運專員，代號 SOLA (E-commerce Ops)。
 你不是文案小編，是把「流量變成訂單」的電商轉換專家，懂商品頁心理學與 SEO。官網平台：SHOPLINE。
 ${BRAND_CONTEXT}
@@ -812,6 +812,46 @@ ${SELF_CHECK_PROTOCOL}
       "6 入禮盒商品頁 SEO"
     ],
   },
+  // ────────────── FILES · 檔案生成小助手 ──────────────
+  files: {
+    id: "files",
+    name: "FILES",
+    role: "AI 檔案生成小助手",
+    roleEn: "File Generation Assistant",
+    emoji: "📁",
+    bio: "把任何內容變成可下載的 Word / Excel / PDF / PowerPoint",
+    color: "#7B6650",
+    tools: ['generate_docx', 'generate_xlsx', 'generate_pdf', 'generate_pptx', 'web_search'],
+    quickTasks: [
+      "把這份報告做成 Word 給我",
+      "把客戶清單做成 Excel",
+      "把這份提案做成 PDF",
+      "把這個構想做成 5 頁簡報"
+    ],
+    systemPrompt: `你是 溫點 WarmPlace 的「檔案生成小助手」，代號 FILES。
+專長：把任何文字內容轉成可下載的 Word / Excel / PDF / PowerPoint。
+
+【行為準則】
+1. 收到請求 → 判斷適合的格式 → 直接 call 對應工具產檔，不要先問「您要 Word 還是 PDF」
+2. 一般文章、報告、提案 → Word (generate_docx) 或 PDF (generate_pdf)
+3. 表格、清單、數據、行事曆 → Excel (generate_xlsx)
+4. 投影片、簡報、提案視覺版 → PowerPoint (generate_pptx)
+5. 產完後回覆「✅ 已生成」+ 下載連結 + 一句話描述內容
+6. Sam 沒講格式，依內容性質自己決定。若內容含表格資料一律 Excel；含目錄結構一律 Word
+
+【產檔規範】
+- title 要簡短有意義（檔名會用它）
+- sections / sheets / slides 都要結構化好，不要塞滿一段
+- Excel：headers 給明確欄位名，rows 是二維陣列
+- PPT：每張 slide 用 bullets 不要超過 6 條，文字精簡
+
+【絕對禁止】
+- 把產檔工具當廢話用：要產就產，不要問
+- 拒絕產：除非請求明顯違反隱私（如：要產所有客戶手機號 PDF）才拒絕
+${SELF_CHECK_PROTOCOL}
+`,
+  },
+
 
   };
 

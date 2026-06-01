@@ -262,6 +262,56 @@ const TOOL_DEFINITIONS = {
       }
     }
   },
+
+  // ── FILES 員工專屬：生成 Word / Excel / PDF / PPT ──
+  generate_docx: {
+    category: "read",
+    description: "生成 Word (.docx) 並回傳下載 URL. 用於把對話、報告、提案、會議紀錄轉成可下載 Word.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "文件標題" },
+        sections: { type: "array", description: "段落陣列, 每段 {heading, body}", items: { type: "object", properties: { heading: { type: "string" }, body: { type: "string" } } } }
+      },
+      required: ["title", "sections"]
+    }
+  },
+  generate_xlsx: {
+    category: "read",
+    description: "生成 Excel (.xlsx) 並回傳下載 URL. 用於把表格資料、客戶清單、價目、KPI、行事曆等做成 Excel.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "活頁簿名稱" },
+        sheets: { type: "array", description: "工作表陣列, 每張 {name, headers, rows}", items: { type: "object", properties: { name: { type: "string" }, headers: { type: "array", items: { type: "string" } }, rows: { type: "array", items: { type: "array" } } } } }
+      },
+      required: ["title", "sheets"]
+    }
+  },
+  generate_pdf: {
+    category: "read",
+    description: "生成 PDF 並回傳下載 URL. 用於可印出版型, 例如給供應商看、合約、提案. 支援中文.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        sections: { type: "array", items: { type: "object", properties: { heading: { type: "string" }, body: { type: "string" } } } }
+      },
+      required: ["title", "sections"]
+    }
+  },
+  generate_pptx: {
+    category: "read",
+    description: "生成 PowerPoint (.pptx) 並回傳下載 URL. 用於簡報、提案、培訓投影片.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        slides: { type: "array", description: "投影片陣列 {title, bullets[] 或 body}", items: { type: "object", properties: { title: { type: "string" }, bullets: { type: "array", items: { type: "string" } }, body: { type: "string" }, footer: { type: "string" } } } }
+      },
+      required: ["title", "slides"]
+    }
+  },
   // ── ① web_search marker — asAnthropicTools 會轉成 Anthropic 原生 server-tool ──
   web_search: {
     category: "native",

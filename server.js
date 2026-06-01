@@ -68,7 +68,7 @@ async function maybeAugmentSystemPrompt(emp) {
   // ② 多輪記憶 + (2) 昨日教訓
   try {
     const H = require('./history');
-    const fnMap = { victor:'VICTOR', leon:'CAMILLE', camille:'CAMILLE', aria:'CAMILLE', dex:'DEX', nova:'NOVA', milo:'CAMILLE', rina:'RINA', hana:'HANA', mira:'MIRA', june:'JUNE', sola:'SOLA' };
+    const fnMap = { victor:'VICTOR', leon:'CAMILLE', camille:'CAMILLE', aria:'CAMILLE', dex:'DEX', nova:'NOVA', milo:'CAMILLE', rina:'RINA', hana:'HANA', mira:'MIRA', june:'JUNE', sola:'SOLA', files:'FILES' };
     const fn = fnMap[(emp.id||'').toLowerCase()] || 'VICTOR';
     // (2) 昨日教訓 — 從 self-eval 注入
     try {
@@ -873,6 +873,18 @@ async function executeReadTool(name, input) {
       } catch(e) { out.google = { error: e.message }; }
       return out;
     }
+    case "generate_docx": {
+      try { const filesMod = require('./files'); return await filesMod.generateDocx(input || {}); } catch(e) { return { error: e.message }; }
+    }
+    case "generate_xlsx": {
+      try { const filesMod = require('./files'); return await filesMod.generateXlsx(input || {}); } catch(e) { return { error: e.message }; }
+    }
+    case "generate_pdf": {
+      try { const filesMod = require('./files'); return await filesMod.generatePdf(input || {}); } catch(e) { return { error: e.message }; }
+    }
+    case "generate_pptx": {
+      try { const filesMod = require('./files'); return await filesMod.generatePptx(input || {}); } catch(e) { return { error: e.message }; }
+    }
     case "fetch_conversation_detail": {
       try {
         const ss = require('./salesmartly');
@@ -965,7 +977,7 @@ const chatAgentHandler = async (req, res) => {
           const lastUser = (messages || []).filter(m => m.role !== 'assistant' && m.role !== 'ai').slice(-1)[0];
           const userText = lastUser ? (typeof lastUser.content === 'string' ? lastUser.content : JSON.stringify(lastUser.content)) : '';
           const fullText = textBlocks.map(b => b.text).join('\n');
-          const fnMap = { victor:'VICTOR', leon:'CAMILLE', camille:'CAMILLE', aria:'CAMILLE', dex:'DEX', nova:'NOVA', milo:'CAMILLE', rina:'RINA', hana:'HANA', mira:'MIRA', june:'JUNE', sola:'SOLA' };
+          const fnMap = { victor:'VICTOR', leon:'CAMILLE', camille:'CAMILLE', aria:'CAMILLE', dex:'DEX', nova:'NOVA', milo:'CAMILLE', rina:'RINA', hana:'HANA', mira:'MIRA', june:'JUNE', sola:'SOLA', files:'FILES' };
           const fn = fnMap[(employeeId||'').toLowerCase()] || 'VICTOR';
           H.record({
             fn,
@@ -1065,7 +1077,7 @@ const _originalChatHandler = async (req, res) => {
       const lastUser = (messages || []).filter(m => m.role !== 'assistant' && m.role !== 'ai').slice(-1)[0];
       const userText = lastUser ? (typeof lastUser.content === 'string' ? lastUser.content : JSON.stringify(lastUser.content)) : '';
       // 員工代號對應到 history FN
-      const fnMap = { victor:'VICTOR', leon:'CAMILLE', camille:'CAMILLE', aria:'CAMILLE', dex:'DEX', nova:'NOVA', milo:'CAMILLE', rina:'RINA', hana:'HANA', mira:'MIRA', june:'JUNE', sola:'SOLA' };
+      const fnMap = { victor:'VICTOR', leon:'CAMILLE', camille:'CAMILLE', aria:'CAMILLE', dex:'DEX', nova:'NOVA', milo:'CAMILLE', rina:'RINA', hana:'HANA', mira:'MIRA', june:'JUNE', sola:'SOLA', files:'FILES' };
       const fn = fnMap[(employeeId||'').toLowerCase()] || 'VICTOR';
       H.record({
         fn,
@@ -4780,7 +4792,8 @@ try { app.use('/api/history', require('./history')); console.log('[history] hist
 catch (e) { console.error('[history] mount failed:', e.message); }
 
 // === MEMORY 集體記憶路由 ===
-try { app.use('/api/memory', require('./memory')); console.log('[memory] memory route mounted at /api/memory'); }
+try { app.use('/api/memory', require('./memory'));
+app.use('/api/exports', require('./files')); console.log('[memory] memory route mounted at /api/memory'); }
 catch (e) { console.error('[memory] mount failed:', e.message); }
 
 // === DIRECTOR 拍攝指導路由 ===
