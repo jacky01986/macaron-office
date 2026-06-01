@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>🧠 團隊集體記憶 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{ --burgundy:#6D2E46; --burgundy-dark:#4a1f30; --gold:#B08D57; --dark:#1C1213; --dark-2:#2a1a1d; --ivory:#FCF6F5; --green:#3fb27f; }
+  *{ box-sizing:border-box; }
+  body{ font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; background:var(--dark); color:var(--ivory); margin:0; padding:0 0 60px; }
+  .wrap{ padding:18px; max-width:920px; margin:0 auto; }
+  h1{ font-size:22px; margin:0 0 4px; color:var(--gold); }
+  .sub{ color:rgba(252,246,245,.7); font-size:13px; margin-bottom:14px; line-height:1.6; }
+  .card{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:12px; padding:16px; margin-bottom:14px; }
+  .toolbar{ display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+  button.go{ background:linear-gradient(135deg,var(--burgundy),var(--burgundy-dark)); color:var(--ivory); border:1px solid var(--gold); padding:10px 20px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
+  button.go:disabled{ opacity:.5; cursor:not-allowed; }
+  .info{ font-size:12px; color:rgba(252,246,245,.6); margin-left:auto; }
+  pre{ background:#1a1010; color:var(--ivory); padding:18px; border-radius:8px; white-space:pre-wrap; font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; font-size:14px; line-height:1.8; margin:0; }
+  pre strong{ color:var(--gold); }
+  .empty{ color:rgba(252,246,245,.5); padding:30px 14px; text-align:center; font-style:italic; }
+</style>
+<link rel="stylesheet" href="/macaron-shared.css">
+</head>
+<body>
+<style>@media all { .macaron-topnav.in-iframe { display:none !important; } }</style>
+<script>(function(){ try{ if(window.parent!==window){ var n=document.querySelector('.macaron-topnav'); if(n)n.classList.add('in-iframe'); } }catch(e){} })();</script>
+<style>
+.macaron-topnav{ background:linear-gradient(135deg,#6B4226,#8B5A33); padding:8px 16px; display:flex; gap:8px; align-items:center; overflow-x:auto; white-space:nowrap; }
+.macaron-topnav strong{ color:#FAF7F2; font-size:14px; margin-right:8px; }
+.macaron-topnav a{ padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; background:#FAF7F2; color:#6B4226; }
+</style>
+<div class="macaron-topnav">
+  <strong>溫點 WarmPlace</strong>
+  <a href="/">🏠 主控台</a>
+  <a href="/content-hub.html">📚 內容中心</a>
+  <a href="/customer-hub.html">👥 客戶中心</a>
+  <a href="/ads-hub.html">📊 廣告中心</a>
+  <a href="/market-intel.html">🔍 市場情報</a>
+  <a href="/teachers.html">🏪 門店戰報</a>
+</div>
+
+<div class="wrap">
+  <h1>🧠 團隊集體記憶</h1>
+  <p class="sub">把你過去 10 天問過的話、AI 員工答過的話、生成過的內容全部消化，整理成「全員必學」的團隊記憶。<br>
+  每天 04:00 自動跑一次，跑完所有員工（VICTOR、CAMILLE、NOVA、RINA、HANA、MIRA、JUNE、SOLA…）的系統提示都會自動把這份記憶讀進去。也就是說：你今天問過的內容，明天 NOVA 寫貼文時會自動知道。</p>
+
+  <div class="toolbar">
+    <button class="go" id="syn" onclick="synthesize()">🧠 立刻消化（30-60 秒）</button>
+    <span class="info" id="info">—</span>
+  </div>
+
+  <div class="card">
+    <div id="out"><div class="empty">⏳ 載入中…</div></div>
+  </div>
+</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+
+function escapeHtml(s){ return String(s||'').replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+// 把 markdown 樣式的 # ## *bold* 等簡單轉成 HTML
+function mdLite(s){
+  let t = escapeHtml(s||'');
+  t = t.replace(/^## (.*)$/gm, '<strong>$1</strong>');
+  t = t.replace(/^# (.*)$/gm, '<strong>$1</strong>');
+  return t;
+}
+
+async function loadCurrent(){
+  try {
+    const j = await fetch('/api/memory/current').then(r=>r.json());
+    if (!j.ok || !j.item || !j.item.digest) {
+      $('out').innerHTML = '<div class="empty">尚未消化過。按上方「立刻消化」可以馬上跑一次，之後每天 04:00 會自動更新。</div>';
+      $('info').textContent = '—';
+      return;
+    }
+    $('out').innerHTML = '<pre>' + mdLite(j.item.digest) + '</pre>';
+    const d = j.item.updated_at ? new Date(j.item.updated_at).toLocaleString('zh-TW') : '—';
+    $('info').textContent = '更新於 ' + d + ' · 共消化 ' + (j.item.source_count||0) + ' 筆對話';
+  } catch(e) {
+    $('out').innerHTML = '<div class="empty" style="color:#e76b6b;">載入失敗：'+e.message+'</div>';
+  }
+}
+
+async function synthesize(){
+  const btn = $('syn');
+  btn.disabled = true; btn.textContent = '🧠 消化中…（30-60 秒）';
+  try {
+    const j = await fetch('/api/memory/synthesize', { method:'POST' }).then(r=>r.json());
+    if (!j.ok) throw new Error(j.error||'失敗');
+    await loadCurrent();
+    btn.textContent = '✅ 完成';
+    setTimeout(()=>{ btn.textContent = '🧠 立刻消化（30-60 秒）'; btn.disabled = false; }, 2000);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '🧠 立刻消化（30-60 秒）';
+    alert('❌ ' + e.message);
+  }
+}
+
+loadCurrent();
+</script>
+</body>
+</html>
