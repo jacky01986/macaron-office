@@ -113,5 +113,49 @@ function copyOut(){ navigator.clipboard.writeText($('out').innerText).then(()=>{
 
 loadTypes(); loadIntel();
 </script>
+
+<!-- ========== 主控台對話紀錄面板 ========== -->
+<style>
+.cdesk-history { max-width:920px; margin:18px auto 0; padding:0 18px; }
+.cdesk-history h3 { color:#B08D57; font-size:15px; margin:0 0 8px; display:flex; align-items:center; gap:8px; }
+.cdesk-history h3 a { font-size:11.5px; color:#B08D57; text-decoration:none; opacity:.7; margin-left:auto; font-weight:400; }
+.cdesk-history .ch-empty { color:rgba(252,246,245,.5); font-size:12px; padding:14px; background:#2a1a1d; border:1px dashed rgba(176,141,87,.25); border-radius:8px; text-align:center; }
+.cdesk-history .ch-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:10px; }
+.cdesk-history .ch-card { background:#2a1a1d; border:1px solid rgba(176,141,87,.3); border-radius:8px; padding:10px 12px; text-decoration:none; color:#FCF6F5; transition:background .15s; display:block; }
+.cdesk-history .ch-card:hover { background:rgba(176,141,87,.08); }
+.cdesk-history .ch-card .ch-ts { font-size:11px; color:rgba(252,246,245,.5); margin-bottom:4px; }
+.cdesk-history .ch-card .ch-title { font-size:13px; font-weight:600; line-height:1.4; }
+.cdesk-history .ch-card .ch-snip { font-size:11.5px; color:rgba(252,246,245,.55); margin-top:4px; line-height:1.5; }
+</style>
+<div class="cdesk-history" id="cdesk-history-SOLA"></div>
+<script>
+(function(){
+  function fmtAgo(ts){ const d=(Date.now()-ts)/1000; if(d<60)return '剛剛'; if(d<3600)return Math.floor(d/60)+' 分鐘前'; if(d<86400)return Math.floor(d/3600)+' 小時前'; return Math.floor(d/86400)+' 天前'; }
+  function esc(s){ return String(s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  async function load(){
+    const wrap = document.getElementById('cdesk-history-SOLA');
+    if (!wrap) return;
+    try {
+      const j = await fetch('/api/history/list?fn=SOLA&limit=20').then(r=>r.json());
+      const items = (j&&j.items)||[];
+      if (!items.length) {
+        wrap.innerHTML = '<h3>📚 從主控台來的問答 / 對話 <a href="/history-view.html?fn=SOLA">看完整 →</a></h3><div class="ch-empty">目前沒有從主控台來的相關問答。你在主控台對 SOLA 員工提問或交付任務，答案會自動同步到這裡。</div>';
+        return;
+      }
+      wrap.innerHTML = '<h3>📚 從主控台來的問答 / 對話 ('+items.length+') <a href="/history-view.html?fn=SOLA">看完整 →</a></h3>'
+        + '<div class="ch-grid">'
+        + items.map(it=>'<a class="ch-card" href="/history-view.html?id='+it.id+'"><div class="ch-ts">'+fmtAgo(it.ts)+'</div><div class="ch-title">'+esc(it.title)+'</div>'+(it.snippet?'<div class="ch-snip">'+esc(it.snippet)+'…</div>':'')+'</a>').join('')
+        + '</div>';
+    } catch(e) {
+      wrap.innerHTML = '<h3>📚 從主控台來的問答</h3><div class="ch-empty">載入失敗：'+e.message+'</div>';
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load);
+  else load();
+  // 每 30 秒自動重整
+  setInterval(load, 30000);
+})();
+</script>
+<!-- ========== /主控台對話紀錄面板 ========== -->
 </body>
 </html>
