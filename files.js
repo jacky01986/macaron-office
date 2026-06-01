@@ -212,6 +212,96 @@ async function generatePptx({ title, slides }) {
 }
 
 // ─────────── 路由：下載 ───────────
+
+// ─────────── 一鍵把歷史紀錄轉成檔案 ───────────
+// GET /api/exports/from-history/:id?format=docx|xlsx|pdf|pptx
+router.get('/from-history/:id', async (req, res) => {
+  try {
+    const histMod = require('./history');
+    const rec = histMod.get(req.params.id);
+    if (!rec) return res.status(404).json({ ok: false, error: 'history not found' });
+    const format = String(req.query.format || 'docx').toLowerCase();
+    const title = (rec.title || '對話').replace(/[\\\/:*?"<>|]/g, '_').slice(0, 60);
+
+    // 把 html 拆解成段落 (保留標題結構)
+    let html = String(rec.html || '');
+    const text = String(rec.text || '');
+    // 拆 html 為 sections: 由 <h1>~<h4> 切段，內文取 textContent
+    function htmlToSections(h) {
+      if (!h) return [{ heading: '', body: text || '（無內容）' }];
+      const sections = [];
+      const parts = h.split(/<h[1-4][^>]*>(.*?)<\/h[1-4]>/i);
+      // parts[0] 是前置，[1] 是第一個 heading 文字，[2] 是其後 body html，依此交錯
+      if (parts.length === 1) {
+        const body = parts[0].replace(/<[^>]+>/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+        return [{ heading: '', body }];
+      }
+      if (parts[0]) {
+        const body = parts[0].replace(/<[^>]+>/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+        if (body) sections.push({ heading: '', body });
+      }
+      for (let i = 1; i < parts.length; i += 2) {
+        const heading = (parts[i] || '').replace(/<[^>]+>/g, '').trim();
+        const body = (parts[i+1] || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n\n').replace(/<li>/gi, '· ').replace(/<\/li>/gi, '\n').replace(/<[^>]+>/g, '').replace(/\n{3,}/g, '\n\n').trim();
+        sections.push({ heading, body });
+      }
+      return sections;
+    }
+    const sections = htmlToSections(html);
+
+    // 找 table 結構轉 Excel 用
+    function htmlToTable(h) {
+      if (!h) return null;
+      const m = h.match(/<table[\s\S]*?<\/table>/i);
+      if (!m) return null;
+      const rows = [];
+      const rowMatches = m[0].match(/<tr[\s\S]*?<\/tr>/gi) || [];
+      for (const r of rowMatches) {
+        const cells = (r.match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || []).map(c => c.replace(/<[^>]+>/g, '').trim());
+        if (cells.length) rows.push(cells);
+      }
+      return rows.length ? rows : null;
+    }
+
+    let out;
+    if (format === 'docx') {
+      out = await module.exports.generateDocx({ title, sections });
+    } else if (format === 'xlsx') {
+      // 優先用 table 解析
+      const table = htmlToTable(html);
+      if (table && table.length > 1) {
+        out = await module.exports.generateXlsx({ title, sheets: [{ name: title.slice(0, 28), headers: table[0], rows: table.slice(1) }] });
+      } else {
+        // 沒表格 → 把 sections 拆成 [標題, 內容] 兩欄
+        const rows = sections.map(s => [s.heading || '段落', s.body]);
+        out = await module.exports.generateXlsx({ title, sheets: [{ name: title.slice(0, 28), headers: ['段落', '內容'], rows }] });
+      }
+    } else if (format === 'pdf') {
+      out = await module.exports.generatePdf({ title, sections });
+      if (!out.ok) {
+        // PDF 失敗 → 自動降級成 docx
+        out = await module.exports.generateDocx({ title: title + '（PDF不可用_改Word）', sections });
+      }
+    } else if (format === 'pptx') {
+      // sections 轉投影片 — 每個 heading 一張
+      const slides = sections.filter(s => s.heading || s.body).map(s => ({
+        title: s.heading || title,
+        bullets: (s.body || '').split('\n').filter(x => x.trim()).slice(0, 6)
+      }));
+      out = await module.exports.generatePptx({ title, slides: slides.length ? slides : [{ title, body: text }] });
+    } else {
+      return res.status(400).json({ ok: false, error: 'unknown format: ' + format });
+    }
+    if (!out || !out.ok) return res.status(500).json({ ok: false, error: (out && out.error) || 'generate failed' });
+    // 直接觸發下載
+    const filePath = path.join(EXPORT_DIR, out.filename);
+    return res.download(filePath, out.filename);
+  } catch (e) {
+    console.error('[from-history]', e);
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 router.get('/:filename', (req, res) => {
   const name = String(req.params.filename || '').replace(/[\/\\.]{2,}/g, '');
   const p = path.join(EXPORT_DIR, name);
@@ -226,6 +316,51 @@ router.get('/', (req, res) => {
       .sort((a, b) => b.mtime - a.mtime).slice(0, 50);
     res.json({ ok: true, items });
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+
+// 診斷端點：強制重抓字型並回報每個 URL 狀況
+router.post('/_debug/refetch-font', async (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  const urls = [
+    'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/TTF/TraditionalChinese/NotoSansCJKtc-Regular.ttf',
+    'https://github.com/googlefonts/noto-cjk/raw/main/Sans/TTF/TraditionalChinese/NotoSansCJKtc-Regular.ttf',
+    'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tc@5.0.5/files/noto-sans-tc-chinese-traditional-400-normal.woff2',
+    'https://fonts.gstatic.com/ea/notosanstc/v1/NotoSansTC-Regular.otf',
+    'https://github.com/notofonts/noto-cjk/raw/main/Sans/OTF/TraditionalChinese/NotoSansCJKtc-Regular.otf',
+  ];
+  const fontDir = path.dirname(CJK_FONT_DISK);
+  try { fs.mkdirSync(fontDir, { recursive: true }); } catch {}
+  const out = [];
+  for (const u of urls) {
+    try {
+      const r = await fetch(u);
+      if (!r.ok) { out.push({ url: u, status: r.status, ok: false }); continue; }
+      const buf = Buffer.from(await r.arrayBuffer());
+      out.push({ url: u, status: r.status, ok: true, bytes: buf.length });
+      if (buf.length > 1024 * 100) {
+        const ext = u.endsWith('.otf') ? '.otf' : (u.endsWith('.woff2') ? '.woff2' : '.ttf');
+        const target = ext === '.ttf' ? CJK_FONT_DISK : CJK_FONT_DISK.replace('.ttf', ext);
+        fs.writeFileSync(target, buf);
+        out[out.length-1].saved = target;
+        out[out.length-1].usable = (ext === '.ttf' || ext === '.otf');
+      }
+    } catch (e) { out.push({ url: u, error: e.message }); }
+  }
+  res.json({ ok: true, results: out, current_font_path: getCjkFontPath() });
+});
+
+router.get('/_debug/font-status', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  res.json({
+    docker_font_exists: fs.existsSync(CJK_FONT_DOCKER),
+    disk_font_exists: fs.existsSync(CJK_FONT_DISK),
+    current_path: getCjkFontPath(),
+    fonts_dir: (function(){ try { return fs.readdirSync(path.dirname(CJK_FONT_DISK)); } catch { return []; }})(),
+    app_fonts_dir: (function(){ try { return fs.readdirSync('/app/fonts'); } catch { return []; }})(),
+  });
 });
 
 module.exports = router;
