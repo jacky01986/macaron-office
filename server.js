@@ -897,6 +897,22 @@ const chatAgentHandler = async (req, res) => {
 
       if (toolUses.length === 0 || resp.stop_reason !== "tool_use") {
         send("done", { ok: true, turns: safety });
+        // 記錄到歷史
+        try {
+          const H = require('./history');
+          const lastUser = (messages || []).filter(m => m.role !== 'assistant' && m.role !== 'ai').slice(-1)[0];
+          const userText = lastUser ? (typeof lastUser.content === 'string' ? lastUser.content : JSON.stringify(lastUser.content)) : '';
+          const fullText = textBlocks.map(b => b.text).join('\n');
+          const fnMap = { victor:'VICTOR', leon:'CAMILLE', camille:'CAMILLE', aria:'CAMILLE', dex:'DEX', nova:'NOVA', milo:'CAMILLE', rina:'RINA', hana:'HANA', mira:'MIRA', june:'JUNE', sola:'SOLA' };
+          const fn = fnMap[(employeeId||'').toLowerCase()] || 'VICTOR';
+          H.record({
+            fn,
+            title: emp.name + ' 對話 · ' + userText.replace(/<[^>]+>/g,' ').slice(0,40),
+            html: '<h4>你問：</h4><p style="white-space:pre-wrap">'+userText.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</p><h4>'+emp.name+' 回覆：</h4><div>'+fullText+'</div>',
+            text: userText.slice(0,500) + ' → ' + fullText.replace(/<[^>]+>/g,' ').slice(0,1500),
+            meta: { employeeId, source: 'chat-agent', turns: safety }
+          });
+        } catch(e) { console.error('[history chat-agent]', e.message); }
         return res.end();
       }
 
@@ -981,6 +997,22 @@ const _originalChatHandler = async (req, res) => {
     stream.on("error", (err) => { send("error", { message: String(err.message || err) }); res.end(); });
     await stream.finalMessage();
     send("done", { ok: true, length: full.length });
+    // 記錄到歷史
+    try {
+      const H = require('./history');
+      const lastUser = (messages || []).filter(m => m.role !== 'assistant' && m.role !== 'ai').slice(-1)[0];
+      const userText = lastUser ? (typeof lastUser.content === 'string' ? lastUser.content : JSON.stringify(lastUser.content)) : '';
+      // 員工代號對應到 history FN
+      const fnMap = { victor:'VICTOR', leon:'CAMILLE', camille:'CAMILLE', aria:'CAMILLE', dex:'DEX', nova:'NOVA', milo:'CAMILLE', rina:'RINA', hana:'HANA', mira:'MIRA', june:'JUNE', sola:'SOLA' };
+      const fn = fnMap[(employeeId||'').toLowerCase()] || 'VICTOR';
+      H.record({
+        fn,
+        title: emp.name + ' 對話 · ' + userText.replace(/<[^>]+>/g,' ').slice(0,40),
+        html: '<h4>你問：</h4><p style="white-space:pre-wrap">'+userText.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</p><h4>'+emp.name+' 回覆：</h4><div>'+full+'</div>',
+        text: userText.slice(0,500) + ' → ' + (full.replace(/<[^>]+>/g,' ').slice(0,1500)),
+        meta: { employeeId, source: 'dashboard' }
+      });
+    } catch(e) { console.error('[history chat]', e.message); }
     res.end();
   } catch (err) {
     console.error("[/api/chat]", err);
@@ -1274,6 +1306,17 @@ ${consolidationParts}
     await finalStream.finalMessage();
 
     send("done", { ok: true, totalWorkers: plan.assignments.length, summaryLength: finalText.length });
+    // 記錄整個 orchestrate 對話
+    try {
+      const H = require('./history');
+      H.record({
+        fn: 'VICTOR',
+        title: 'VICTOR 分派 · ' + String(task).slice(0,40),
+        html: '<h4>你交付：</h4><p style="white-space:pre-wrap">'+String(task).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</p><h4>VICTOR 統整（分派給 '+plan.assignments.length+' 位專員後）：</h4><div>'+finalText+'</div>',
+        text: String(task).slice(0,500) + ' → ' + finalText.replace(/<[^>]+>/g,' ').slice(0,1500),
+        meta: { source: 'orchestrate', workers: plan.assignments.length }
+      });
+    } catch(e) { console.error('[history orchestrate]', e.message); }
     res.end();
   } catch (err) {
     console.error("[/api/orchestrate]", err);
