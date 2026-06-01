@@ -342,7 +342,7 @@
   }
   .strategy-box .label { font-family: Georgia, serif; color: var(--gold); font-size: 11px; letter-spacing: 2px; display: block; margin-bottom: 4px; font-style: normal; }
 
-  /* ──── Action items (JEFFREY 本週待辦清單) ──── */
+  /* ──── Action items (SAM 本週待辦清單) ──── */
   .msg.ai .bubble .action-box {
     background: linear-gradient(135deg, rgba(176, 141, 87, 0.12) 0%, rgba(109, 46, 70, 0.18) 100%);
     border: 1px solid var(--gold); border-radius: 12px;
@@ -619,7 +619,7 @@
     <div class="ceo">
       <div class="av">J</div>
       <div class="info">
-        <div class="name">JEFFREY</div>
+        <div class="name">SAM</div>
         <div class="role">品味長 · 決策者</div>
       </div>
     </div>
@@ -930,7 +930,7 @@ function buildTaskTimeline(msgs, emp) {
   msgs.forEach((m) => {
     if (m.role === 'user') {
       directCnt++;
-      items.push({ from: '👤 JEFFREY 直派', text: m.content || '', ts: m.ts || '' });
+      items.push({ from: '👤 SAM 直派', text: m.content || '', ts: m.ts || '' });
     } else if (m.type === 'victor-delegation' || (m.label && m.label.indexOf('VICTOR 派發') >= 0)) {
       victorCnt++;
       const tmp = document.createElement('div');
@@ -981,7 +981,7 @@ function appendMessageToDOM(msg, animate = true) {
   }
   div.className = `msg ${cls}${animate ? ' fade-in' : ''}`;
   if (msg.role === 'user') {
-    div.innerHTML = `<div class="label">您 · JEFFREY</div><div class="bubble">${escapeHtml(msg.content)}</div><div class="time-stamp">${msg.ts}</div>`;
+    div.innerHTML = `<div class="label">您 · SAM</div><div class="bubble">${escapeHtml(msg.content)}</div><div class="time-stamp">${msg.ts}</div>`;
   } else if (cls === 'victor-delegation') {
     const tmp = document.createElement('div');
     tmp.innerHTML = msg.content || '';
