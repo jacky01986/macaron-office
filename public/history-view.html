@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>📚 歷史紀錄 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{ --burgundy:#6D2E46; --burgundy-dark:#4a1f30; --gold:#B08D57; --dark:#1C1213; --dark-2:#2a1a1d; --ivory:#FCF6F5; --green:#3fb27f; }
+  *{ box-sizing:border-box; }
+  body{ font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; background:var(--dark); color:var(--ivory); margin:0; padding:0 0 60px; }
+  .wrap{ padding:18px; max-width:1080px; margin:0 auto; }
+  h1{ font-size:22px; margin:0 0 6px; color:var(--gold); }
+  .sub{ color:rgba(252,246,245,.65); font-size:13px; margin-bottom:14px; }
+  .toolbar{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; align-items:center; }
+  .toolbar select,.toolbar button{ background:var(--dark-2); border:1px solid var(--burgundy); color:var(--ivory); border-radius:6px; padding:7px 12px; font-size:13px; cursor:pointer; }
+  .toolbar button.danger{ border-color:#e76b6b; color:#e76b6b; }
+  .meta-info{ font-size:12px; color:rgba(252,246,245,.6); margin-left:auto; }
+  .list{ display:grid; grid-template-columns:1fr 1.5fr; gap:14px; }
+  @media(max-width:760px){ .list{ grid-template-columns:1fr; } }
+  .left{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:10px; padding:8px; max-height:80vh; overflow-y:auto; }
+  .item{ padding:10px 12px; border-radius:8px; cursor:pointer; transition:background .15s; border-bottom:1px dashed rgba(176,141,87,.15); }
+  .item:last-child{ border-bottom:none; }
+  .item:hover{ background:rgba(176,141,87,.08); }
+  .item.active{ background:rgba(176,141,87,.18); border-bottom-color:transparent; }
+  .item .row{ display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .item .badge{ font-size:10.5px; padding:2px 7px; border-radius:9px; background:rgba(176,141,87,.18); color:var(--gold); border:1px solid rgba(176,141,87,.4); font-weight:600; white-space:nowrap; }
+  .item .ts{ font-size:11px; color:rgba(252,246,245,.5); margin-left:auto; }
+  .item .title{ font-size:13.5px; color:var(--ivory); font-weight:600; line-height:1.4; }
+  .item .snippet{ font-size:11.5px; color:rgba(252,246,245,.55); margin-top:3px; line-height:1.5; }
+  .right{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:10px; padding:18px; min-height:300px; }
+  .right .empty{ color:rgba(252,246,245,.5); text-align:center; padding:50px 20px; }
+  .right .head{ display:flex; align-items:center; gap:10px; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid rgba(176,141,87,.25); }
+  .right .head .icon{ font-size:24px; }
+  .right .head .titles h2{ font-size:16px; color:var(--gold); margin:0 0 3px; }
+  .right .head .titles .sub{ font-size:11.5px; color:rgba(252,246,245,.55); margin:0; }
+  .right .head .act{ margin-left:auto; display:flex; gap:6px; }
+  .right .head .act button{ background:transparent; color:var(--gold); border:1px solid var(--gold); padding:5px 10px; border-radius:5px; font-size:11.5px; cursor:pointer; }
+  .right .head .act button.danger{ border-color:#e76b6b; color:#e76b6b; }
+  .body{ font-size:14px; line-height:1.7; }
+  .body h3,.body h4{ color:var(--gold); margin:18px 0 8px; }
+  .body strong{ color:var(--gold); }
+  .body table{ border-collapse:collapse; width:100%; margin:10px 0; font-size:13px; }
+  .body table th,.body table td{ border:1px solid rgba(176,141,87,.3); padding:6px 8px; text-align:left; }
+  .body blockquote{ border-left:3px solid var(--gold); padding:6px 12px; margin:8px 0; background:rgba(176,141,87,.08); }
+  .body ul,.body ol{ padding-left:22px; }
+  .body pre{ background:rgba(0,0,0,.3); padding:10px; border-radius:5px; overflow-x:auto; font-size:12px; }
+</style>
+<link rel="stylesheet" href="/macaron-shared.css">
+</head>
+<body>
+<style>@media all { .macaron-topnav.in-iframe { display:none !important; } }</style>
+<script>(function(){ try{ if(window.parent!==window){ var n=document.querySelector('.macaron-topnav'); if(n)n.classList.add('in-iframe'); } }catch(e){} })();</script>
+<style>
+.macaron-topnav{ background:linear-gradient(135deg,#6B4226,#8B5A33); padding:8px 16px; display:flex; gap:8px; align-items:center; overflow-x:auto; white-space:nowrap; }
+.macaron-topnav strong{ color:#FAF7F2; font-size:14px; margin-right:8px; }
+.macaron-topnav a{ padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; background:#FAF7F2; color:#6B4226; }
+</style>
+<div class="macaron-topnav">
+  <strong>溫點 WarmPlace</strong>
+  <a href="/">🏠 主控台</a>
+  <a href="/content-hub.html">📚 內容中心</a>
+  <a href="/customer-hub.html">👥 客戶中心</a>
+  <a href="/ads-hub.html">📊 廣告中心</a>
+  <a href="/market-intel.html">🔍 市場情報</a>
+  <a href="/teachers.html">🏪 門店戰報</a>
+</div>
+
+<div class="wrap">
+  <h1>📚 歷史紀錄</h1>
+  <p class="sub">每次 AI 員工生成的內容都會自動記錄在這裡。點左側任一筆，右邊就會顯示完整內容。最多保留 500 筆。</p>
+
+  <div class="toolbar">
+    <label>篩選功能：</label>
+    <select id="filter" onchange="loadList()">
+      <option value="">全部</option>
+    </select>
+    <button onclick="loadList()">🔄 重新整理</button>
+    <span class="meta-info" id="meta">—</span>
+  </div>
+
+  <div class="list">
+    <div class="left" id="left"><div style="padding:20px;color:rgba(252,246,245,.5);text-align:center;">載入中…</div></div>
+    <div class="right" id="right"><div class="empty">👈 點左側任一筆紀錄查看完整內容</div></div>
+  </div>
+</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+let CUR_ID = null;
+
+function fmtTime(ts){
+  const d = new Date(ts);
+  const now = Date.now();
+  const diff = (now - ts) / 1000;
+  if (diff < 60) return '剛剛';
+  if (diff < 3600) return Math.floor(diff/60) + ' 分鐘前';
+  if (diff < 86400) return Math.floor(diff/3600) + ' 小時前';
+  return d.toLocaleDateString('zh-TW',{month:'2-digit',day:'2-digit'}) + ' ' + d.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+}
+
+async function loadFunctions(){
+  try {
+    const j = await fetch('/api/history/functions').then(r=>r.json());
+    const sel = $('filter');
+    (j.functions||[]).forEach(f => {
+      const o = document.createElement('option');
+      o.value = f.key; o.textContent = f.icon + ' ' + f.label;
+      sel.appendChild(o);
+    });
+  } catch {}
+}
+
+async function loadList(){
+  const fn = $('filter').value;
+  const url = '/api/history/list?limit=200' + (fn ? '&fn=' + fn : '');
+  $('left').innerHTML = '<div style="padding:20px;color:rgba(252,246,245,.5);text-align:center;">載入中…</div>';
+  try {
+    const j = await fetch(url).then(r=>r.json());
+    const items = j.items || [];
+    $('meta').textContent = '共 ' + items.length + ' 筆';
+    if (!items.length) {
+      $('left').innerHTML = '<div style="padding:40px 20px;color:rgba(252,246,245,.5);text-align:center;">還沒有紀錄。等 AI 員工開始生成就會出現在這裡。</div>';
+      return;
+    }
+    $('left').innerHTML = items.map(it => '<div class="item" data-id="'+it.id+'" onclick="openItem(\''+it.id+'\')">'
+      + '<div class="row"><span class="badge">'+it.icon+' '+it.label+'</span><span class="ts">'+fmtTime(it.ts)+'</span></div>'
+      + '<div class="title">'+escapeHtml(it.title)+'</div>'
+      + (it.snippet ? '<div class="snippet">'+escapeHtml(it.snippet)+'…</div>' : '')
+      + '</div>').join('');
+    // 嘗試從 URL ?id= 直接開
+    const url = new URL(location.href);
+    const qid = url.searchParams.get('id');
+    if (qid) openItem(qid);
+  } catch (e) {
+    $('left').innerHTML = '<div style="padding:20px;color:#e76b6b;text-align:center;">❌ '+e.message+'</div>';
+  }
+}
+
+async function openItem(id){
+  CUR_ID = id;
+  document.querySelectorAll('.item').forEach(el => el.classList.toggle('active', el.dataset.id === id));
+  $('right').innerHTML = '<div class="empty">⏳ 載入中…</div>';
+  try {
+    const j = await fetch('/api/history/' + id).then(r=>r.json());
+    if (!j.ok) throw new Error(j.error || '失敗');
+    const it = j.item;
+    const d = new Date(it.ts);
+    const body = it.html || ('<pre>' + escapeHtml(it.text || '（無內容）') + '</pre>');
+    $('right').innerHTML = '<div class="head">'
+      + '<div class="icon">'+it.icon+'</div>'
+      + '<div class="titles"><h2>'+escapeHtml(it.title)+'</h2><p class="sub">'+escapeHtml(it.label)+' · '+d.toLocaleString('zh-TW')+'</p></div>'
+      + '<div class="act"><button onclick="copyBody()">📋 複製</button><button class="danger" onclick="delItem(\''+id+'\')">🗑 刪除</button></div>'
+      + '</div>'
+      + '<div class="body" id="body">' + body + '</div>';
+  } catch (e) {
+    $('right').innerHTML = '<div class="empty" style="color:#e76b6b;">❌ '+e.message+'</div>';
+  }
+}
+
+function copyBody(){
+  const txt = $('body') ? $('body').innerText : '';
+  if (!txt) return;
+  navigator.clipboard.writeText(txt).then(()=>alert('已複製')).catch(()=>alert('請手動選取'));
+}
+
+async function delItem(id){
+  if (!confirm('刪除這筆紀錄？')) return;
+  await fetch('/api/history/' + id, { method:'DELETE' });
+  $('right').innerHTML = '<div class="empty">👈 點左側任一筆紀錄查看完整內容</div>';
+  CUR_ID = null;
+  loadList();
+}
+
+function escapeHtml(s){ return String(s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+loadFunctions().then(loadList);
+</script>
+</body>
+</html>

@@ -703,7 +703,7 @@
     <h2>工作動態</h2>
     <div class="tab-bar">
       <button class="tab active" data-tab="features" onclick="switchTab('features')">🎯 功能</button>
-      <button class="tab" data-tab="feed" onclick="switchTab('feed')">即時動態</button>
+      <button class="tab" data-tab="history" onclick="switchTab('history')">📚 歷史紀錄</button>
       <button class="tab" data-tab="reports" onclick="switchTab('reports')">排程報告</button>
     </div>
     <div id="features">
@@ -725,6 +725,7 @@
         <a href="/roas.html" class="ff-link"><span class="ff-ic">📈</span><span>ROAS 即時數據</span></a>
         <a href="/optimize.html" class="ff-link"><span class="ff-ic">⚡</span><span>廣告自動體檢</span></a>
         <a href="/work-status.html" class="ff-link"><span class="ff-ic">📋</span><span>工作動態</span></a>
+        <a href="/history-view.html" class="ff-link"><span class="ff-ic">📚</span><span>歷史紀錄（所有生成內容 10 天）</span></a>
       </div>
       <div class="ff-group">
         <div class="ff-title">🔍 市場情報</div>
@@ -740,6 +741,7 @@
       </div>
     </div>
     <div id="feed" style="display:none;"></div>
+    <div id="history" style="display:none;"></div>
     <div id="reports" style="display:none;"></div>
   </aside>
 </div>
@@ -1028,13 +1030,48 @@ function renderFeed() {
 }
 
 async function switchTab(t) {
-  // features tab
   document.getElementById('features').style.display = (t === 'features') ? 'block' : 'none';
   document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.tab[data-tab="${t}"]`).classList.add('active');
+  const cur = document.querySelector(`.tab[data-tab="${t}"]`);
+  if (cur) cur.classList.add('active');
   document.getElementById('feed').style.display = t === 'feed' ? 'block' : 'none';
+  document.getElementById('history').style.display = t === 'history' ? 'block' : 'none';
   document.getElementById('reports').style.display = t === 'reports' ? 'block' : 'none';
   if (t === 'reports') await loadReports();
+  if (t === 'history') await loadHistory();
+}
+
+async function loadHistory() {
+  const c = document.getElementById('history');
+  c.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px;font-style:italic;">載入中...</div>';
+  try {
+    const j = await fetch('/api/history/list?limit=50').then(r=>r.json());
+    const items = (j && j.items) || [];
+    if (!items.length) {
+      c.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center;font-style:italic;">還沒有紀錄。任何 AI 員工生成內容都會出現在這裡（保留 10 天）。</div>';
+      return;
+    }
+    c.innerHTML = '<div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><a href="/history-view.html" style="font-size:11px;color:var(--gold);text-decoration:none;">看完整 →</a></div>' + items.map(it => `
+      <a href="/history-view.html?id=${it.id}" style="text-decoration:none;color:inherit;">
+        <div class="feed-item" style="cursor:pointer;border-left:2px solid ${it.color};">
+          <div class="time">${fmtAgo(it.ts)}</div>
+          <div class="who">${it.icon} ${escapeHtml(it.label)}</div>
+          <div class="what" style="margin-top:4px;font-weight:600;">${escapeHtml(it.title)}</div>
+          ${it.snippet ? `<div class="what" style="opacity:.7;font-size:11px;margin-top:2px;">${escapeHtml(it.snippet)}…</div>` : ''}
+        </div>
+      </a>
+    `).join('');
+  } catch (e) {
+    c.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px;">載入失敗：'+(e.message||e)+'</div>';
+  }
+}
+
+function fmtAgo(ts) {
+  const diff = (Date.now() - ts) / 1000;
+  if (diff < 60) return '剛剛';
+  if (diff < 3600) return Math.floor(diff/60) + ' 分鐘前';
+  if (diff < 86400) return Math.floor(diff/3600) + ' 小時前';
+  return Math.floor(diff/86400) + ' 天前';
 }
 
 async function loadReports() {
