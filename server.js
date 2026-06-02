@@ -64,7 +64,8 @@ const FORMAT_ENFORCEMENT = `
 如果對話進入第 2、3 輪以上，仍須保持上述 HTML 結構，不要因為是「繼續對話」就簡化。`;
 
 async function maybeAugmentSystemPrompt(emp) {
-  let baseSystem = emp.systemPrompt + FORMAT_ENFORCEMENT;
+  const _surrSafe = s => String(s||'').replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,'');
+  let baseSystem = _surrSafe(emp.systemPrompt + FORMAT_ENFORCEMENT);
   // ② 多輪記憶 + (2) 昨日教訓
   try {
     const H = require('./history');
@@ -83,7 +84,7 @@ async function maybeAugmentSystemPrompt(emp) {
       baseSystem += '\n\n=== 📚 你最近 5 次跟 Sam 的對話 (延續討論, 不要重複問已答過的) ===\n' + lines.join('\n') + '\n=== 記憶結束 ===\n';
     }
   } catch {}
-  if (!META_AWARE_EMPLOYEES.has(emp.id) || !meta.tokenOk()) return baseSystem;
+  if (!META_AWARE_EMPLOYEES.has(emp.id) || !meta.tokenOk()) return baseSystem.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,'');
   try {
     const metaBlock = await meta.buildCoachDataBlock();
     const googleBlock = google.tokenOk() ? await google.buildCoachDataBlock() : null;
