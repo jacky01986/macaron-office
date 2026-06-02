@@ -189,7 +189,33 @@ async function draftFor(chat_user_id) {
   return { ok: true, chat_user_id, html, mode: getSettings().mode };
 }
 
-// ── 每天 08:00 自我優化：學風格 + 更新成交 playbook ──
+// ── 每天 08:00 自我優化：學自家風格 + 全網成交策略 + 融合產 playbook ──
+async function webSearchClosingTactics(c) {
+  // 用 Anthropic 原生 web_search 抓全網私訊漏斗/DM 成交最佳實踐
+  try {
+    const r = await c.messages.create({
+      model: MODEL, max_tokens: 2000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 4 }],
+      messages: [{
+        role: 'user',
+        content: '請用 web_search 調查【精品禮贈品牌的 IG/FB DM 私訊漏斗成交策略】, 主要研究：\n'
+          + '1. 精品甜點/烘焙/禮盒類品牌 (尤其韓系/法式) 的 DM 成交常見話術\n'
+          + '2. 高轉換的 DM 開場句、嫌貴破解、企業送禮接單模板\n'
+          + '3. 2026 年最新 IG/Meta DM 成交漏斗最佳實踐\n'
+          + '4. 台灣消費者偏好的私訊溝通風格 (PingFang 客服風)\n\n'
+          + '用繁體中文回 JSON (只回 JSON, 不要 markdown):\n'
+          + '{\n  "industry_best_practices": ["全網觀察到的 5-8 條私訊成交黃金法則"],\n'
+          + '  "winning_opening_lines": ["3-5 個高轉換 DM 開場句範例 (中文)"],\n'
+          + '  "objection_breakers": ["3-5 個嫌貴/猶豫破解話術"],\n'
+          + '  "brand_fit_advice": "針對精品馬卡龍+費南雪品牌, 該選哪種風格 (溫度 vs 專業 vs 顧問式)"\n}'
+      }]
+    });
+    let text = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+    text = text.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '');
+    try { return JSON.parse(text); } catch { return { industry_best_practices: [text.slice(0, 500)], winning_opening_lines: [], objection_breakers: [], brand_fit_advice: '' }; }
+  } catch (e) { console.warn('[closer] web search insights failed:', e.message); return null; }
+}
+
 async function selfOptimize({ days = 3, sample = 25 } = {}) {
   const c = getClient();
   if (!c) return { ok: false, error: 'no api key' };
@@ -204,23 +230,41 @@ async function selfOptimize({ days = 3, sample = 25 } = {}) {
     try { msgs = await sm.listMessagesNormalized(uid, { page_size: 30 }); } catch {}
     msgs.forEach(m => { if (!m.text) return; (m.from_customer ? custMsgs : ourMsgs).push(m.text.slice(0, 200)); });
   }
-  if (!ourMsgs.length && !custMsgs.length) return { ok: false, error: '近期沒有對話可學習' };
-  const prompt = '你是 HANA 的自我優化引擎。以下是溫點 WarmPlace 近 ' + days + ' 天的 SaleSmartly 對話。'
-    + '「我們」是店家回覆、「客人」是顧客。請分析並用 JSON 回覆（只回 JSON）：\n'
-    + '{\n  "style_notes": "老闆/店家回覆的語氣特徵與常用句型(要具體，讓 AI 能模仿)",\n'
-    + '  "winning_tactics": ["從對話中觀察到、似乎能推進成交的有效回法，3-6 條"],\n'
-    + '  "common_objections": ["客人最常出現的疑慮/反對，與建議破解方向，3-6 條"]\n}\n\n'
-    + '=== 我們(店家)的回覆樣本 ===\n' + ourMsgs.slice(0, 60).join('\n')
-    + '\n\n=== 客人訊息樣本 ===\n' + custMsgs.slice(0, 60).join('\n');
-  const r = await c.messages.create({ model: MODEL, max_tokens: 1500, messages: [{ role: 'user', content: prompt }] });
+  // 即使沒對話也跑全網調查 (給品牌風格建議)
+  console.log('[closer] step 1/2: webSearchClosingTactics...');
+  const webInsights = await webSearchClosingTactics(c);
+  console.log('[closer] step 2/2: combine + playbook...');
+
+  // 融合 prompt: 自家對話 + 全網調查 → 量身訂做的 playbook
+  let prompt = '你是 HANA 的自我優化引擎。融合 [自家對話樣本] + [全網成交策略] 產出最適合溫點 WarmPlace (精品馬卡龍+費南雪) 的成交 playbook。\n\n'
+    + '請用 JSON 回覆 (只回 JSON, 不要 markdown):\n'
+    + '{\n'
+    + '  "style_notes": "綜合風格描述 — 結合自家既有口吻 + 全網最佳實踐, 寫出 HANA 該如何回客戶 (具體可模仿)",\n'
+    + '  "winning_tactics": ["最適合溫點品牌的成交技巧 5-7 條 (融合自家 + 全網)"],\n'
+    + '  "common_objections": ["客人常見疑慮 + 破解方向 4-6 條"],\n'
+    + '  "opening_templates": ["3-5 個主動 DM 開場句模板 (用溫點品牌語氣)"],\n'
+    + '  "industry_summary": "全網調查到的精品禮贈 DM 成交趨勢一句話"\n'
+    + '}\n\n';
+  if (ourMsgs.length || custMsgs.length) {
+    prompt += '=== 自家對話 — 我們(店家)的回覆樣本 ===\n' + ourMsgs.slice(0, 60).join('\n')
+      + '\n\n=== 自家對話 — 客人訊息樣本 ===\n' + custMsgs.slice(0, 60).join('\n');
+  } else {
+    prompt += '=== 自家對話 ===\n(過去 ' + days + ' 天無對話樣本, 請主要依全網調查推薦最佳風格)';
+  }
+  if (webInsights) {
+    prompt += '\n\n=== 全網調查 — 私訊漏斗最佳實踐 ===\n' + JSON.stringify(webInsights, null, 2);
+  }
+
+  const r = await c.messages.create({ model: MODEL, max_tokens: 2500, messages: [{ role: 'user', content: prompt }] });
   let text = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
   text = text.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '');
   let parsed;
-  try { parsed = JSON.parse(text); } catch { parsed = { style_notes: text.slice(0, 1000), winning_tactics: [], common_objections: [] }; }
+  try { parsed = JSON.parse(text); } catch { parsed = { style_notes: text.slice(0, 1500), winning_tactics: [], common_objections: [], opening_templates: [], industry_summary: '' }; }
   parsed.learned_at = new Date().toISOString();
   parsed.based_on_msgs = ourMsgs.length + custMsgs.length;
+  parsed.industry_insights = webInsights;  // 保留全網調查原始結果
   saveJSON(PLAYBOOK_FILE, parsed);
-  return { ok: true, learned_at: parsed.learned_at, based_on_msgs: parsed.based_on_msgs };
+  return { ok: true, learned_at: parsed.learned_at, based_on_msgs: parsed.based_on_msgs, web_search_used: !!webInsights };
 }
 
 // ───────────────────────── Routes ─────────────────────────
