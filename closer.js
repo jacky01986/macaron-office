@@ -368,6 +368,207 @@ router.post('/optimize', async (req, res) => {
   catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
+// ── Debug：查 SaleSmartly raw response 看名字到底在哪 ──
+router.get('/_debug_visitor', async (req, res) => {
+  try {
+    if (!sm || !sm.apiCall) throw new Error('salesmartly 未載入');
+    const PROJECT_ID = process.env.SALESMARTLY_PROJECT_ID || '';
+    let uid = req.query.uid || '';
+    // 若沒指定 uid，從 board 抓第一個
+    let sessionRaw = null;
+    if (!uid) {
+      const conv = await sm.listRecentConversations({ days: 14, page_size: 100 });
+      const list = (conv && (conv.list || (conv.data && conv.data.list))) || [];
+      const macaron = list.filter(isMacaronChannel);
+      sessionRaw = macaron[0] || null;
+      uid = sessionRaw && (sessionRaw.chat_user_id || sessionRaw.contact_id || sessionRaw.user_id || sessionRaw.session_id);
+    } else {
+      // 找對應 session
+      try {
+        const conv = await sm.listRecentConversations({ days: 30, page_size: 200 });
+        const list = (conv && (conv.list || (conv.data && conv.data.list))) || [];
+        sessionRaw = list.find(s => (s.chat_user_id || s.contact_id || s.user_id || s.session_id) === uid) || null;
+      } catch {}
+    }
+    if (!uid) return res.status(400).json({ ok: false, error: '無 uid 可用' });
+
+    // 1. session 原始所有欄位
+    const session_all_keys = sessionRaw ? Object.keys(sessionRaw) : [];
+    const session_name_like_fields = {};
+    if (sessionRaw) {
+      Object.keys(sessionRaw).forEach(k => {
+        if (/name|nick|user|contact|visitor|customer|title/i.test(k)) {
+          session_name_like_fields[k] = sessionRaw[k];
+        }
+      });
+    }
+
+    // 2. listMessages 原始 raw（前 3 則）
+    let messages_raw = null;
+    let messages_msg_keys = [];
+    let messages_sender_fields = [];
+    try {
+      const r = await sm.listMessages(uid, { page_size: 30 });
+      const ms = (r.data && r.data.list) || r.list || [];
+      messages_raw = ms.slice(0, 3);
+      if (ms[0]) messages_msg_keys = Object.keys(ms[0]);
+      ms.forEach(m => {
+        Object.keys(m).forEach(k => {
+          if (/name|nick|sender|from|user/i.test(k) && m[k] && !messages_sender_fields.find(f => f.field === k)) {
+            messages_sender_fields.push({ field: k, sample_value: String(m[k]).slice(0, 80) });
+          }
+        });
+      });
+    } catch (e) { messages_raw = { error: e.message }; }
+
+    // 3. 4 個 visitor-info 端點各自結果
+    const visitor_endpoints = [
+      '/api/v2/get-visitor-info',
+      '/api/v2/get-contact-info',
+      '/api/v2/get-user-info',
+      '/api/v2/get-chat-user-info',
+    ];
+    const visitor_probe = [];
+    for (const ep of visitor_endpoints) {
+      const row = { endpoint: ep };
+      try {
+        const r = await sm.apiCall(ep, { chat_user_id: uid, project_id: PROJECT_ID }, 'POST');
+        row.ok = true;
+        row.code = r && r.code;
+        row.has_data = !!(r && r.data);
+        row.data = r && r.data;
+        row.raw_keys = r ? Object.keys(r) : [];
+      } catch (e) {
+        row.ok = false;
+        row.error = String(e.message || e).slice(0, 200);
+      }
+      visitor_probe.push(row);
+    }
+
+    // 4. cache 內容
+    let cache_entry = null;
+    try {
+      if (sm.getVisitorInfo) {
+        cache_entry = await sm.getVisitorInfo(uid);
+      }
+    } catch (e) { cache_entry = { error: e.message }; }
+
+    res.json({
+      ok: true,
+      uid,
+      project_id_set: !!PROJECT_ID,
+      session: { all_keys: session_all_keys, name_like_fields: session_name_like_fields, raw_full: sessionRaw },
+      messages: { sample_first_3_raw: messages_raw, all_message_keys: messages_msg_keys, found_name_like_fields_with_values: messages_sender_fields },
+      visitor_info_endpoints: visitor_probe,
+      cache_entry,
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+function registerCron(cron) {
+  if (!cron || typeof cron.schedule !== 'function') return;
+  const tz = process.env.TZ || 'Asia/Taipei';
+  // 每天 08:00 自我優化
+  cron.schedule('0 8 * * *', async () => {
+    console.log('[closer] HANA 08:00 self-optimize starting...');
+    try { const r = await selfOptimize({ days: 3 }); console.log('[closer] self-optimize:', JSON.stringify(r)); }
+    catch (e) { console.error('[closer] self-optimize failed:', e.message); }
+  }, { timezone: tz });
+  console.log('[closer] HANA cron registered (daily 08:00 self-optimize)');
+}
+
+module.exports = router;
+module.exports.registerCron = registerCron;
+module.exports.selfOptimize = selfOptimize;
+module.exports.buildBoard = buildBoard;
+ct_id || sessionRaw.user_id || sessionRaw.session_id);
+    } else {
+      // 找對應 session
+      try {
+        const conv = await sm.listRecentConversations({ days: 30, page_size: 200 });
+        const list = (conv && (conv.list || (conv.data && conv.data.list))) || [];
+        sessionRaw = list.find(s => (s.chat_user_id || s.contact_id || s.user_id || s.session_id) === uid) || null;
+      } catch {}
+    }
+    if (!uid) return res.status(400).json({ ok: false, error: '無 uid 可用' });
+
+    // 1. session 原始所有欄位
+    const session_all_keys = sessionRaw ? Object.keys(sessionRaw) : [];
+    const session_name_like_fields = {};
+    if (sessionRaw) {
+      Object.keys(sessionRaw).forEach(k => {
+        if (/name|nick|user|contact|visitor|customer|title/i.test(k)) {
+          session_name_like_fields[k] = sessionRaw[k];
+        }
+      });
+    }
+
+    // 2. listMessages 原始 raw（前 3 則）
+    let messages_raw = null;
+    let messages_msg_keys = [];
+    let messages_sender_fields = [];
+    try {
+      const r = await sm.listMessages(uid, { page_size: 30 });
+      const ms = (r.data && r.data.list) || r.list || [];
+      messages_raw = ms.slice(0, 3);
+      if (ms[0]) messages_msg_keys = Object.keys(ms[0]);
+      ms.forEach(m => {
+        Object.keys(m).forEach(k => {
+          if (/name|nick|sender|from|user/i.test(k) && m[k] && !messages_sender_fields.find(f => f.field === k)) {
+            messages_sender_fields.push({ field: k, sample_value: String(m[k]).slice(0, 80) });
+          }
+        });
+      });
+    } catch (e) { messages_raw = { error: e.message }; }
+
+    // 3. 4 個 visitor-info 端點各自結果
+    const visitor_endpoints = [
+      '/api/v2/get-visitor-info',
+      '/api/v2/get-contact-info',
+      '/api/v2/get-user-info',
+      '/api/v2/get-chat-user-info',
+    ];
+    const visitor_probe = [];
+    for (const ep of visitor_endpoints) {
+      const row = { endpoint: ep };
+      try {
+        const r = await sm.apiCall(ep, { chat_user_id: uid, project_id: PROJECT_ID }, 'POST');
+        row.ok = true;
+        row.code = r && r.code;
+        row.has_data = !!(r && r.data);
+        row.data = r && r.data;
+        row.raw_keys = r ? Object.keys(r) : [];
+      } catch (e) {
+        row.ok = false;
+        row.error = String(e.message || e).slice(0, 200);
+      }
+      visitor_probe.push(row);
+    }
+
+    // 4. cache 內容
+    let cache_entry = null;
+    try {
+      if (sm.getVisitorInfo) {
+        cache_entry = await sm.getVisitorInfo(uid);
+      }
+    } catch (e) { cache_entry = { error: e.message }; }
+
+    res.json({
+      ok: true,
+      uid,
+      project_id_set: !!PROJECT_ID,
+      session: { all_keys: session_all_keys, name_like_fields: session_name_like_fields, raw_full: sessionRaw },
+      messages: { sample_first_3_raw: messages_raw, all_message_keys: messages_msg_keys, found_name_like_fields_with_values: messages_sender_fields },
+      visitor_info_endpoints: visitor_probe,
+      cache_entry,
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 function registerCron(cron) {
   if (!cron || typeof cron.schedule !== 'function') return;
   const tz = process.env.TZ || 'Asia/Taipei';
