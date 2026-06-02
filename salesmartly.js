@@ -301,6 +301,56 @@ async function getCustomerProfiles({ days = 90, page_size = 200 } = {}) {
   };
 }
 
+
+// ── 取單一 chat_user 真實名字 (FB display_name / IG handle / LINE displayName) + cache ──
+const VISITOR_CACHE_FILE = path.join(CACHE_DIR, 'salesmartly-visitors.json');
+function _loadVisitorCache() {
+  try { return JSON.parse(fs.readFileSync(VISITOR_CACHE_FILE, 'utf8')); } catch { return {}; }
+}
+function _saveVisitorCache(o) {
+  try { fs.mkdirSync(CACHE_DIR, { recursive: true }); } catch {}
+  try { fs.writeFileSync(VISITOR_CACHE_FILE, JSON.stringify(o, null, 2)); } catch {}
+}
+const VISITOR_ENDPOINTS = [
+  '/api/v2/get-visitor-info',
+  '/api/v2/get-contact-info',
+  '/api/v2/get-user-info',
+  '/api/v2/get-chat-user-info',
+];
+async function getVisitorInfo(chat_user_id, { force = false } = {}) {
+  if (!chat_user_id) return null;
+  const cache = _loadVisitorCache();
+  if (!force && cache[chat_user_id] && cache[chat_user_id]._at && (Date.now() - cache[chat_user_id]._at) < 24*3600*1000) {
+    return cache[chat_user_id];
+  }
+  const params = { chat_user_id, project_id: PROJECT_ID };
+  for (const ep of VISITOR_ENDPOINTS) {
+    try {
+      const r = await apiCall(ep, params, 'POST');
+      if (r && r.code === 200 && r.data) {
+        const d = r.data;
+        const info = {
+          chat_user_id,
+          nickname: d.nickname || d.display_name || d.name || d.user_name || d.contact_name || '',
+          real_name: d.real_name || d.full_name || '',
+          channel: d.channel || d.source || '',
+          avatar: d.avatar || d.profile_pic || '',
+          tags: d.tags || [],
+          _at: Date.now(),
+          _ep: ep,
+        };
+        cache[chat_user_id] = info;
+        _saveVisitorCache(cache);
+        return info;
+      }
+    } catch {}
+  }
+  // 全部失敗就只 cache 空殼避免重複嘗試 (TTL 1hr)
+  cache[chat_user_id] = { chat_user_id, nickname: '', _at: Date.now() - 23*3600*1000, _ep: 'none' };
+  _saveVisitorCache(cache);
+  return cache[chat_user_id];
+}
+
 // Normalize messages to consistent {from_customer, text, at}
 async function listMessagesNormalized(chat_user_id, opts) {
   const r = await listMessages(chat_user_id, opts);
@@ -317,5 +367,5 @@ async function listMessagesNormalized(chat_user_id, opts) {
   })).filter(m => m.text && m.text.length > 0 && !m.text.startsWith('{"channel_info"'));
 }
 
-module.exports = { signParams, apiCall, listRecentConversations, listMessages, listMessagesNormalized, extractTopQuestions, getCustomerInsights, formatBriefingSection, probeAll,   getCustomerProfiles,
+module.exports = { signParams, apiCall, listRecentConversations, listMessages, listMessagesNormalized, extractTopQuestions, getCustomerInsights, formatBriefingSection, probeAll, getVisitorInfo, getCustomerProfiles,
 };

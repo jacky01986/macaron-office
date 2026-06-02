@@ -126,10 +126,15 @@ async function buildBoard({ days = 14, limit = 30 } = {}) {
     if (!cls) continue;
     // 從訊息抽真實名字 (sender_type=1 是客人,sender_name 是 FB/IG/LINE 顯示名)
     const custName = (messages.find(m => m.from_customer && m.sender_name && m.sender_name !== 'visitor') || {}).sender_name || '';
+    // 再 fallback 到 SaleSmartly get-visitor-info (有 cache)
+    let visitorName = '';
+    if (!custName && sm.getVisitorInfo) {
+      try { const v = await sm.getVisitorInfo(uid); visitorName = (v && (v.nickname || v.real_name)) || ''; } catch {}
+    }
     // 只放需要處理的 (hot/objection/stalled)；waiting 收進但排後面
     out.push({
       chat_user_id: uid,
-      name: custName || s.nickname || s.name || s.contact_name || s.user_name || s.visitor_name || s.customer_nickname || ('客人 ' + String(uid).slice(0, 6)),
+      name: custName || visitorName || s.nickname || s.name || s.contact_name || s.user_name || s.visitor_name || s.customer_nickname || ('客人 ' + String(uid).slice(0, 6)),
       channel: s.channel || s.source || s.platform || '',
       last_at: s.last_message_time || s.start_time || null,
       status: cls.status,
