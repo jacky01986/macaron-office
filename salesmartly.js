@@ -312,6 +312,8 @@ async function listMessagesNormalized(chat_user_id, opts) {
     at: m.send_time || m.created_at || m.time,
     msg_type: m.msg_type,
     sender_type: m.sender_type,
+    sender_name: m.sender_name || m.from_name || m.nickname || m.user_name || m.contact_name || '',
+    sender_avatar: m.sender_avatar || m.avatar || '',
   })).filter(m => m.text && m.text.length > 0 && !m.text.startsWith('{"channel_info"'));
 }
 
