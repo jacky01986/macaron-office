@@ -101,12 +101,26 @@ async function generateXlsx({ title, sheets }) {
       ws.getRow(1).font = { bold: true, color: { argb: 'FFFCF6F5' } };
       ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6D2E46' } };
     }
-    for (const r of (s.rows || [])) ws.addRow(r);
-    // 自動寬度
+    for (const r of (s.rows || [])) {
+      const addedRow = ws.addRow(r);
+      // 為含長字串的儲存格啟用換行 + 頂端對齊
+      addedRow.eachCell({ includeEmpty: true }, (cell) => {
+        cell.alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
+      });
+    }
+    // 自動寬度 + 高度 (依內容長度)
     ws.columns.forEach((col, i) => {
       let max = (headers[i] || '').length;
-      (s.rows || []).forEach(r => { const v = String(r[i] ?? ''); if (v.length > max) max = v.length; });
-      col.width = Math.min(60, Math.max(12, max + 2));
+      (s.rows || []).forEach(r => { const v = String(r[i] ?? ''); if (v.length > max) max = Math.min(v.length, 80); });
+      col.width = Math.min(80, Math.max(12, max + 2));
+    });
+    // 列高自動 (依內容行數)
+    (s.rows || []).forEach((r, idx) => {
+      const maxLines = Math.max(...r.map(v => String(v||'').split('\n').length + Math.floor(String(v||'').length / 80)));
+      if (maxLines > 1) {
+        const row = ws.getRow(idx + (headers.length ? 2 : 1));
+        row.height = Math.min(400, maxLines * 18);
+      }
     });
   }
   const filename = newFilename(title || 'workbook', 'xlsx');
@@ -189,11 +203,26 @@ async function generatePptx({ title, slides }) {
   }
 
   for (const s of (slides || [])) {
+    // body 字數多時依 600 字一頁切割
+    if (s.body && String(s.body).length > 600) {
+      const chunks = String(s.body).match(/[\s\S]{1,600}/g) || [String(s.body)];
+      chunks.forEach((chunk, idx) => {
+        const sl = pres.addSlide();
+        sl.background = { color: 'FCF6F5' };
+        const tt = idx === 0 ? s.title : (s.title || '') + ' (續 ' + (idx + 1) + ')';
+        if (tt) sl.addText(String(tt), { x: 0.5, y: 0.4, w: 12.3, h: 0.9, fontSize: 26, color: '6D2E46', bold: true, fontFace: 'Microsoft JhengHei' });
+        sl.addText(chunk, { x: 0.7, y: 1.6, w: 11.7, h: 5.3, fontSize: 14, color: '1C1213', fontFace: 'Microsoft JhengHei', valign: 'top' });
+        if (s.footer) sl.addText(String(s.footer), { x: 0.5, y: 7.0, w: 12.3, h: 0.4, fontSize: 10, color: '888888', fontFace: 'Microsoft JhengHei', italic: true });
+      });
+      continue;
+    }
     const sl = pres.addSlide();
     sl.background = { color: 'FCF6F5' };
     if (s.title) sl.addText(String(s.title), { x: 0.5, y: 0.4, w: 12.3, h: 0.9, fontSize: 28, color: '6D2E46', bold: true, fontFace: 'Microsoft JhengHei' });
     if (s.bullets && s.bullets.length) {
-      sl.addText(s.bullets.map(b => ({ text: String(b), options: { bullet: true } })), { x: 0.7, y: 1.6, w: 11.7, h: 5.3, fontSize: 18, color: '1C1213', fontFace: 'Microsoft JhengHei', valign: 'top', paraSpaceAfter: 8 });
+      // bullet 也防截斷, 字數依條數調 size
+      const fs = s.bullets.length > 8 ? 14 : (s.bullets.length > 5 ? 16 : 18);
+      sl.addText(s.bullets.map(b => ({ text: String(b), options: { bullet: true } })), { x: 0.7, y: 1.6, w: 11.7, h: 5.3, fontSize: fs, color: '1C1213', fontFace: 'Microsoft JhengHei', valign: 'top', paraSpaceAfter: 6 });
     } else if (s.body) {
       sl.addText(String(s.body), { x: 0.7, y: 1.6, w: 11.7, h: 5.3, fontSize: 16, color: '1C1213', fontFace: 'Microsoft JhengHei', valign: 'top' });
     }
@@ -272,8 +301,19 @@ router.get('/from-history/:id', async (req, res) => {
       if (table && table.length > 1) {
         out = await module.exports.generateXlsx({ title, sheets: [{ name: title.slice(0, 28), headers: table[0], rows: table.slice(1) }] });
       } else {
-        // 沒表格 → 把 sections 拆成 [標題, 內容] 兩欄
-        const rows = sections.map(s => [s.heading || '段落', s.body]);
+        // 沒表格 → 把每個段落「每行」拆成單獨列, 不切斷
+        const rows = [];
+        for (const s of sections) {
+          const heading = s.heading || '';
+          const lines = (s.body || '').split('\n').map(l=>l.trim()).filter(Boolean);
+          if (lines.length === 0) continue;
+          // 第一列含 heading + 第一行
+          rows.push([heading, lines[0]]);
+          // 後續每行單獨一列 (heading 空白)
+          for (let i = 1; i < lines.length; i++) rows.push(['', lines[i]]);
+          // 段落間空白列
+          rows.push(['', '']);
+        }
         out = await module.exports.generateXlsx({ title, sheets: [{ name: title.slice(0, 28), headers: ['段落', '內容'], rows }] });
       }
     } else if (format === 'pdf') {
@@ -283,11 +323,22 @@ router.get('/from-history/:id', async (req, res) => {
         out = await module.exports.generateDocx({ title: title + '（PDF不可用_改Word）', sections });
       }
     } else if (format === 'pptx') {
-      // sections 轉投影片 — 每個 heading 一張
-      const slides = sections.filter(s => s.heading || s.body).map(s => ({
-        title: s.heading || title,
-        bullets: (s.body || '').split('\n').filter(x => x.trim()).slice(0, 6)
-      }));
+      // sections 轉投影片 — 每段一張, 但超過 6 條 bullet 自動拆多張
+      const slides = [];
+      for (const s of sections.filter(x => x.heading || x.body)) {
+        const lines = (s.body || '').split('\n').map(l=>l.trim()).filter(Boolean);
+        const head = s.heading || title;
+        if (lines.length === 0) {
+          slides.push({ title: head, bullets: ['（無內容）'] });
+          continue;
+        }
+        const CHUNK = 6;
+        for (let i = 0; i < lines.length; i += CHUNK) {
+          const chunk = lines.slice(i, i + CHUNK);
+          const slideTitle = i === 0 ? head : head + ' (續 ' + Math.floor(i/CHUNK + 1) + ')';
+          slides.push({ title: slideTitle, bullets: chunk });
+        }
+      }
       out = await module.exports.generatePptx({ title, slides: slides.length ? slides : [{ title, body: text }] });
     } else {
       return res.status(400).json({ ok: false, error: 'unknown format: ' + format });
