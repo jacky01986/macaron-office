@@ -127,6 +127,12 @@ async function loadList(){
       + '<div class="row"><span class="badge">'+it.icon+' '+it.label+'</span><span class="ts">'+fmtTime(it.ts)+'</span></div>'
       + '<div class="title">'+escapeHtml(it.title)+'</div>'
       + (it.snippet ? '<div class="snippet">'+escapeHtml(it.snippet)+'…</div>' : '')
+      + '<div class="mini-act" onclick="event.stopPropagation()" style="display:flex;gap:4px;margin-top:6px;">'
+        + '<a href="/api/exports/from-history/'+it.id+'?format=docx" download style="font-size:10.5px;padding:2px 7px;background:rgba(176,141,87,.15);color:#E8C896;border-radius:4px;text-decoration:none;">📄</a>'
+        + '<a href="/api/exports/from-history/'+it.id+'?format=xlsx" download style="font-size:10.5px;padding:2px 7px;background:rgba(176,141,87,.15);color:#E8C896;border-radius:4px;text-decoration:none;">📊</a>'
+        + '<a href="/api/exports/from-history/'+it.id+'?format=pptx" download style="font-size:10.5px;padding:2px 7px;background:rgba(176,141,87,.15);color:#E8C896;border-radius:4px;text-decoration:none;">🎬</a>'
+        + '<a href="/api/exports/from-history/'+it.id+'?format=pdf" download style="font-size:10.5px;padding:2px 7px;background:rgba(176,141,87,.15);color:#E8C896;border-radius:4px;text-decoration:none;">📕</a>'
+        + '</div>'
       + '</div>').join('');
     // 嘗試從 URL ?id= 直接開
     const pageUrl = new URL(location.href);
@@ -150,7 +156,7 @@ async function openItem(id){
     $('right').innerHTML = '<div class="head">'
       + '<div class="icon">'+it.icon+'</div>'
       + '<div class="titles"><h2>'+escapeHtml(it.title)+'</h2><p class="sub">'+escapeHtml(it.label)+' · '+d.toLocaleString('zh-TW')+'</p></div>'
-      + '<div class="act"><button onclick="copyBody()">📋 複製</button><button class="danger" onclick="delItem(\''+id+'\')">🗑 刪除</button></div>'
+      + '<div class="act"><a href="/api/exports/from-history/'+id+'?format=docx" download style="display:inline-block;padding:5px 10px;border:1px solid var(--gold);border-radius:5px;font-size:11.5px;color:var(--gold);text-decoration:none;margin-right:4px;">📄 Word</a><a href="/api/exports/from-history/'+id+'?format=xlsx" download style="display:inline-block;padding:5px 10px;border:1px solid var(--gold);border-radius:5px;font-size:11.5px;color:var(--gold);text-decoration:none;margin-right:4px;">📊 Excel</a><a href="/api/exports/from-history/'+id+'?format=pptx" download style="display:inline-block;padding:5px 10px;border:1px solid var(--gold);border-radius:5px;font-size:11.5px;color:var(--gold);text-decoration:none;margin-right:4px;">🎬 PPT</a><a href="/api/exports/from-history/'+id+'?format=pdf" download style="display:inline-block;padding:5px 10px;border:1px solid var(--gold);border-radius:5px;font-size:11.5px;color:var(--gold);text-decoration:none;margin-right:4px;">📕 PDF</a><button onclick="copyBody()" style="margin-left:6px;">📋 複製</button><button class="danger" onclick="delItem(\''+id+'\')">🗑 刪除</button></div>'
       + '</div>'
       + '<div class="body" id="body">' + body + '</div>';
   } catch (e) {
