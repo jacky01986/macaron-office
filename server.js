@@ -78,7 +78,8 @@ async function maybeAugmentSystemPrompt(emp) {
     } catch {}
     const recent = H.list({ limit: 5, fn });
     if (recent && recent.length) {
-      const lines = recent.map((r,i) => '['+(i+1)+'] '+r.title+' — '+ (r.snippet||'').slice(0,120));
+      const safeStr2 = s => String(s||'').replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,'');
+      const lines = recent.map((r,i) => safeStr2('['+(i+1)+'] '+r.title+' — '+ (r.snippet||'').slice(0,120)));
       baseSystem += '\n\n=== 📚 你最近 5 次跟 Sam 的對話 (延續討論, 不要重複問已答過的) ===\n' + lines.join('\n') + '\n=== 記憶結束 ===\n';
     }
   } catch {}
@@ -97,7 +98,8 @@ async function maybeAugmentSystemPrompt(emp) {
       extra += "\n\n---\n[📊 COACHING DATA · Google Ads 即時數據快照]\n" +
         googleBlock + "\n\n(資料來源：Google Ads API)";
     }
-    return baseSystem + extra;
+    const finalSafe = (baseSystem + extra).replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,'');
+  return finalSafe;
   } catch (e) {
     console.warn(`[meta coaching-data] ${emp.id}:`, e.message);
     return baseSystem;

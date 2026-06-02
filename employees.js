@@ -4,6 +4,10 @@
 // 7 位 AI 員工：1 位行銷總監 (VICTOR) + 6 位專員
 // v2 重點：加入「思考協議」「品質紅線」「好壞範例對比」「自我檢核」
 
+// 移除孤立 surrogate 半字 (防 Anthropic JSON 拒收)
+function safeStr(s) { return String(s || '').replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, ''); }
+
+
 // Market intel auto-injector (runs at module load + on demand)
 let _marketIntelCache = '';
 try {
@@ -28,7 +32,7 @@ try {
         const wf = typeof i.weekly_focus === 'string' ? i.weekly_focus : JSON.stringify(i.weekly_focus || '');
         const acts = (i.action_items || []).slice(0, 5).map((a, n) => (n + 1) + '. ' + (a.title || a)).join('\n');
         const trends = (i.trending_topics || []).slice(0, 4).map(t => '· ' + (t.topic || t)).join('\n');
-        _scoutCache = '本週重點：' + String(wf).slice(0, 320) + '\n\n行動建議：\n' + acts + (trends ? '\n\n趨勢：\n' + trends : '');
+        _scoutCache = safeStr('本週重點：' + String(wf).slice(0, 320) + '\n\n行動建議：\n' + acts + (trends ? '\n\n趨勢：\n' + trends : ''));
       } else { _scoutCache = ''; }
     } catch { _scoutCache = ''; }
   }

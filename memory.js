@@ -123,12 +123,15 @@ async function synthesize() {
 
 function current() { return loadJSON(MEM_FILE, null); }
 
+// 移除孤立 surrogate 半字 (防 Anthropic JSON 拒收)
+function safeStr(s) { return String(s || '').replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, ''); }
+
 // 給其他模組（employees.js）注入用，回傳乾淨的純文字尾段
 function getMemoryTail() {
   try {
     const m = current();
     if (!m || !m.digest) return '';
-    return '\n\n=== 團隊集體記憶（每天 04:00 自動更新，全員共用）===\n' + String(m.digest).slice(0, 2500) + '\n=== 團隊記憶結束 ===\n';
+    return '\n\n=== 團隊集體記憶（每天 04:00 自動更新，全員共用）===\n' + safeStr(String(m.digest).slice(0, 2500)) + '\n=== 團隊記憶結束 ===\n';
   } catch { return ''; }
 }
 

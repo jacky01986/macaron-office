@@ -99,13 +99,16 @@ async function runAll() {
   return results;
 }
 
+// 移除孤立 surrogate 半字 (防 Anthropic JSON 拒收)
+function safeStr(s) { return String(s || '').replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, ''); }
+
 function getLessonFor(emp) {
   try {
     const f = path.join(SELF_EVAL_DIR, String(emp).toUpperCase() + '.json');
     if (!fs.existsSync(f)) return '';
     const j = JSON.parse(fs.readFileSync(f, 'utf8'));
     if (!j.lesson || /過去 7 天紀錄不足/.test(j.lesson)) return '';
-    return '\n\n=== 📚 你的昨日教訓（自我檢討，今天先讀過再回答）===\n' + String(j.lesson).slice(0, 2000) + '\n=== 教訓結束 ===\n';
+    return '\n\n=== 📚 你的昨日教訓（自我檢討，今天先讀過再回答）===\n' + safeStr(String(j.lesson).slice(0, 2000)) + '\n=== 教訓結束 ===\n';
   } catch { return ''; }
 }
 
