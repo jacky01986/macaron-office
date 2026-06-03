@@ -27,20 +27,23 @@ function decodeHtml(s) {
 
 function parseProductsFromHTML(html) {
   const products = [];
-  // 從 /products/{slug} 連結抽 URL — 比 div regex 穩
-  const urlRE = /href="(\/products\/[^"#?]+)"/g;
   const seen = new Set();
+  // 從 a.product-item 連結抽 URL — Shopline 用 .product-item class 包整個卡片
+  // 同時容忍 href 是單引號 / 雙引號 / 完整 URL
+  const allHref = /href=["']([^"']+\/products\/[^"'#?]+)["']/g;
   let m;
-  while ((m = urlRE.exec(html)) !== null) {
-    const href = m[1];
+  while ((m = allHref.exec(html)) !== null) {
+    let href = m[1];
+    if (href.includes('{') || href.includes('}') || href.includes('$')) continue;
+    // 去掉 hostname 留 path
+    href = href.replace(/^https?:\/\/[^\/]+/, '');
     if (seen.has(href)) continue;
-    if (href.includes('{') || href.includes('}') || href.includes('${')) continue;  // skip template placeholders
     seen.add(href);
     let slug;
     try { slug = decodeURIComponent(href.replace('/products/', '')).replace(/-/g, ' '); } catch { slug = href.replace('/products/', ''); }
     products.push({
       title: slug.trim(),
-      price: '',  // 詳情頁再抓
+      price: '',
       url: 'https://' + STORE_DOMAIN + href,
       image: '',
       slug: href.replace('/products/', ''),
@@ -171,6 +174,16 @@ function logWebhook(event, body) {
 }
 
 // ─────────── Routes ───────────
+router.get('/_debug_html', async (req, res) => {
+  try {
+    const r = await fetch('https://' + STORE_DOMAIN + '/products', { headers: { 'User-Agent': 'Mozilla/5.0 macaron-office bot' } });
+    const html = await r.text();
+    // Return only product-related snippets (find lines containing /products/)
+    const lines = html.split('\n').filter(l => l.includes('/products/') && !l.includes('chunk') && !l.includes('manifest')).slice(0, 20);
+    res.json({ ok: true, status: r.status, html_size: html.length, product_lines: lines.map(l => l.replace(/[\r\t]/g, ' ').slice(0, 200)) });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
 router.get('/_status', async (req, res) => {
   const cache = loadCache();
   res.json({
