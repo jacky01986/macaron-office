@@ -1,353 +1,287 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <title>📖 使用說明 · 溫點 WarmPlace AI 團隊</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-  :root{
-    --burgundy:#6D2E46; --burgundy-dark:#4a1f30; --gold:#B08D57; --gold-bright:#E8C896;
-    --dark:#1C1213; --dark-2:#2a1a1d; --dark-3:#3a262a;
-    --ivory:#FCF6F5; --green:#3fb27f; --mute:rgba(252,246,245,.6);
-  }
-  *{ box-sizing:border-box; }
-  body{ font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; background:var(--dark); color:var(--ivory); margin:0; line-height:1.7; }
-  a{ color:var(--gold-bright); }
-  .wrap{ max-width:1080px; margin:0 auto; padding:24px 18px 80px; }
-
-  /* hero */
-  .hero{ background:linear-gradient(135deg,var(--burgundy),var(--burgundy-dark)); border:1px solid var(--gold); border-radius:14px; padding:24px 28px; margin-bottom:24px; }
-  .hero h1{ font-size:26px; margin:0 0 8px; color:var(--gold-bright); }
-  .hero .lead{ color:var(--ivory); font-size:14.5px; max-width:780px; }
-  .hero .stat-row{ display:flex; gap:14px; flex-wrap:wrap; margin-top:16px; }
-  .hero .stat{ background:rgba(0,0,0,.25); border:1px solid rgba(176,141,87,.4); border-radius:8px; padding:8px 14px; font-size:13px; }
-  .hero .stat b{ color:var(--gold-bright); }
-
-  /* anchor nav */
-  .anchor-nav{ position:sticky; top:0; background:rgba(28,18,19,.94); backdrop-filter:blur(6px); border-bottom:1px solid rgba(176,141,87,.25); padding:10px 18px; margin:0 -18px 18px; z-index:10; display:flex; gap:8px; overflow-x:auto; white-space:nowrap; font-size:13px; }
-  .anchor-nav a{ padding:5px 10px; border-radius:6px; text-decoration:none; color:var(--ivory); border:1px solid transparent; }
-  .anchor-nav a:hover{ border-color:var(--gold); color:var(--gold-bright); }
-
-  /* sections */
-  h2{ font-size:19px; margin:32px 0 12px; color:var(--gold-bright); border-left:3px solid var(--gold); padding-left:10px; }
-  h3{ font-size:15px; margin:18px 0 8px; color:var(--gold-bright); }
-
-  /* 4 入口 */
-  .ports{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
-  @media(max-width:760px){ .ports{ grid-template-columns:repeat(2,1fr); } }
-  .port{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:10px; padding:14px; }
-  .port .ic{ font-size:22px; }
-  .port h4{ margin:6px 0 4px; font-size:14px; color:var(--gold-bright); }
-  .port p{ margin:0; font-size:12.5px; color:var(--mute); }
-
-  /* 12 員工卡 */
-  .emps{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:14px; }
-  @media(max-width:760px){ .emps{ grid-template-columns:1fr; } }
-  .emp{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:12px; padding:16px 18px; transition:border-color .15s; }
-  .emp:hover{ border-color:var(--gold); }
-  .emp .head{ display:flex; align-items:center; gap:10px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px dashed rgba(176,141,87,.25); }
-  .emp .head .av{ width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,var(--burgundy),var(--burgundy-dark)); display:flex; align-items:center; justify-content:center; font-size:22px; border:2px solid var(--gold); }
-  .emp .head .name{ font-size:16px; font-weight:700; color:var(--gold-bright); }
-  .emp .head .role{ font-size:11.5px; color:var(--mute); margin-top:2px; }
-  .emp .pos{ font-size:13px; color:var(--ivory); margin:0 0 10px; padding:8px 10px; background:rgba(176,141,87,.08); border-left:2px solid var(--gold); border-radius:0 4px 4px 0; }
-  .emp .label{ font-size:11.5px; color:var(--gold-bright); margin:10px 0 4px; font-weight:600; letter-spacing:.5px; }
-  .emp ul{ margin:4px 0 0; padding-left:18px; font-size:13px; }
-  .emp ul li{ margin:2px 0; }
-  .emp .examples{ display:flex; flex-direction:column; gap:5px; margin-top:4px; }
-  .emp .ex{ background:rgba(176,141,87,.12); border:1px solid rgba(176,141,87,.25); border-radius:6px; padding:6px 10px; font-size:12.5px; cursor:pointer; color:var(--ivory); transition:background .15s; }
-  .emp .ex:hover{ background:rgba(176,141,87,.22); color:var(--gold-bright); }
-  .emp .ex::before{ content:"💡 "; }
-  .emp .links{ margin-top:10px; padding-top:8px; border-top:1px dashed rgba(176,141,87,.25); font-size:12px; }
-  .emp .links a{ display:inline-block; margin-right:10px; }
-
-  /* 系統能力 */
-  .caps{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:12px; }
-  @media(max-width:760px){ .caps{ grid-template-columns:1fr; } }
-  .cap{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:10px; padding:14px; }
-  .cap .ic{ font-size:20px; }
-  .cap h4{ font-size:14px; margin:6px 0 4px; color:var(--gold-bright); }
-  .cap p{ font-size:12.5px; color:var(--mute); margin:0; }
-
-  /* 自動排程 */
-  .cron-list{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:10px; padding:14px 18px; margin-top:8px; }
-  .cron-list table{ width:100%; font-size:13px; border-collapse:collapse; }
-  .cron-list td{ padding:6px 8px; border-bottom:1px dashed rgba(176,141,87,.18); }
-  .cron-list td:first-child{ color:var(--gold-bright); white-space:nowrap; font-family:monospace; }
-  .cron-list tr:last-child td{ border-bottom:none; }
-
-  /* FAQ */
-  .faq{ background:var(--dark-2); border:1px solid rgba(176,141,87,.3); border-radius:10px; padding:8px 18px; }
-  .faq details{ padding:10px 0; border-bottom:1px dashed rgba(176,141,87,.18); }
-  .faq details:last-child{ border-bottom:none; }
-  .faq summary{ cursor:pointer; font-weight:600; color:var(--gold-bright); font-size:14px; padding:4px 0; }
-  .faq p{ margin:8px 0 4px; font-size:13.5px; color:var(--ivory); padding-left:14px; }
-
-  /* footer */
-  footer{ margin-top:34px; padding-top:18px; border-top:1px solid rgba(176,141,87,.25); text-align:center; font-size:12px; color:var(--mute); }
-
-  .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--burgundy); color:var(--gold-bright); padding:12px 24px; border-radius:8px; border:1px solid var(--gold); font-size:14px; font-weight:600; box-shadow:0 6px 20px rgba(0,0,0,.4); z-index:100; display:none; }
-</style>
 <link rel="stylesheet" href="/macaron-shared.css">
+<style>
+  body{margin:0;padding:24px;background:transparent;color:#f4e8d4;font-family:'Noto Sans TC','PingFang TC',sans-serif;line-height:1.65}
+  .wrap{max-width:1080px;margin:0 auto}
+  .banner{background:linear-gradient(135deg,#5e2a3a 0%,#3a1521 100%);border:1px solid rgba(176,141,87,.32);border-radius:18px;padding:28px 32px;margin-bottom:28px}
+  .banner h1{margin:0 0 12px;font-size:28px}
+  .banner p{margin:0 0 16px;color:#e4d6bc;font-size:15px}
+  .pills{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+  .pill{background:rgba(0,0,0,.32);border:1px solid rgba(176,141,87,.4);border-radius:24px;padding:8px 16px;font-size:13px;color:#f4e8d4}
+  .pill b{color:#fff;margin-left:4px}
+  .nav{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+  .nav a{background:rgba(0,0,0,.28);border:1px solid rgba(176,141,87,.22);color:#e4d6bc;padding:8px 14px;border-radius:10px;text-decoration:none;font-size:13px}
+  .nav a:hover{background:rgba(176,141,87,.18);color:#fff}
+  section{background:rgba(0,0,0,.28);border:1px solid rgba(176,141,87,.18);border-radius:14px;padding:22px 26px;margin-bottom:22px}
+  section h2{margin:0 0 14px;font-size:20px;border-left:4px solid #B08D57;padding-left:10px}
+  section h3{margin:16px 0 8px;font-size:16px;color:#f4e8d4}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:14px}
+  .card{background:rgba(0,0,0,.28);border:1px solid rgba(176,141,87,.2);border-radius:12px;padding:16px 18px}
+  .card .icon{font-size:28px;margin-bottom:6px}
+  .card h4{margin:4px 0 6px;font-size:15px}
+  .card p{margin:0;color:#c9b89e;font-size:13px}
+  .new-badge{display:inline-block;background:#5e2a3a;color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;margin-left:6px;border:1px solid rgba(176,141,87,.5)}
+  .emp{background:rgba(0,0,0,.28);border:1px solid rgba(176,141,87,.22);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column}
+  .emp .head{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+  .emp .avatar{font-size:32px;background:linear-gradient(135deg,#5e2a3a,#3a1521);width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid rgba(176,141,87,.4)}
+  .emp .info h4{margin:0 0 4px;font-size:16px;color:#fff}
+  .emp .info .role{color:#d9c4a3;font-size:12px}
+  .emp .can{font-size:13px;color:#c9b89e;margin:8px 0}
+  .emp .can li{margin-bottom:3px}
+  .emp .examples{background:rgba(176,141,87,.08);border:1px solid rgba(176,141,87,.18);border-radius:8px;padding:10px 12px;margin-top:8px}
+  .emp .examples b{font-size:12px;color:#d9c4a3}
+  .emp .examples .q{font-size:12px;color:#e4d6bc;margin-top:4px;cursor:pointer;font-style:italic;line-height:1.4}
+  .emp .examples .q:hover{color:#fff}
+  .emp .where{margin-top:auto;padding-top:10px;font-size:11px;color:#a09186;border-top:1px dashed rgba(176,141,87,.18)}
+  .cron-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin-top:12px}
+  .cron-item{background:rgba(0,0,0,.32);border-left:3px solid #B08D57;padding:10px 14px;border-radius:6px;font-size:13px}
+  .cron-item b{color:#fff;font-size:13px;display:block;margin-bottom:2px}
+  .cron-item span{color:#c9b89e;font-size:12px}
+  .tip{background:rgba(176,141,87,.08);border:1px solid rgba(176,141,87,.22);border-radius:10px;padding:14px 18px;margin:10px 0;font-size:13px}
+  .tip b{color:#f4e8d4}
+  .faq dt{margin:14px 0 4px;font-weight:600;color:#f4e8d4;font-size:14px}
+  .faq dd{margin:0 0 8px;color:#c9b89e;font-size:13px}
+  .new{color:#ffcd6b;font-weight:600}
+</style>
 </head>
 <body>
-<style>@media all { .macaron-topnav.in-iframe { display:none !important; } }</style>
-<script>(function(){ try{ if(window.parent!==window){ var n=document.querySelector('.macaron-topnav'); if(n)n.classList.add('in-iframe'); } }catch(e){} })();</script>
-<style>
-.macaron-topnav{ background:linear-gradient(135deg,#6B4226,#8B5A33); padding:8px 16px; display:flex; gap:8px; align-items:center; overflow-x:auto; white-space:nowrap; }
-.macaron-topnav strong{ color:#FAF7F2; font-size:14px; margin-right:8px; }
-.macaron-topnav a{ padding:6px 12px; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600; background:#FAF7F2; color:#6B4226; }
-</style>
-<div class="macaron-topnav">
-  <strong>溫點 WarmPlace</strong>
-  <a href="/">🏠 主控台</a>
-  <a href="/content-hub.html">📚 內容中心</a>
-  <a href="/customer-hub.html">👥 客戶中心</a>
-  <a href="/ads-hub.html">📊 廣告中心</a>
-  <a href="/market-intel.html">🔍 市場情報</a>
-  <a href="/teachers.html">🏪 門店戰報</a>
-</div>
-
 <div class="wrap">
 
-  <div class="hero">
+  <div class="banner">
     <h1>📖 溫點 WarmPlace AI 團隊使用說明</h1>
-    <p class="lead">你不是一個人 — 你有 12 個 AI 員工，個個會上網查當下情報、記得你之前說過什麼、產出後自評、彼此互相 delegate、每晚反省自己昨天哪裡做不好。這份說明告訴你「他們各能做什麼」「怎麼把事丟給他們」「在哪找他們」。</p>
-    <div class="stat-row">
-      <span class="stat">員工總數 <b>12 位</b></span>
-      <span class="stat">每位都能 <b>上網查當下情報</b></span>
-      <span class="stat">每位都會 <b>產出後自評</b></span>
-      <span class="stat">每晚 22:00 <b>自動反省</b></span>
-      <span class="stat">每天 04:00 <b>集體記憶消化</b></span>
+    <p>你不是一個人 — 你有 <b>13 個 AI 員工</b>，個個會上網查當下情報、記得你之前說過什麼、產出後自評、彼此互相 delegate、每晚反省自己昨天哪裡做不好。這份說明告訴你「他們各能做什麼」「怎麼把事丟給他們」「在哪找他們」。</p>
+    <div class="pills">
+      <span class="pill">員工總數 <b>13 位</b><span class="new-badge">NEW</span></span>
+      <span class="pill">每位都能 <b>上網查當下情報</b></span>
+      <span class="pill">每位都會 <b>產出後自評</b></span>
+      <span class="pill"><b>FILES</b> 文件生成 (Word/Excel/PPT/PDF)<span class="new-badge">NEW</span></span>
+      <span class="pill">每晚 22:00 <b>自動反省</b></span>
+      <span class="pill">每天 04:00 <b>集體記憶消化</b></span>
     </div>
   </div>
 
-  <nav class="anchor-nav">
-    <a href="#how">🚪 4 種入口</a>
-    <a href="#caps">🧠 6 大新能力</a>
-    <a href="#emps">👥 12 位員工</a>
+  <div class="nav">
+    <a href="#entry">📥 4 種入口</a>
+    <a href="#abilities">🧠 8 大新能力</a>
+    <a href="#employees">👥 13 位員工</a>
+    <a href="#files">📁 文件生成 (NEW)</a>
+    <a href="#customers">👥 客人畫像 (NEW)</a>
     <a href="#cron">⏰ 自動排程</a>
     <a href="#tips">💡 用得好的小技巧</a>
     <a href="#faq">❓ FAQ</a>
-  </nav>
+  </div>
 
-  <!-- 4 種入口 -->
-  <h2 id="how">🚪 把事丟給 AI 員工的 4 種入口</h2>
-  <div class="ports">
-    <div class="port">
-      <div class="ic">🏠</div>
-      <h4>主控台對話</h4>
-      <p>最常用。打開 <a href="/">主頁</a>，左欄選員工，右欄打字。多輪對話他會記得你之前說什麼。</p>
+  <section id="entry">
+    <h2>📥 把事丟給 AI 員工的 4 種入口</h2>
+    <div class="grid">
+      <div class="card"><div class="icon">🏠</div><h4>主控台對話</h4><p>最常用。打開 <a href="/index.html" style="color:#d9c4a3">主頁</a>，左欄選員工，右欄打字。多輪對話他會記得你之前說什麼。</p></div>
+      <div class="card"><div class="icon">💬</div><h4>Telegram VICTOR</h4><p>在手機上直接跟 VICTOR 講話，他會看數據、call 工具、分派團隊。適合出門時用。</p></div>
+      <div class="card"><div class="icon">🎬</div><h4>員工專屬頁</h4><p>RINA→<a href="/reels.html" style="color:#d9c4a3">/reels</a>、HANA→<a href="/closer.html" style="color:#d9c4a3">/closer</a>、MIRA→<a href="/mira.html" style="color:#d9c4a3">/mira</a> 等，介面客製化、按鈕快。</p></div>
+      <div class="card"><div class="icon">⏰</div><h4>自動排程</h4><p>每天/每週固定時間自動跑：晨報、市場掃描、自我反省、集體記憶。不用你動手。</p></div>
     </div>
-    <div class="port">
-      <div class="ic">💬</div>
-      <h4>Telegram VICTOR</h4>
-      <p>在手機上直接跟 VICTOR 講話，他會看數據、call 工具、分派團隊。適合出門路上問。</p>
+  </section>
+
+  <section id="abilities">
+    <h2>🧠 8 大新能力 — 為什麼這次他們比之前聰明很多</h2>
+    <div class="grid">
+      <div class="card"><div class="icon">🌐</div><h4>全員能上網查當下情報</h4><p>web_search 工具加在 12 位員工身上。問「2026 母親節甜點趨勢」他們會去 Google，不是憑訓練記憶亂掰。</p></div>
+      <div class="card"><div class="icon">🧠</div><h4>主控台多輪記憶</h4><p>同一 session 內，員工會記得你前面說過什麼。連問三次「再短一點」他不會忘了主題。</p></div>
+      <div class="card"><div class="icon">📩</div><h4>HANA 讀真實 DM + 抓真名<span class="new-badge">NEW</span></h4><p>HANA 看板直接讀 SaleSmartly 全管道 (FB DM + IG DM + LINE)，<span class="new">顯示真實 FB/IG 名字</span>（Zhen Yi Su、季涵兒、유수연…），不是「客人 xxxxxx」。</p></div>
+      <div class="card"><div class="icon">✅</div><h4>產出後自我把關</h4><p>每位員工在 prompt 結尾都有 SELF_CHECK 協議：產出後自評紅/黃/綠燈，違反品牌鐵則自動重寫。</p></div>
+      <div class="card"><div class="icon">🤝</div><h4>彼此 delegate 像團隊</h4><p>JUNE 排專案要寫文案時自動 call CAMILLE；RINA 拍 Reels 要寫 caption 時也 delegate 給 CAMILLE。</p></div>
+      <div class="card"><div class="icon">📊</div><h4>看自家舊貼文學成功公式</h4><p>get_meta_posts 工具讓 CAMILLE/RINA 拉自家 IG/FB 最近 5 篇貼文，從互動數據反推「冠軍公式」再寫新文案。</p></div>
+      <div class="card"><div class="icon">📁</div><h4>FILES 文件生成<span class="new-badge">NEW</span></h4><p>第 13 個員工 <b>FILES</b>，4 格式生成：<span class="new">Word/Excel/PPT/PDF</span>。PDF 含中文字型 (NotoSansTC) 完全正常。每筆歷史紀錄也都有一鍵下載按鈕。</p></div>
+      <div class="card"><div class="icon">🌙</div><h4>每晚 22:00 自我反省</h4><p>每位員工讀自己過去 7 天 history，AI 找出最差 3 件給明天的自己看。系統自動把昨天教訓塞進 systemPrompt — 員工會自己進化。</p></div>
     </div>
-    <div class="port">
-      <div class="ic">🎬</div>
-      <h4>員工專屬頁</h4>
-      <p>RINA→<a href="/reels.html">/reels</a>、HANA→<a href="/line.html">/line</a>、MIRA→<a href="/mira.html">/mira</a> 等，介面客製化、按鈕快、附歷史紀錄。</p>
-    </div>
-    <div class="port">
-      <div class="ic">⏰</div>
-      <h4>自動排程</h4>
-      <p>每天/每週固定時間自動跑：晨報、市場掃描、自我反省、集體記憶。不用你動手。</p>
-    </div>
-  </div>
+  </section>
 
-  <!-- 6 大新能力 -->
-  <h2 id="caps">🧠 6 大新能力（讓 AI 員工像真人一樣聰明）</h2>
-  <div class="caps">
-    <div class="cap"><div class="ic">🌐</div><h4>上網查當下情報</h4><p>全員都能 call web_search。寫文案前會去查 2026 年最新趨勢，不是憑訓練資料瞎掰。</p></div>
-    <div class="cap"><div class="ic">🧠</div><h4>跨 session 記憶</h4><p>明天跟 CAMILLE 講話，她還記得你昨天提到的「新口味茉莉烏龍限量 100 盒」。</p></div>
-    <div class="cap"><div class="ic">✅</div><h4>產出後自評</h4><p>每個回覆最後一行強制收尾「✅ 自評：紅燈 0 / 鐵則無違反 / 給 Sam 一個沒想過的角度」。</p></div>
-    <div class="cap"><div class="ic">🔁</div><h4>彼此互相 delegate</h4><p>RINA 排 Reels 時把 caption 派給 CAMILLE；JUNE 排專案時把文案派給 CAMILLE。團隊協作。</p></div>
-    <div class="cap"><div class="ic">📊</div><h4>看自家舊貼文學公式</h4><p>get_meta_posts 抓你自己 IG/FB 最近 N 篇，反推「冠軍公式」再套用寫新內容。</p></div>
-    <div class="cap"><div class="ic">📚</div><h4>每晚 22:00 自我反省</h4><p>每位員工讀自己過去 7 天產出，AI 找出最差 3 件提醒明天的自己改進。</p></div>
-  </div>
+  <section id="employees">
+    <h2>👥 13 位員工 — 各自能做什麼</h2>
+    <div class="grid">
 
-  <!-- 12 員工卡片 -->
-  <h2 id="emps">👥 12 位 AI 員工</h2>
-  <div class="emps" id="empGrid"></div>
-
-  <!-- 自動排程 -->
-  <h2 id="cron">⏰ 系統自動排程（不用你動手）</h2>
-  <div class="cron-list">
-    <table>
-      <tr><td>每天 03:00</td><td>清除超過 10 天的歷史紀錄</td></tr>
-      <tr><td>每天 04:00</td><td>集體記憶消化：讀過去 10 天對話，AI 整理成「全員必讀」記憶</td></tr>
-      <tr><td>每天 06:00</td><td>SCOUT 全球市場掃描 + DISTILL 行動建議</td></tr>
-      <tr><td>每天 06:00</td><td>市場情報日報（馬卡龍/費南雪新聞 + FB Ads Library 對手廣告）</td></tr>
-      <tr><td>每天 06:00</td><td>競品掃描（daily）</td></tr>
-      <tr><td>每天 08:00</td><td>HANA 自我風格優化（讀你昨天回的私訊學語氣）</td></tr>
-      <tr><td>每天 08:30</td><td>MIRA 門市教育每日優化</td></tr>
-      <tr><td>每天 09:10</td><td>JUNE 專案逾期檢查</td></tr>
-      <tr><td>每天 09:00 / 19:00</td><td>自動產生 IG/FB 草稿放 queue（不直接發，等你 approve）</td></tr>
-      <tr><td>每天 22:00</td><td>全員 nightly self-eval — 各員讀自己 7 天紀錄，AI 找出最差 3 件給明天的自己</td></tr>
-      <tr><td>每週一 08:00</td><td>SCOUT 週日深度掃描</td></tr>
-      <tr><td>每週一 09:00</td><td>VICTOR 週策略簡報推 Telegram</td></tr>
-      <tr><td>每週五 17:00</td><td>DEX 週成效報表推 Telegram</td></tr>
-      <tr><td>每月 1 日 09:00</td><td>Token 健康檢查 + ai-team 月度任務</td></tr>
-    </table>
-  </div>
-
-  <!-- Tips -->
-  <h2 id="tips">💡 用得好的小技巧</h2>
-  <div class="cron-list">
-    <p><b>① 不確定要派給誰，就先問 VICTOR。</b> 他會幫你拆任務、選人、彙整。</p>
-    <p><b>② 要「具體成品」用 CAMILLE 或 NOVA；要「決策建議」用 VICTOR 或 DEX。</b></p>
-    <p><b>③ 問問題加「請呼叫 XXX 工具」就會強制觸發。</b> 例如：「請呼叫 get_meta_posts 拿 IG 最近 5 篇」。</p>
-    <p><b>④ 連續對話時不用每次重提背景。</b> 跨 session 記憶會自動帶上最近 5 次互動摘要。</p>
-    <p><b>⑤ 看歷史紀錄找靈感。</b> <a href="/history-view.html">/history-view</a> 可以翻全員過去 10 天產出。</p>
-    <p><b>⑥ 想知道團隊現在記得什麼。</b> <a href="/memory.html">/memory</a> 看每天 04:00 自動整理的集體記憶。</p>
-    <p><b>⑦ 想立刻看市場情報。</b> <a href="/market-intel.html">/market-intel</a> 不用等明早 06:00。</p>
-  </div>
-
-  <!-- FAQ -->
-  <h2 id="faq">❓ FAQ</h2>
-  <div class="faq">
-    <details>
-      <summary>Q：他們回得很慢，正常嗎？</summary>
-      <p>正常。新版每次回覆要：① 查網（10–30 秒）② 跑工具（5–20 秒）③ 自評重寫（10 秒）④ 寫完整 HTML 結構。總共 30–90 秒。換來的是內容真的「有 2026 年 6 月當下情報、有洞察、不違反鐵則」，不是憑空亂寫。</p>
-    </details>
-    <details>
-      <summary>Q：我可以同時開好幾個員工對話嗎？</summary>
-      <p>可以。主控台左欄切換員工，每位員工的對話會分開保存，互不影響。歷史紀錄 <a href="/history-view.html">/history-view</a> 可以一次看全部。</p>
-    </details>
-    <details>
-      <summary>Q：員工會自動發 FB / IG 嗎？</summary>
-      <p>不會自動發。系統會「自動產草稿」放進 queue，但要你進 <a href="/auto-publish.html">/auto-publish</a> 後台 approve 才會真的發。半自動模式。</p>
-    </details>
-    <details>
-      <summary>Q：怎麼知道某個員工的工具呼叫成功了？</summary>
-      <p>看回覆內容。如果他用了 web_search，會引用「2026 年某月某日 X 新聞」這種訓練資料沒有的資訊；用了 get_meta_posts 會引用你「IG 7/15 那篇貼文得到 312 讚」這種具體你家數據；用了 fetch_conversation_detail 會引用「客戶 A 在 6/10 問你保存期限」這種對話原句。</p>
-    </details>
-    <details>
-      <summary>Q：員工會記得我多久前說的話？</summary>
-      <p>① 同一對話內 — 整段都記得 ② 跨 session — 自動帶最近 5 次互動摘要 ③ 集體記憶 — 過去 10 天所有對話經 04:00 消化後全員共讀 ④ 超過 10 天的原始紀錄會被自動清除（隱私考量）但集體記憶會留下精華</p>
-    </details>
-    <details>
-      <summary>Q：我可以加新的員工嗎？</summary>
-      <p>可以。跟我說「我要加一個 XXX 員工，職責是 ___，工具給他 ___」我會在 employees.js 註冊新員工 + 開專屬頁面 + 串歷史紀錄。但建議先把現有 12 位用熟，避免重疊。</p>
-    </details>
-    <details>
-      <summary>Q：員工答得不夠好，怎麼辦？</summary>
-      <p>① 跟他說「不夠具體，請補上品名/數字/時間」② 跟他說「違反鐵則了，請重寫」③ 直接派給 VICTOR 重做（他會分派團隊）④ 進 <a href="/memory.html">/memory</a> 按「立刻消化」更新團隊記憶讓明天的他更好</p>
-    </details>
-  </div>
-
-  <footer>
-    溫點 WarmPlace · AI 虛擬辦公室 · v2 (smarter team) · 12 員工 / 6 新能力 / 14 個自動排程
-  </footer>
-</div>
-
-<div class="toast" id="toast">已複製到剪貼簿</div>
-
-<script>
-// ──── 12 員工資料 ────
-const EMPS = [
-  { id:'victor', emoji:'👑', name:'VICTOR', role:'AI 行銷總監', pos:'拆解任務、分派專員、統整成果。不會自己寫文案 — 他是調度員。',
-    can:['看你給的任務 → 拆成子任務 → 派給適合的員工 → 收回整合','戰略級決策建議（要不要做 X、預算怎麼切）','每週推策略簡報到 Telegram','面對複雜問題會 call 多個工具串接'],
-    examples:['幫我做一份溫點 6 月的行銷健檢報告','教我看懂我們的 IG 數據，告訴我下一步該做什麼','幫我規劃父親節線上線下整合活動方案，分派團隊','我想打造溫點品牌 IP，從哪裡開始'],
-    where:['<a href="/">主控台</a> 左欄 VICTOR','Telegram bot'] },
-
-  { id:'camille', emoji:'✒️', name:'CAMILLE', role:'AI 內容主筆', pos:'寫文案。IG / FB / EDM / Ads / 部落格長文 / SEO 都吃。會抓自家舊貼文反推冠軍公式。',
-    can:['寫 IG caption / FB 貼文 / EDM 主旨+內文','寫 Meta Ads 文案（含 A/B 變體）','部落格長文（含 SEO 關鍵字佈局）','GEO 長文（多平台同題覆蓋）'],
-    examples:['寫 3 則父親節 IG 貼文，120 字內','5 組 Meta Ads 文案（情感版 vs 理性版）','請呼叫 get_meta_posts 拿我家 IG 最近 5 篇，找出贏家公式寫新文案','部落格長文「精品馬卡龍如何挑」+ SEO 關鍵字'],
-    where:['<a href="/">主控台</a> 左欄 CAMILLE','<a href="/content-hub.html">內容中心</a>'] },
-
-  { id:'nova', emoji:'💫', name:'NOVA', role:'AI 品牌經理', pos:'社群經營（IG/FB/LINE）+ 公關媒體 + 品牌故事。會排行事曆。',
-    can:['排下週社群行事曆（IG/FB/LINE 三平台）','寫 Reels 三個劇本','寫新品上市新聞稿','建議適合接觸的媒體名單'],
-    examples:['排下週社群行事曆','父親節 Reels 三個劇本','幫新口味茉莉烏龍寫一份發表新聞稿','建議 5 家適合接觸的台南/食品線媒體'],
-    where:['<a href="/">主控台</a> 左欄 NOVA','<a href="/social.html">社群草稿</a>'] },
-
-  { id:'rina', emoji:'🎬', name:'RINA', role:'AI 短影音導演', pos:'Reels / TikTok 腳本、分鏡、拍攝企劃、節奏。吃 SCOUT 情報抓當下趨勢。',
-    can:['Reels 完整分鏡（15 秒 / 30 秒）','拍攝企劃（場景、道具、燈光、演員）','根據對手最近熱門 Reels 提案','把 caption 派給 CAMILLE'],
-    examples:['依 SCOUT 情報產 3 支父親節 Reels 企劃','15 秒拆禮盒 ASMR Reels 鉤子句','請呼叫 fetch_conversation_detail 找客戶痛點當 Reels 題材','請呼叫 delegate_to_employee 把 caption 派給 CAMILLE'],
-    where:['<a href="/">主控台</a> 左欄 RINA','<a href="/reels.html">RINA 短影音</a>'] },
-
-  { id:'hana', emoji:'💬', name:'HANA', role:'AI 私訊成交客服', pos:'讀 Meta DM/LINE 私訊、分級、寫成交回覆。會學你的語氣。',
-    can:['掃描快成交的對話（VIP 候選）','幫某通客人寫成交回覆草稿','面對嫌貴/猶豫的客人怎麼回','婚禮喜餅/企業訂購怎麼接'],
-    examples:['掃描最近 20 則快成交的對話','請呼叫 fetch_conversation_detail 讀客戶 A 的對話歷史','嫌貴的客人怎麼回（要溫度但不讓步）','婚禮喜餅單 30 盒怎麼接'],
-    where:['<a href="/">主控台</a> 左欄 HANA','<a href="/closer.html">HANA 私訊成交</a>','<a href="/line.html">LINE 訊息</a>'] },
-
-  { id:'mira', emoji:'🏪', name:'MIRA', role:'AI 門市教育主管', pos:'話術 / 加購 / 新人訓練 / 成交 SOP / 神秘客檢核。可上傳知識庫。',
-    can:['產一份門市話術庫（依場景分類）','寫加購腳本（雙享禮盒）','新人教育訓練教材（5 天上手）','成交流程 SOP + 神秘客檢核表'],
-    examples:['產一份父親節門市話術庫','寫雙奏禮盒加購腳本','新人 5 天教育訓練教材','設計神秘客檢核 10 題評分表'],
-    where:['<a href="/">主控台</a> 左欄 MIRA','<a href="/mira.html">MIRA 門市教育</a>','<a href="/teachers.html">門店戰報</a>'] },
-
-  { id:'june', emoji:'📋', name:'JUNE', role:'AI 行銷專案總管', pos:'排專案時程 / 負責人 / 相依關係。會強制呼叫 delegate_to_employee 把子任務派出去。',
-    can:['從 SCOUT 行動建議排本季專案','排某檔期完整專案（時程、負責人、預算、KPI）','專案逾期自動檢查','把寫文案派 CAMILLE、視覺派 ARIA、Reels 派 RINA'],
-    examples:['從 SCOUT 行動建議排本季專案','父親節檔期完整專案時程','雙奏禮盒上市專案（要含 IG 文案 + Reels 腳本）','B2B 企業送禮專案'],
-    where:['<a href="/">主控台</a> 左欄 JUNE','<a href="/june.html">JUNE 專案總管</a>'] },
-
-  { id:'sola', emoji:'🛒', name:'SOLA', role:'AI 官網營運', pos:'商品頁 / 活動頁 / 轉換優化 / 電商 SEO（SHOPLINE）。',
-    can:['寫商品頁文案（含 SEO）','活動頁 Landing Page 結構建議','官網轉換流程優化建議','電商 A/B 測試方向'],
-    examples:['寫雙奏禮盒商品頁文案','父親節活動頁 Landing 結構建議','6 入禮盒商品頁 SEO 關鍵字佈局','官網購物車流失點分析'],
-    where:['<a href="/">主控台</a> 左欄 SOLA','<a href="/sola.html">SOLA 官網營運</a>'] },
-
-  { id:'dex', emoji:'📊', name:'DEX', role:'AI 數據分析師', pos:'成效報表、競品追蹤、預算優化建議。每週五 17:00 自動推週報。',
-    can:['本週成效檢視（Meta / Google / IG）','三店 ROAS 比較','預算重分配建議','競品本月動向分析'],
-    examples:['本週成效檢視','三店 ROAS 比較哪家最好','下月 6 萬預算怎麼切','請呼叫 get_meta_posts 找出 5 月互動最高的 3 篇'],
-    where:['<a href="/">主控台</a> 左欄 DEX','<a href="/ads-hub.html">廣告中心</a>','<a href="/roas.html">ROAS 分析</a>'] },
-
-  { id:'leon', emoji:'🎯', name:'LEON', role:'AI 廣告投手', pos:'Meta / Google Ads 投放與優化。可提案暫停或調預算（半自動，要你 approve）。',
-    can:['檔期廣告投放策略','本月預算重分配','再行銷受眾規劃','A/B 測試素材建議'],
-    examples:['父親節 Meta 廣告投放策略','本月 6 萬預算重分配','再行銷受眾分群規劃','A/B 測試 3 組素材建議'],
-    where:['<a href="/">主控台</a> 左欄 LEON','<a href="/ads-hub.html">廣告中心</a>','<a href="/optimize.html">投放優化</a>'] },
-
-  { id:'aria', emoji:'🎨', name:'ARIA', role:'AI 視覺指導', pos:'Midjourney / 拍攝示意提示詞 + 視覺概念。',
-    can:['Midjourney 提示詞（含構圖/光線/色調）','新品上市視覺概念','IG 頭圖設計方向','包裝升級方案'],
-    examples:['父親節 5 組 Midjourney 視覺提示詞','茉莉烏龍新品上市視覺概念','IG 頭圖 3 個設計方向','禮盒包裝升級 3 個方案'],
-    where:['<a href="/">主控台</a> 左欄 ARIA','<a href="/shot-guide.html">拍攝示意</a>'] },
-
-  { id:'milo', emoji:'🤝', name:'MILO', role:'AI KOL 合作', pos:'網紅選角、合約協商、業配腳本。',
-    can:['KOL 候選名單（含粉絲輪廓對位）','業配貼文腳本','合作條款建議','微網紅 vs 大網紅比較'],
-    examples:['父親節 KOL 候選 5 位（含理由）','業配貼文腳本（要自然不像業配）','合作條款怎麼開（拒絕 X、堅持 Y）','微網紅 vs 大網紅 ROI 比較'],
-    where:['<a href="/">主控台</a> 左欄 MILO'] },
-];
-
-// ──── 渲染員工卡 ────
-const grid = document.getElementById('empGrid');
-EMPS.forEach(e => {
-  const ex = e.examples.map(x => '<div class="ex" onclick="askIt(\''+e.id+'\',\''+x.replace(/'/g,"\\'")+'\')">' + x + '</div>').join('');
-  const can = e.can.map(c => '<li>' + c + '</li>').join('');
-  const where = e.where.join(' · ');
-  grid.insertAdjacentHTML('beforeend', `
-    <div class="emp" id="emp-${e.id}">
-      <div class="head">
-        <div class="av">${e.emoji}</div>
-        <div>
-          <div class="name">${e.name}</div>
-          <div class="role">${e.role}</div>
-        </div>
+      <div class="emp">
+        <div class="head"><div class="avatar">📋</div><div class="info"><h4>VICTOR</h4><div class="role">策略總監 · 戰略簡報</div></div></div>
+        <ul class="can"><li>每週寫戰略簡報 (含市場洞察)</li><li>數據解讀 + 行動建議</li><li>分派任務給其他員工</li><li>Telegram 上直接對話</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「給我這週的戰略簡報」</div><div class="q">「6 月該主推什麼產品？」</div><div class="q">「分析昨天廣告數據哪個值得加碼」</div></div>
+        <div class="where">📍 主控台 + Telegram</div>
       </div>
-      <div class="pos">${e.pos}</div>
-      <div class="label">能幹的事</div>
-      <ul>${can}</ul>
-      <div class="label">5 個 Sam 最常用問句（點一下試試）</div>
-      <div class="examples">${ex}</div>
-      <div class="links">📍 在哪找：${where}</div>
+
+      <div class="emp">
+        <div class="head"><div class="avatar">📁</div><div class="info"><h4>FILES <span class="new-badge">NEW</span></h4><div class="role">檔案生成小助手 · 4 格式輸出</div></div></div>
+        <ul class="can"><li>產 Word 報告 (含表格、標題層級)</li><li>產 Excel (wrapText + 列高自適應)</li><li>產 PowerPoint (自動分頁、品牌封面)</li><li>產 PDF (含中文 NotoSansTC 字型)</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「把這個會議結論做成 Word」</div><div class="q">「給我 6 月行銷專案 Excel，欄位：日期/主題/負責人/預算」</div><div class="q">「3 支 Reels 分鏡做成 PPT 給供應商看」</div></div>
+        <div class="where">📍 主控台 (任何員工說「給我 Excel/Word/PPT/PDF」會自動派給 FILES) + 歷史紀錄頁右上角 4 顆下載按鈕</div>
+      </div>
+
+      <div class="emp">
+        <div class="head"><div class="avatar">💬</div><div class="info"><h4>HANA</h4><div class="role">私訊成交客服顧問</div></div></div>
+        <ul class="can"><li>讀 FB DM/IG DM/LINE 真實對話</li><li><span class="new">真名顯示（FB/IG 顯示名）</span></li><li>分級：🔥 快成交 / 💔 有疑慮 / ⏳ 晾著沒回 / 🕗 等客人</li><li>每天 08:00 自我優化 + 全網成交策略調查</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「Zhen Yi Su 問粽粽胖卡龍訂購方式，幫我寫成交回覆」</div><div class="q">「看板上哪幾通最該優先回？」</div><div class="q">「立刻自我優化 (重新學風格)」</div></div>
+        <div class="where">📍 主控台 + <a href="/closer.html" style="color:#d9c4a3">/closer.html</a></div>
+      </div>
+
+      <div class="emp">
+        <div class="head"><div class="avatar">📊</div><div class="info"><h4>DEX</h4><div class="role">數據分析師</div></div></div>
+        <ul class="can"><li>讀廣告、訂單、流量數據</li><li>找趨勢、異常、CPL 突破點</li><li>每週五 17:00 自動發週報</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「昨天廣告 CPL 為何飆高？」</div><div class="q">「比一下 5 月跟 6 月的轉換率」</div></div>
+        <div class="where">📍 主控台 + 每週五自動週報</div>
+      </div>
+
+      <div class="emp">
+        <div class="head"><div class="avatar">✍️</div><div class="info"><h4>CAMILLE</h4><div class="role">內容文案專員</div></div></div>
+        <ul class="can"><li>IG 貼文 caption + 圖文文案</li><li>EDM、Email、私訊話術</li><li>看自家舊貼文找冠軍公式再寫</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「請呼叫 get_meta_posts 拿我家 IG 最近 5 篇，找出贏家公式寫新文案」</div><div class="q">「寫一則父親節禮盒的 IG caption」</div><div class="q">「3 個 EDM 標題 + 開場」</div></div>
+        <div class="where">📍 主控台</div>
+      </div>
+
+      <div class="emp">
+        <div class="head"><div class="avatar">🎬</div><div class="info"><h4>RINA</h4><div class="role">Reels 短影音導演</div></div></div>
+        <ul class="can"><li>30 秒 Reels 分鏡 + 視覺指令</li><li>拍攝企劃 + Hook 鉤子</li><li>caption 委派給 CAMILLE 寫</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「下週父親節 Reels 拍 3 個方向，每個 30 秒」</div><div class="q">「看看其他甜點品牌最近熱門的 Reels 怎麼拍」</div></div>
+        <div class="where">📍 主控台 + <a href="/reels.html" style="color:#d9c4a3">/reels.html</a></div>
+      </div>
+
+      <div class="emp">
+        <div class="head"><div class="avatar">📅</div><div class="info"><h4>JUNE</h4><div class="role">行銷專案總管</div></div></div>
+        <ul class="can"><li>排專案 (預算 / 時程 / 負責人)</li><li>delegate 子任務給 CAMILLE/RINA/NOVA</li><li>整合各員工產出成完整計劃</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「排父親節專案，預算 NT$20k，到貨保證 5 日內」</div><div class="q">「下半年雙奉禮盒上市規劃」</div></div>
+        <div class="where">📍 主控台 + <a href="/june.html" style="color:#d9c4a3">/june.html</a></div>
+      </div>
+
+      <div class="emp">
+        <div class="head"><div class="avatar">🎓</div><div class="info"><h4>MIRA</h4><div class="role">門市教育訓練</div></div></div>
+        <ul class="can"><li>新人教育 / 鐵則複習</li><li>門市 SOP 撰寫</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「寫新人第一週訓練計畫」</div><div class="q">「企業詢單接洽 SOP」</div></div>
+        <div class="where">📍 主控台 + <a href="/mira.html" style="color:#d9c4a3">/mira.html</a></div>
+      </div>
+
+      <div class="emp">
+        <div class="head"><div class="avatar">🌍</div><div class="info"><h4>SOLA</h4><div class="role">SEO + GEO 長文寫手</div></div></div>
+        <ul class="can"><li>SEO 長文部落格</li><li>GEO (Google Map) 內容優化</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「寫一篇『台南馬卡龍推薦』SEO 長文」</div><div class="q">「給溫點台南本店 GBP 文章 5 個方向」</div></div>
+        <div class="where">📍 主控台 + <a href="/sola.html" style="color:#d9c4a3">/sola.html</a></div>
+      </div>
+
+      <div class="emp">
+        <div class="head"><div class="avatar">📰</div><div class="info"><h4>NOVA</h4><div class="role">市場動態分析師</div></div></div>
+        <ul class="can"><li>競品動態追蹤</li><li>市場趨勢、節慶機會</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「上週競品做了什麼活動？」</div><div class="q">「下個月有哪些節慶可以借力？」</div></div>
+        <div class="where">📍 主控台</div>
+      </div>
+
+      <div class="emp">
+        <div class="head"><div class="avatar">🎨</div><div class="info"><h4>GIA</h4><div class="role">GEO 長文業主說明專家</div></div></div>
+        <ul class="can"><li>客戶情境長文 (落地頁、KOL pitch)</li><li>記憶共鳴、品牌故事</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「寫一篇長文給高端顧客講雙主力的故事」</div><div class="q">「KOL 合作 pitch 一頁」</div></div>
+        <div class="where">📍 主控台</div>
+      </div>
+
+      <div class="emp">
+        <div class="head"><div class="avatar">🎯</div><div class="info"><h4>DIRECTOR</h4><div class="role">攝影/影片導演</div></div></div>
+        <ul class="can"><li>商品攝影分鏡 / 角度 / 燈光</li><li>影片剪輯方向</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「父親節禮盒商攝 5 個構圖方向」</div></div>
+        <div class="where">📍 主控台</div>
+      </div>
+
+      <div class="emp">
+        <div class="head"><div class="avatar">⚙️</div><div class="info"><h4>AUTO</h4><div class="role">自動發文與內容排程</div></div></div>
+        <ul class="can"><li>自動產生內容草稿</li><li>排程、定期推送</li></ul>
+        <div class="examples"><b>範例：</b><div class="q">「下週每天一則 IG 自動排程」</div></div>
+        <div class="where">📍 主控台 + 自動排程</div>
+      </div>
+
     </div>
-  `);
-});
+  </section>
 
-// ──── 點範例問句 → 跳主控台 + 預填 ────
-function askIt(empId, msg) {
-  try {
-    sessionStorage.setItem('prefillEmp', empId);
-    sessionStorage.setItem('prefillMsg', msg);
-  } catch {}
-  // 複製到剪貼簿備用
-  try { navigator.clipboard.writeText(msg); showToast('已複製問句 — 跳到主控台貼上即可'); } catch { showToast('跳到主控台後請手動輸入'); }
-  setTimeout(() => { location.href = '/?emp=' + empId; }, 900);
-}
+  <section id="files">
+    <h2>📁 FILES — 把任何內容變成可下載檔案<span class="new-badge">NEW</span></h2>
+    <p>FILES 是第 13 個員工，專做 4 格式：<b>Word (.docx) / Excel (.xlsx) / PowerPoint (.pptx) / PDF (.pdf)</b>。</p>
+    
+    <h3>怎麼用 — 方式 1：直接跟 FILES 對話</h3>
+    <div class="tip"><b>範例：</b><br>「幫我做一份 6 月行銷成效 Excel，A 欄日期 B 欄主題 C 欄花費 D 欄轉換率」<br>「把我們的雙主力故事做成 5 頁 PPT 給客戶看」<br>「3 則 IG caption 整理成 Word，含 hashtag 區塊」</div>
 
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.style.display = 'block';
-  setTimeout(() => t.style.display = 'none', 1800);
-}
-</script>
+    <h3>怎麼用 — 方式 2：歷史紀錄一鍵下載</h3>
+    <p>打開 <a href="/history-view.html" style="color:#d9c4a3">/history-view.html</a>，每筆紀錄都有 4 個下載按鈕：</p>
+    <div class="cron-list">
+      <div class="cron-item"><b>📄 Word</b><span>微軟正黑體中文 + 主題色 heading</span></div>
+      <div class="cron-item"><b>📊 Excel</b><span>wrapText + 自動列高 + 主題色 header</span></div>
+      <div class="cron-item"><b>🎬 PPT</b><span>自動分頁 + 品牌封面 + bullet 字級自適應</span></div>
+      <div class="cron-item"><b>📕 PDF</b><span>NotoSansTC 7MB 真字型，中文完整呈現</span></div>
+    </div>
+
+    <h3>內容會多紮實？</h3>
+    <p>不是只放標題，FILES 會把該筆對話的<b>完整內容</b>解析成 sections、表格、bullets，套用品牌色再輸出。Excel 每筆訊息獨立一行、會自動斷行；PPT 自動拆頁（body 超過 600 字會分頁）。</p>
+  </section>
+
+  <section id="customers">
+    <h2>👥 客人畫像 — 用 RFM 看誰該優先回<span class="new-badge">NEW</span></h2>
+    <p>之前只看 LINE 顯示 0 人。現在讀 <b>SaleSmartly 全管道 (FB DM + IG DM + LINE)</b>，所有有傳訊息進來的客人都會出現，用真實 FB/IG 名字（Zhen Yi Su、季涵兒、유수연…）。</p>
+    
+    <h3>4 個分群</h3>
+    <div class="cron-list">
+      <div class="cron-item" style="border-left-color:#B08D57"><b>🔥 VIP</b><span>14 天內活躍 + 有購買訊號（高優先處理）</span></div>
+      <div class="cron-item" style="border-left-color:#3ddc84"><b>💚 活躍客</b><span>14 天內有對話</span></div>
+      <div class="cron-item" style="border-left-color:#4285F4"><b>🆕 新客</b><span>首次聯絡 ≤ 14 天</span></div>
+      <div class="cron-item" style="border-left-color:#ff6b6b"><b>😴 潛在流失</b><span>超過 30 天沒聯絡</span></div>
+    </div>
+
+    <h3>每張卡片看到什麼</h3>
+    <p>來源 badge (FB/IG/LINE) + 真實顯示名 + 多久前最後對話 + 從 HANA 看板繼承的狀態 + 最後一句訊息預覽。</p>
+    <p>📍 找這個畫面：<a href="/customer-hub.html" style="color:#d9c4a3">客戶中心 → 客人畫像 分頁</a></p>
+  </section>
+
+  <section id="cron">
+    <h2>⏰ 自動排程 — 14 個固定時間任務</h2>
+    <div class="cron-list">
+      <div class="cron-item"><b>每天 03:00</b><span>清理過期歷史紀錄</span></div>
+      <div class="cron-item"><b>每天 04:00</b><span>集體記憶消化 — 員工昨天的對話 → 共享記憶</span></div>
+      <div class="cron-item"><b>每天 06:00</b><span>SCOUT 全球市場掃描</span></div>
+      <div class="cron-item"><b>每天 06:00</b><span>市場情報日報</span></div>
+      <div class="cron-item"><b>每天 08:00</b><span>HANA 自我優化 — 全網調查成交策略</span></div>
+      <div class="cron-item"><b>每天 09:00</b><span>VICTOR 早報 (週一發完整版)</span></div>
+      <div class="cron-item"><b>每天 22:00</b><span>每位員工自我反省（讀自己昨天的最差 3 件）</span></div>
+      <div class="cron-item"><b>每週一 08:00</b><span>SCOUT 完整週報</span></div>
+      <div class="cron-item"><b>每週五 17:00</b><span>DEX 數據週報</span></div>
+      <div class="cron-item"><b>每月 1 號 03:30</b><span>Token 體檢</span></div>
+    </div>
+  </section>
+
+  <section id="tips">
+    <h2>💡 用得好的小技巧</h2>
+    <div class="tip"><b>1. 不知道派誰，就問 VICTOR</b><br>「這事該誰做？」VICTOR 會分析後派給對的人，或自己接手。</div>
+    <div class="tip"><b>2. 加「請呼叫 XXX 工具」會強制觸發</b><br>例如「請呼叫 get_meta_posts 看我家 IG 最近 5 篇」確保用工具不是憑記憶亂掰。</div>
+    <div class="tip"><b>3. 「給我 Excel」「做成 PPT」會自動派給 FILES<span class="new-badge">NEW</span></b><br>任何員工的產出後加這句，FILES 就會把內容變檔案。也可以指定欄位「A 欄日期 B 欄主題」。</div>
+    <div class="tip"><b>4. 歷史紀錄是靈感寶庫</b><br>不知道之前 CAMILLE 怎麼寫過 IG caption？打開 <a href="/history-view.html" style="color:#d9c4a3">/history-view.html</a> 找出來，按 📄📊🎬📕 下載重用。</div>
+    <div class="tip"><b>5. HANA 看板按「掃描對話」一次處理一批<span class="new-badge">NEW</span></b><br>在 /closer.html 按一下掃出 16 通要處理的對話 (含真名)。一鍵幫 🔥 快成交全寫草稿。</div>
+    <div class="tip"><b>6. 客人畫像看誰流失要追回<span class="new-badge">NEW</span></b><br>「潛在流失」欄位看到老客戶 30 天沒回，可以主動 DM 關心 + 推新品。</div>
+    <div class="tip"><b>7. PDF 中文不會壞了<span class="new-badge">NEW</span></b><br>之前 PDF 中文會變方塊，現在內建 NotoSansTC 7MB 真字型，所有 PDF 出來都是漂亮繁中。</div>
+  </section>
+
+  <section id="faq" class="faq">
+    <h2>❓ FAQ</h2>
+    <dl>
+      <dt>為什麼有時員工回得慢？</dt>
+      <dd>web_search 上網調查每次 30-90 秒。自評也會花時間。整個流程約 1-2 分鐘是正常的。</dd>
+      <dt>會自動發文嗎？</dt>
+      <dd>不會。所有產出目前都是「草稿模式」— 你看完按複製貼到平台。HANA 雖然有半自動/全自動模式，但實際發送功能仍未開通。</dd>
+      <dt>員工記得多久？</dt>
+      <dd>同 session 完整記憶。跨 session：04:00 集體記憶消化會把昨天精華塞進共享記憶；22:00 自我反省會把最差 3 件提醒明天的自己。</dd>
+      <dt>答得不好怎麼辦？</dt>
+      <dd>用「3. 加『請呼叫 XXX 工具』」強制觸發具體工具。或換句話、給更多脈絡。員工自評綠燈不代表你 100% 滿意，你還是裁判。</dd>
+      <dt>PDF 為什麼變成 Word？</dt>
+      <dd>已修復！過去 PDF 因 CJK 字型問題會自動降級成 Word。現在內建 NotoSansTC（7MB），PDF 直接寫中文完全正常。</dd>
+      <dt>客人畫像顯示「客人 xxxxxx」？</dt>
+      <dd>已修復！過去因 fallback 鏈沒抓 session.title 欄位，現在 16 個 FB/IG 客人都顯示真名（Zhen Yi Su、季涵兒、유수연…）。</dd>
+      <dt>FILES 的檔案存在哪？</dt>
+      <dd>產出後立刻給你下載連結（/api/exports/...）。檔案存在 Render persistent disk，可以隨時重下。</dd>
+    </dl>
+  </section>
+
+</div>
 </body>
 </html>
