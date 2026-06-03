@@ -33,8 +33,11 @@ function parseProductsFromHTML(html) {
   let m;
   while ((m = urlRE.exec(html)) !== null) {
     const href = m[1];
-    if (seen.has(href)) continue; seen.add(href);
-    const slug = decodeURIComponent(href.replace('/products/', '')).replace(/-/g, ' ');
+    if (seen.has(href)) continue;
+    if (href.includes('{') || href.includes('}') || href.includes('${')) continue;  // skip template placeholders
+    seen.add(href);
+    let slug;
+    try { slug = decodeURIComponent(href.replace('/products/', '')).replace(/-/g, ' '); } catch { slug = href.replace('/products/', ''); }
     products.push({
       title: slug.trim(),
       price: '',  // 詳情頁再抓
