@@ -1,150 +1,163 @@
 // ============================================================
-// 溫點 WarmPlace · LINE 客人畫像 + RFM 分群 (T8)
+// customers.js — 客人畫像 + RFM 分群 (溫點 WarmPlace)
+// 改用 SaleSmartly 全管道 (FB DM + IG DM + LINE) — 用 session.title 抓 FB/IG/LINE 真實顯示名
+// 掛載：app.use('/api/customers', require('./customers'));
 // ============================================================
-// 從 line-messages.json 聚合，計算 R/F/M，分 4 組
+const express = require('express');
+const router = express.Router();
+const sm = (() => { try { return require('./salesmartly'); } catch { return null; } })();
 
-const fs = require("fs");
-const path = require("path");
+// 只看溫點 macaron 的頻道：FB 溫點 page id + IG @warmplace.here
+const MACARON_FB_PAGE_ID = '903707566167263';
+function isMacaronChannel(s) {
+  const ch = Number(s.channel);
+  const cid = String(s.channel_id);
+  if (ch === 1 && cid === MACARON_FB_PAGE_ID) return true; // FB 溫點
+  if (ch === 6) return true;  // IG 溫點
+  if (ch === 2) return true;  // LINE (若有)
+  return false;
+}
+function channelName(s) {
+  const ch = Number(s.channel);
+  if (ch === 1) return 'FB';
+  if (ch === 6) return 'IG';
+  if (ch === 2) return 'LINE';
+  return 'CH' + ch;
+}
 
-// segment 4 組
 const SEGMENTS = {
-  vip: { label: "🔥 VIP", color: "#B08D57", desc: "高頻 + 詢價多 + 最近活躍" },
-  active: { label: "💚 活躍客", color: "#3ddc84", desc: "最近 14 天有對話" },
-  new: { label: "🆕 新客", color: "#4285F4", desc: "首次聯絡 ≤ 14 天" },
-  atrisk: { label: "😴 潛在流失", color: "#ff6b6b", desc: "超過 30 天沒聯絡" },
+  vip:    { label: '🔥 VIP',      color: '#B08D57', desc: '高頻 (≥5) + 近 14 天活躍' },
+  active: { label: '💚 活躍客',   color: '#3ddc84', desc: '14 天內有對話' },
+  new:    { label: '🆕 新客',     color: '#4285F4', desc: '首次聯絡 ≤ 14 天' },
+  atrisk: { label: '😴 潛在流失', color: '#ff6b6b', desc: '超過 30 天沒聯絡' },
 };
 
-// 意圖分數（用來估算潛在價值，當作 M 替代）
-const INTENT_VALUE = {
-  price: 5,        // 詢價最高分
-  gifting: 4,      // 送禮也是高意願
-  pickup: 3,       // 取貨表示已下單
-  product: 2,      // 一般產品問題
-  storage: 1,      // 保存問題（已買）
-  complaint: 1,    // 抱怨（要小心處理但仍是客人）
-  other: 1,
-};
+const DAY = 86400 * 1000;
 
-function loadMessages(dataDir) {
-  const file = path.join(dataDir, "line-messages.json");
-  if (!fs.existsSync(file)) return [];
-  try {
-    const arr = JSON.parse(fs.readFileSync(file, "utf8"));
-    return Array.isArray(arr) ? arr : [];
-  } catch (e) {
-    return [];
+function classifySegment({ recencyDays, ageDays, msgCount }) {
+  if (ageDays <= 14 && msgCount <= 3) return 'new';
+  if (recencyDays > 30) return 'atrisk';
+  if (msgCount >= 5 && recencyDays <= 14) return 'vip';
+  if (recencyDays <= 14) return 'active';
+  return 'atrisk';
+}
+
+function tsToMs(t) {
+  if (!t) return 0;
+  const n = parseInt(t);
+  if (!n) return 0;
+  return n > 1e12 ? n : n * 1000; // SaleSmartly 有時用 sec、有時 ms
+}
+
+async function buildAll({ days = 60 } = {}) {
+  if (!sm || !sm.listRecentConversations) {
+    return { ok: false, error: 'salesmartly 未載入', total: 0, summary: { total: 0, vip: 0, active: 0, new: 0, atrisk: 0 }, groups: { vip: [], active: [], new: [], atrisk: [] }, segments: SEGMENTS };
   }
-}
-
-function loadCustomerProfiles(dataDir) {
-  const file = path.join(dataDir, "customer-profiles.json");
-  if (!fs.existsSync(file)) return {};
-  try {
-    return JSON.parse(fs.readFileSync(file, "utf8")) || {};
-  } catch (e) {
-    return {};
-  }
-}
-
-function saveCustomerProfiles(dataDir, profiles) {
-  const file = path.join(dataDir, "customer-profiles.json");
-  fs.writeFileSync(file, JSON.stringify(profiles, null, 2));
-}
-
-function daysBetween(t1, t2) {
-  return Math.floor((new Date(t2).getTime() - new Date(t1).getTime()) / (24 * 3600 * 1000));
-}
-
-// 把 messages 聚合成 customers
-function aggregateCustomers(messages, profiles = {}) {
-  const byUser = {};
+  const conv = await sm.listRecentConversations({ days, page_size: 200 });
+  const list = (conv && (conv.list || (conv.data && conv.data.list))) || [];
+  const macaron = list.filter(isMacaronChannel);
   const now = Date.now();
-  for (const m of messages) {
-    if (!m.userId) continue;
-    if (!byUser[m.userId]) {
-      byUser[m.userId] = {
-        userId: m.userId,
-        userName: m.userName || m.userId.slice(0, 12),
-        firstMessageAt: m.timestamp,
-        lastMessageAt: m.timestamp,
+
+  // 把同一 chat_user_id 的多個 session 合併
+  const byUser = {};
+  for (const s of macaron) {
+    const uid = s.chat_user_id || s.contact_id || s.user_id || s.session_id || s.id;
+    if (!uid) continue;
+    const lastMs = tsToMs(s.last_message_time) || tsToMs(s.end_time) || tsToMs(s.start_time);
+    const firstMs = tsToMs(s.start_time) || lastMs;
+    const msgCount = (parseInt(s.msg_count) || 0) || ((parseInt(s.customer_msg_count) || 0) + (parseInt(s.user_msg_count) || 0));
+    const custMsgCount = parseInt(s.customer_msg_count) || 0;
+    const replyCount = parseInt(s.user_msg_count) || 0; // 我們的回覆數
+
+    if (!byUser[uid]) {
+      byUser[uid] = {
+        userId: uid,
+        userName: s.title || ('客人 ' + String(uid).slice(0, 6)),
+        channel: channelName(s),
+        channel_raw: s.channel,
+        firstMessageAt: firstMs,
+        lastMessageAt: lastMs,
         messageCount: 0,
-        intents: {},
-        messages: [],
-        replied: 0,
+        customerMessageCount: 0,
+        replyCount: 0,
+        tags: Array.isArray(s.tags) ? [...s.tags] : [],
+        labels: Array.isArray(s.labels) ? [...s.labels] : [],
+        sessions: 0,
       };
     }
-    const c = byUser[m.userId];
-    c.messageCount++;
-    if (m.replied) c.replied++;
-    if (m.timestamp < c.firstMessageAt) c.firstMessageAt = m.timestamp;
-    if (m.timestamp > c.lastMessageAt) c.lastMessageAt = m.timestamp;
-    const intent = m.intent || "other";
-    c.intents[intent] = (c.intents[intent] || 0) + 1;
-    c.messages.push({ id: m.id, text: m.text, intent, timestamp: m.timestamp, replied: m.replied, replyText: m.replyText });
+    const c = byUser[uid];
+    if (!c.userName || c.userName.startsWith('客人 ')) c.userName = s.title || c.userName;
+    if (firstMs && (!c.firstMessageAt || firstMs < c.firstMessageAt)) c.firstMessageAt = firstMs;
+    if (lastMs && lastMs > c.lastMessageAt) c.lastMessageAt = lastMs;
+    c.messageCount += msgCount;
+    c.customerMessageCount += custMsgCount;
+    c.replyCount += replyCount;
+    c.sessions += 1;
+    if (Array.isArray(s.tags)) for (const t of s.tags) if (!c.tags.includes(t)) c.tags.push(t);
+    if (Array.isArray(s.labels)) for (const l of s.labels) if (!c.labels.includes(l)) c.labels.push(l);
   }
 
-  // 計算 R/F/M + segment
+  // 算 R/F + segment
   const customers = Object.values(byUser).map(c => {
-    const recencyDays = Math.floor((now - new Date(c.lastMessageAt).getTime()) / (24 * 3600 * 1000));
-    const ageDays = Math.floor((now - new Date(c.firstMessageAt).getTime()) / (24 * 3600 * 1000));
-    const frequency = c.messageCount;
-    // M = 意圖分數加權
-    let monetary = 0;
-    for (const [intent, count] of Object.entries(c.intents)) {
-      monetary += (INTENT_VALUE[intent] || 1) * count;
-    }
-    // 分組邏輯
-    let segment;
-    if (ageDays <= 14 && frequency <= 3) {
-      segment = "new";
-    } else if (recencyDays > 30) {
-      segment = "atrisk";
-    } else if (frequency >= 5 && monetary >= 15 && recencyDays <= 14) {
-      segment = "vip";
-    } else if (recencyDays <= 14) {
-      segment = "active";
-    } else {
-      segment = "atrisk";
-    }
-    // 拉 saved profile (AI 畫像)
-    const profile = profiles[c.userId] || {};
+    const recencyDays = c.lastMessageAt ? Math.floor((now - c.lastMessageAt) / DAY) : 9999;
+    const ageDays = c.firstMessageAt ? Math.floor((now - c.firstMessageAt) / DAY) : 0;
+    const segment = classifySegment({ recencyDays, ageDays, msgCount: c.messageCount });
     return {
       ...c,
       recencyDays,
       ageDays,
-      frequency,
-      monetary,
+      frequency: c.messageCount,
+      lastMessageAtIso: c.lastMessageAt ? new Date(c.lastMessageAt).toISOString() : null,
+      firstMessageAtIso: c.firstMessageAt ? new Date(c.firstMessageAt).toISOString() : null,
       segment,
-      aiProfile: profile.aiProfile || null,
-      tags: profile.tags || [],
-      profileUpdatedAt: profile.updatedAt || null,
-      messages: c.messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)),
+      hasReplied: c.replyCount > 0,
     };
   });
-  // 排序：VIP / Active / New 越近越前；At-risk 越久越前
+
+  // 排序：VIP / Active / New 最近的最前；At-risk 越久越前
+  const order = { vip: 0, active: 1, new: 2, atrisk: 3 };
   customers.sort((a, b) => {
-    const order = { vip: 0, active: 1, new: 2, atrisk: 3 };
     if (order[a.segment] !== order[b.segment]) return order[a.segment] - order[b.segment];
-    return new Date(b.lastMessageAt) - new Date(a.lastMessageAt);
+    return b.lastMessageAt - a.lastMessageAt;
   });
-  return customers;
-}
 
-// 統計分組數
-function groupBySegment(customers) {
+  // 分群
   const groups = { vip: [], active: [], new: [], atrisk: [] };
-  for (const c of customers) {
-    if (groups[c.segment]) groups[c.segment].push(c);
-  }
-  return groups;
+  for (const c of customers) if (groups[c.segment]) groups[c.segment].push(c);
+
+  const summary = {
+    total: customers.length,
+    vip: groups.vip.length,
+    active: groups.active.length,
+    new: groups.new.length,
+    atrisk: groups.atrisk.length,
+  };
+
+  return { ok: true, total: customers.length, days_range: days, summary, groups, segments: SEGMENTS, customers };
 }
 
-module.exports = {
-  SEGMENTS,
-  loadMessages,
-  loadCustomerProfiles,
-  saveCustomerProfiles,
-  aggregateCustomers,
-  groupBySegment,
-  daysBetween,
-};
+// ───────── Routes ─────────
+router.get('/', async (req, res) => {
+  try {
+    const days = Math.min(Math.max(parseInt(req.query.days) || 60, 7), 365);
+    res.json(await buildAll({ days }));
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+router.get('/profiles', async (req, res) => {
+  try {
+    const days = Math.min(Math.max(parseInt(req.query.days) || 60, 7), 365);
+    const r = await buildAll({ days });
+    res.json({ ok: r.ok, total: r.total, profiles: r.customers || [] });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+router.get('/segments', (req, res) => res.json({ ok: true, segments: SEGMENTS }));
+
+// Stubs to keep existing UI happy (broadcast 暫不開放)
+router.post('/segment-broadcast', express.json(), (req, res) => res.status(403).json({ ok: false, error: '群發功能暫未開放（草稿模式）' }));
+router.post('/segment-push', express.json(), (req, res) => res.status(403).json({ ok: false, error: '群發功能暫未開放（草稿模式）' }));
+
+module.exports = router;
+module.exports.buildAll = buildAll;
+module.exports.SEGMENTS = SEGMENTS;
