@@ -27,26 +27,43 @@ function decodeHtml(s) {
 
 function parseProductsFromHTML(html) {
   const products = [];
-  // 每個 product-item div 是一個商品
-  const itemRE = /<div[^>]*class="[^"]*product-item[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/g;
+  // 從 /products/{slug} 連結抽 URL — 比 div regex 穩
+  const urlRE = /href="(\/products\/[^"#?]+)"/g;
+  const seen = new Set();
   let m;
-  while ((m = itemRE.exec(html)) !== null) {
-    const block = m[1];
-    const hrefM = block.match(/href="([^"]+)"/);
-    const titleM = block.match(/class="[^"]*product-item-title[^"]*"[^>]*>([^<]+)</)
-                || block.match(/class="[^"]*(?:title|name)[^"]*"[^>]*>([^<]+)</);
-    const priceM = block.match(/class="[^"]*product-item-price[^"]*"[^>]*>([\s\S]*?)</)
-                || block.match(/(NT\$[\d,]+)/);
-    const imgM = block.match(/src="([^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/);
-    if (!hrefM && !titleM) continue;
+  while ((m = urlRE.exec(html)) !== null) {
+    const href = m[1];
+    if (seen.has(href)) continue; seen.add(href);
+    const slug = decodeURIComponent(href.replace('/products/', '')).replace(/-/g, ' ');
     products.push({
-      title: titleM ? decodeHtml(titleM[1]).trim() : '',
-      price: priceM ? decodeHtml((priceM[1] || priceM[0])).replace(/\s+/g, ' ').trim() : '',
-      url: hrefM ? (hrefM[1].startsWith('http') ? hrefM[1] : 'https://' + STORE_DOMAIN + hrefM[1]) : '',
-      image: imgM ? imgM[1] : '',
+      title: slug.trim(),
+      price: '',  // 詳情頁再抓
+      url: 'https://' + STORE_DOMAIN + href,
+      image: '',
+      slug: href.replace('/products/', ''),
     });
   }
   return products;
+}
+
+// 從單一商品詳情頁抓價格 + 圖
+async function fetchProductDetail(url) {
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 macaron-office bot' } });
+    if (!r.ok) return {};
+    const html = await r.text();
+    // og:title 比較準
+    const titleM = html.match(/<meta property="og:title" content="([^"]+)"/);
+    const priceM = html.match(/<meta property="product:price:amount" content="([^"]+)"/)
+                || html.match(/"price"[^:]*:\s*"?(\d+\.?\d*)"?/);
+    const imageM = html.match(/<meta property="og:image" content="([^"]+)"/);
+    const currM = html.match(/<meta property="product:price:currency" content="([^"]+)"/);
+    return {
+      title: titleM ? decodeHtml(titleM[1]).trim() : '',
+      price: priceM ? (currM ? currM[1] + ' ' : 'NT$') + priceM[1] : '',
+      image: imageM ? imageM[1] : '',
+    };
+  } catch { return {}; }
 }
 
 async function fetchStorefront() {
@@ -54,7 +71,16 @@ async function fetchStorefront() {
   const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 macaron-office bot' } });
   if (!r.ok) throw new Error('Storefront HTTP ' + r.status);
   const html = await r.text();
-  const products = parseProductsFromHTML(html);
+  let products = parseProductsFromHTML(html);
+  // 平行抓每個商品詳情頁 (拿真實 title/price/image)
+  const details = await Promise.all(products.map(p => fetchProductDetail(p.url)));
+  products = products.map((p, i) => ({
+    title: details[i].title || p.title,  // og:title 優先,fallback URL slug
+    price: details[i].price || p.price,
+    image: details[i].image || p.image,
+    url: p.url,
+    slug: p.slug,
+  }));
   return { products, html_size: html.length };
 }
 
