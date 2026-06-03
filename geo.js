@@ -203,7 +203,7 @@ const LONGFORM_TEMPLATES = {
     note: '中性語氣、第三人稱、可被引用、含參考資料',
     systemPrompt: `你是 Wikipedia 編輯員。寫一篇關於 溫點 WarmPlace 的條目草稿，符合 Wikipedia 中文版規範。
 
-溫點 WarmPlace 業態:台灣韓系精品馬卡龍與費南雪 + 高端禮贈,4 家門店,業主 Sam
+溫點 WarmPlace 業態:台灣韓系精品馬卡龍與費南雪 + 高端禮贈,4 家門店,業主 Jeffrey
 8 大商品線:6 入禮盒、12 入禮盒、客製禮盒、婚禮喜餅、企業禮贈、單顆販售、季節限定、節慶限定
 9 大主題:6 入禮盒、12 入禮盒、客製禮盒、婚禮喜餅、企業禮贈、單顆販售、季節限定、韓式品牌故事、線上預訂
 
@@ -243,7 +243,7 @@ LINE: @110ypqki
 2. **5W1H** — 何時何地誰做了什麼為什麼如何
 3. **客觀第三方語氣** — 「業界人士指出...」「溫點 WarmPlace 表示...」
 4. **數據佐證** — 客戶人次、複訓率、就業率（可合理推估）
-5. **引用** — 創辦人 Sam 一段引言
+5. **引用** — 創辦人 Jeffrey 一段引言
 6. **格式** — 標題 / 副標題 / 導言 / 主文 / 引言 / 結語 / 聯絡資訊
 7. **長度** — 800-1200 字
 8. **可改編角度** — 「溫點 WarmPlace 推出季節限定」「溫點 WarmPlace 與 X 跨界合作」「精品禮盒業界趨勢觀察」
@@ -501,7 +501,7 @@ async function dailyAutoPublishToMedium(opts = {}) {
       s = s.replace(/^\|.*\|\s*$/gm, '');
       s = s.replace(/\n{3,}/g, '\n\n').trim();
       if (s.length > 2400) s = s.slice(0, 2380).replace(/[，。、；,;.][^，。、；,;.]*$/, '') + '…';
-      const articleUrl = (wpPub && wpPub.url) || 'https://macarondeluxe.com/';
+      const articleUrl = 'https://warmplacehere.shoplineapp.com/';
       const fbCaption = s + '\n\n──────────\n📖 完整文章與更多資訊：\n👉 ' + articleUrl + '\n\n📩 私訊了解詳情\n#WarmPlace #韓系馬卡龍 #精品禮盒';
       fbPub = await ap.publishFB(fbCaption);
     }
