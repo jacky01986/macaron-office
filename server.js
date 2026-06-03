@@ -4803,6 +4803,8 @@ catch (e) { console.error('[memory] mount failed:', e.message); }
 try { app.use('/api/shot-director', require('./shot-director')); console.log('[shot-director] DIRECTOR route mounted at /api/shot-director'); }
 catch (e) { console.error('[shot-director] mount failed:', e.message); }
 try { app.use('/api/meta-admin', require('./meta-admin')); console.log('[meta-admin] route mounted at /api/meta-admin'); } catch (e) { console.error('[meta-admin] mount failed:', e.message); }
+try { app.use('/api/shopline', require('./shopline')); console.log('[shopline] route mounted at /api/shopline'); } catch (e) { console.error('[shopline] mount failed:', e.message); }
+try { require('./shopline').registerCron(cron); } catch (e) { console.error('[shopline] cron failed:', e.message); }
 
 app.listen(PORT, () => {
   console.log('🥐 溫點 WarmPlace · Virtual Office v2');
