@@ -286,31 +286,36 @@ router.get('/_debug_html', async (req, res) => {
 
 router.get('/_debug_probe', async (req, res) => {
   if (!OPEN_API_TOKEN) return res.json({ ok: false, error: 'no token set' });
-  // v3 — 試 shopline.com 系列 + merchant subdomain + storefront API
-  const candidates = [
-    'https://open.shopline.io/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
-    'https://open.shopline.com/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
-    'https://open-api.shopline.com/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
-    'https://open.shopline.com/api/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
-    'https://open.shoplineapp.com/v1/orders?per_page=1',
-    'https://api.shopline.io/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
-    'https://api.shopline.com/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
-    'https://warmplacehere.shoplineapp.com/api/v1/orders?per_page=1',
-    'https://warmplacehere.shoplineapp.com/api/admin/v1/orders?per_page=1',
-    'https://warmplacehere.shoplineapp.com/admin/api/orders?per_page=1',
-    'https://shoplineapp.com/api/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
-    'https://shopline.com/api/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
+  // v4 — open.shopline.io 真 API host,試各種 path 找對的
+  const base = 'https://open.shopline.io';
+  const paths = [
+    '/v1/orders?per_page=1',
+    '/api/v1/orders?per_page=1',
+    '/admin/api/v1/orders?per_page=1',
+    '/openapi/v1/orders?per_page=1',
+    '/v1/orders?merchant_id=' + MERCHANT_ID + '&per_page=1',
+    '/v1/products?per_page=1',
+    '/v1/blog/posts?per_page=1',
+    '/v1/me',
+    '/v1/shop',
+    '/v1/merchants/me',
+    '/v1/store-front/orders?per_page=1',
+    '/admin/orders.json?limit=1',
+    '/2024-01/orders.json',
+    '/.well-known/openapi.json',
+    '/health',
+    '/',
   ];
-  const accept = 'application/vnd.shopline.com; version=1';
   const out = [];
-  for (const url of candidates) {
+  for (const path of paths) {
+    const url = base + path;
     try {
-      const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': accept, 'Content-Type': 'application/json' } });
+      const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': 'application/json', 'X-Shopline-Merchant-Id': MERCHANT_ID } });
       const text = await r.text();
-      out.push({ url: url.replace('https://',''), status: r.status, ct: (r.headers.get('content-type')||'').split(';')[0], preview: text.slice(0, 120).replace(/\s+/g, ' ') });
-    } catch (e) { out.push({ url, error: e.message.slice(0, 80) }); }
+      out.push({ path, status: r.status, ct: (r.headers.get('content-type')||'').split(';')[0], preview: text.slice(0, 150).replace(/\s+/g, ' ').slice(0, 100) });
+    } catch (e) { out.push({ path, error: e.message.slice(0, 60) }); }
   }
-  res.json({ ok: true, results: out });
+  res.json({ ok: true, base, results: out });
 });
 
 router.get('/_status', async (req, res) => {
