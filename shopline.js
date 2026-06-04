@@ -126,7 +126,7 @@ async function getProductContext() {
 }
 
 // ─────────── Open API (等 token) ───────────
-const OPEN_BASE = 'https://open.shoplineapp.com';
+const OPEN_BASE = 'https://open.shopline.io';
 
 async function openApiCall(endpoint, opts = {}) {
   if (!OPEN_API_TOKEN) throw new Error('SHOPLINE_ACCESS_TOKEN 未設定 — 還在等客服開通');
@@ -146,11 +146,12 @@ async function openApiCall(endpoint, opts = {}) {
   return data;
 }
 
+function withMid(qs) { return qs + (qs.includes('?') ? '&' : '?') + 'merchant_id=' + MERCHANT_ID; }
 async function getOrders({ from, to, limit = 50 } = {}) {
-  return openApiCall(`/api/v1/orders?per_page=${limit}${from ? '&created_at_gte=' + encodeURIComponent(from) : ''}${to ? '&created_at_lte=' + encodeURIComponent(to) : ''}`);
+  return openApiCall(withMid(`/v1/orders?per_page=${limit}${from ? '&created_at_gte=' + encodeURIComponent(from) : ''}${to ? '&created_at_lte=' + encodeURIComponent(to) : ''}`));
 }
-async function getCustomers({ limit = 50 } = {}) { return openApiCall('/api/v1/customers?per_page=' + limit); }
-async function getCheckouts({ limit = 50 } = {}) { return openApiCall('/api/v1/checkouts?per_page=' + limit); }
+async function getCustomers({ limit = 50 } = {}) { return openApiCall(withMid('/v1/customers?per_page=' + limit)); }
+async function getCheckouts({ limit = 50 } = {}) { return openApiCall(withMid('/v1/checkouts?per_page=' + limit)); }
 
 // ─────────── Webhook 接收 (給 HANA 棄單) ───────────
 function verifyWebhook(req) {
@@ -185,7 +186,7 @@ async function publishBlogPost({ title, content_html, tags = [], cover_image_url
     ...(category_id ? { category_id } : {}),
   };
   try {
-    const r = await openApiCall('/api/v1/merchants/' + MERCHANT_ID + '/blog/posts', { method: 'POST', body });
+    const r = await openApiCall(withMid('/v1/blogs/posts'), { method: 'POST', body });
     return { ok: true, post_id: r.id || r.data?.id, response: r };
   } catch (e) {
     return { ok: false, error: e.message };
@@ -195,7 +196,7 @@ async function publishBlogPost({ title, content_html, tags = [], cover_image_url
 async function listBlogPosts({ limit = 20 } = {}) {
   if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token yet' };
   try {
-    const r = await openApiCall('/api/v1/merchants/' + MERCHANT_ID + '/blog/posts?per_page=' + limit);
+    const r = await openApiCall(withMid('/v1/blogs/posts?per_page=' + limit));
     return { ok: true, posts: r.items || r.data || r, count: (r.items || r.data || r || []).length };
   } catch (e) { return { ok: false, error: e.message }; }
 }
@@ -204,7 +205,7 @@ async function getBlogPost(postId) {
   if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token yet' };
   if (!postId) return { ok: false, error: 'postId required' };
   try {
-    const r = await openApiCall('/api/v1/merchants/' + MERCHANT_ID + '/blog/posts/' + encodeURIComponent(postId));
+    const r = await openApiCall(withMid('/v1/blogs/posts/' + encodeURIComponent(postId)));
     return { ok: true, post: r };
   } catch (e) { return { ok: false, error: e.message }; }
 }
@@ -217,7 +218,7 @@ async function updateBlogPost(postId, fields = {}) {
   for (const k of allowed) if (fields[k] !== undefined) body[k] = fields[k];
   if (Object.keys(body).length === 0) return { ok: false, error: 'no updatable fields provided' };
   try {
-    const r = await openApiCall('/api/v1/merchants/' + MERCHANT_ID + '/blog/posts/' + encodeURIComponent(postId), { method: 'PATCH', body });
+    const r = await openApiCall(withMid('/v1/blogs/posts/' + encodeURIComponent(postId)), { method: 'PATCH', body });
     return { ok: true, post: r };
   } catch (e) { return { ok: false, error: e.message }; }
 }
@@ -227,7 +228,7 @@ async function deleteBlogPost(postId, { confirmed = false } = {}) {
   if (!postId) return { ok: false, error: 'postId required' };
   if (!confirmed) return { ok: false, error: 'confirmed:true required to delete' };
   try {
-    const r = await openApiCall('/api/v1/merchants/' + MERCHANT_ID + '/blog/posts/' + encodeURIComponent(postId), { method: 'DELETE' });
+    const r = await openApiCall(withMid('/v1/blogs/posts/' + encodeURIComponent(postId)), { method: 'DELETE' });
     return { ok: true, deleted: postId, response: r };
   } catch (e) { return { ok: false, error: e.message }; }
 }
@@ -237,7 +238,7 @@ async function getOrdersSummary({ days = 1 } = {}) {
   if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token yet' };
   try {
     const from = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
-    const r = await openApiCall('/api/v1/merchants/' + MERCHANT_ID + '/orders?per_page=200&created_at_gte=' + from);
+    const r = await openApiCall(withMid('/v1/orders?per_page=200&created_at_gte=' + from));
     const orders = r.items || r.data || r;
     let revenue = 0, count = orders.length, qty = 0;
     const skuQty = {};
@@ -286,33 +287,33 @@ router.get('/_debug_html', async (req, res) => {
 
 router.get('/_debug_probe', async (req, res) => {
   if (!OPEN_API_TOKEN) return res.json({ ok: false, error: 'no token set' });
-  // v4 — open.shopline.io 真 API host,試各種 path 找對的
+  // v5 — base URL 確定 https://open.shopline.io/v1/, 用 merchant_id query
   const base = 'https://open.shopline.io';
+  const mq = '?merchant_id=' + MERCHANT_ID;
   const paths = [
-    '/v1/orders?per_page=1',
-    '/api/v1/orders?per_page=1',
-    '/admin/api/v1/orders?per_page=1',
-    '/openapi/v1/orders?per_page=1',
-    '/v1/orders?merchant_id=' + MERCHANT_ID + '&per_page=1',
-    '/v1/products?per_page=1',
-    '/v1/blog/posts?per_page=1',
-    '/v1/me',
-    '/v1/shop',
-    '/v1/merchants/me',
-    '/v1/store-front/orders?per_page=1',
-    '/admin/orders.json?limit=1',
-    '/2024-01/orders.json',
-    '/.well-known/openapi.json',
-    '/health',
-    '/',
+    '/v1/orders?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/products?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/customers?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/checkouts?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/blog/posts?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/blogs/posts?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/blogs?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/blog_posts?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/posts?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/blog_categories' + mq,
+    '/v1/articles?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/news?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/cart?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/carts?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/abandoned_checkouts' + mq,
   ];
   const out = [];
   for (const path of paths) {
-    const url = base + path;
     try {
-      const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': 'application/json', 'X-Shopline-Merchant-Id': MERCHANT_ID } });
+      const r = await fetch(base + path, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': 'application/json' } });
       const text = await r.text();
-      out.push({ path, status: r.status, ct: (r.headers.get('content-type')||'').split(';')[0], preview: text.slice(0, 150).replace(/\s+/g, ' ').slice(0, 100) });
+      const isJson = text.trim().startsWith('{') || text.trim().startsWith('[');
+      out.push({ path, status: r.status, isJson, sample_len: text.length });
     } catch (e) { out.push({ path, error: e.message.slice(0, 60) }); }
   }
   res.json({ ok: true, base, results: out });
