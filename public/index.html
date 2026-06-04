@@ -1055,7 +1055,7 @@ async function switchTab(t) {
   if (cur) cur.classList.add('active');
   document.getElementById('feed').style.display = t === 'feed' ? 'block' : 'none';
   document.getElementById('history').style.display = t === 'history' ? 'block' : 'none';
-  document.getElementById('reports').style.display = t === 'reports' ? 'block' : 'none';
+  document.getElementById('reports').style.display = t === 'reports' ? 'block' : 'none';  document.getElementById('shopline').style.display = t === 'shopline' ? 'block' : 'none';
   if (t === 'reports') await loadReports();
   if (t === 'history') await loadHistory();
 }
