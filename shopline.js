@@ -286,36 +286,31 @@ router.get('/_debug_html', async (req, res) => {
 
 router.get('/_debug_probe', async (req, res) => {
   if (!OPEN_API_TOKEN) return res.json({ ok: false, error: 'no token set' });
-  // 已確定 URL,試各種 Accept header 找 200
-  const url = 'https://open.shoplineapp.com/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1';
-  const accepts = [
-    'application/vnd.shoplineapp.com; version=1',
-    'application/vnd.shoplineapp.com.v1+json',
-    'application/vnd.shoplineapp.v1+json',
-    'application/vnd.shopline.com.v1+json',
-    'application/vnd.shopline.com+json',
-    'application/vnd.api+json',
-    'application/vnd.shoplineapp+json; version=1',
-    'application/vnd.shopline.api.v1+json',
-    'application/vnd.api.v1+json',
-    'application/json; version=1',
-    'application/json; charset=utf-8',
+  // v3 — 試 shopline.com 系列 + merchant subdomain + storefront API
+  const candidates = [
+    'https://open.shopline.io/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
+    'https://open.shopline.com/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
+    'https://open-api.shopline.com/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
+    'https://open.shopline.com/api/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
+    'https://open.shoplineapp.com/v1/orders?per_page=1',
+    'https://api.shopline.io/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
+    'https://api.shopline.com/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
+    'https://warmplacehere.shoplineapp.com/api/v1/orders?per_page=1',
+    'https://warmplacehere.shoplineapp.com/api/admin/v1/orders?per_page=1',
+    'https://warmplacehere.shoplineapp.com/admin/api/orders?per_page=1',
+    'https://shoplineapp.com/api/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
+    'https://shopline.com/api/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
   ];
+  const accept = 'application/vnd.shopline.com; version=1';
   const out = [];
-  for (const accept of accepts) {
+  for (const url of candidates) {
     try {
-      const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': accept } });
+      const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': accept, 'Content-Type': 'application/json' } });
       const text = await r.text();
-      out.push({ accept, status: r.status, preview: text.slice(0, 150).replace(/\s+/g, ' ') });
-    } catch (e) { out.push({ accept, error: e.message.slice(0, 80) }); }
+      out.push({ url: url.replace('https://',''), status: r.status, ct: (r.headers.get('content-type')||'').split(';')[0], preview: text.slice(0, 120).replace(/\s+/g, ' ') });
+    } catch (e) { out.push({ url, error: e.message.slice(0, 80) }); }
   }
-  // 也試完全空的 Accept 看 Shopline 預設要什麼
-  try {
-    const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN } });
-    const text = await r.text();
-    out.push({ accept: '(none)', status: r.status, preview: text.slice(0, 200).replace(/\s+/g, ' '), headers_returned: Object.fromEntries([...r.headers.entries()].slice(0,8)) });
-  } catch {}
-  res.json({ ok: true, url, results: out });
+  res.json({ ok: true, results: out });
 });
 
 router.get('/_status', async (req, res) => {
