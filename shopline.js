@@ -284,6 +284,43 @@ router.get('/_debug_html', async (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
+router.get('/_debug_probe', async (req, res) => {
+  if (!OPEN_API_TOKEN) return res.json({ ok: false, error: 'no token set' });
+  // 試各種 base URL + path 組合,看哪個回 JSON (不是 HTML)
+  const bases = [
+    'https://open.shoplineapp.com',
+    'https://open-api.shoplineapp.com',
+    'https://api.shopline.com',
+    'https://open.shopline.com',
+    'https://open.shoplineapp.com/api',
+  ];
+  const paths = [
+    '/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
+    '/api/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
+    '/v1/orders?per_page=1',
+    '/merchants/' + MERCHANT_ID + '/orders?per_page=1',
+  ];
+  const out = [];
+  for (const base of bases) {
+    for (const path of paths) {
+      const url = base + path;
+      try {
+        const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': 'application/json' } });
+        const text = await r.text();
+        const isJSON = text.trim().startsWith('{') || text.trim().startsWith('[');
+        out.push({
+          url: base + path,
+          status: r.status,
+          ct: (r.headers.get('content-type') || '').split(';')[0],
+          isJSON,
+          preview: text.slice(0, 200).replace(/\s+/g, ' ').slice(0, 150),
+        });
+      } catch (e) { out.push({ url: base + path, error: e.message.slice(0, 100) }); }
+    }
+  }
+  res.json({ ok: true, token_len: OPEN_API_TOKEN.length, results: out });
+});
+
 router.get('/_status', async (req, res) => {
   const cache = loadCache();
   res.json({
