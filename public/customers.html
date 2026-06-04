@@ -34,7 +34,7 @@
 </head>
 <body>
   <h1>👥 客人畫像</h1>
-  <div class="sub">溫點 WarmPlace · SaleSmartly 全管道 (FB DM + IG DM + LINE) · RFM 分群</div>
+  <div class="sub">溫點 WarmPlace · SaleSmartly 全管道 (FB DM + IG DM) · RFM 分群</div>
   <div id="err" class="err" style="display:none"></div>
   <div class="summary" id="summary">
     <div class="item">總計 <b id="t-total">0</b> 位客人</div>
@@ -63,9 +63,14 @@
     </div>
   </div>
 
-<script>
+<div id="shopline-section" style="margin-top:24px;display:none">
+    <div class="sub" style="font-size:16px;color:#B08D57;margin-bottom:10px">💰 Shopline LTV 客戶 (真實消費金額)</div>
+    <div id="sl-summary" class="summary"></div>
+    <div id="sl-cols" class="cols"></div>
+  </div>
+  <script>
 function esc(s){return String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'})[c])}
-function chTag(ch){const map={1:'FB',6:'IG',2:'LINE'};return '<span class="ch-badge">'+(map[ch]||('CH'+ch))+'</span>'}
+function chTag(ch){const map={1:'FB',6:'IG'};return '<span class="ch-badge">'+(map[ch]||('CH'+ch))+'</span>'}
 
 function classify(c){
   const now=Date.now();
@@ -88,7 +93,7 @@ async function load(force){
     const r=await fetch('/api/closer/board?days=60&limit=60'+(force?'&_='+Date.now():''));
     const j=await r.json();
     if(!j.ok)throw new Error(j.error||'API 失敗');
-    const customers=(j.conversations||[]).map(classify);
+    const customers=(j.conversations||[]).filter(c=>Number(c.channel)!==2).map(classify);  // 過濾掉 LINE channel (已停用)
     const groups={vip:[],active:[],new:[],atrisk:[]};
     customers.forEach(c=>{if(groups[c.segment]) groups[c.segment].push(c)});
     // 排序：近 14 天活躍的最新優先；流失越久越前
@@ -123,7 +128,36 @@ async function load(force){
     ['vip','active','new','atrisk'].forEach(s=>{document.getElementById('g-'+s).innerHTML='<div class="empty">載入失敗</div>'});
   }
 }
+
+async function loadShoplineLTV(){
+  try{
+    const r=await fetch('/api/shopline/customers-ltv?limit=200');
+    const j=await r.json();
+    if(!j.ok || !j.customers || !j.customers.length)return;
+    document.getElementById('shopline-section').style.display='block';
+    const cs=j.customers;const groups={vip:[],active:[],new:[],atrisk:[]};
+    cs.forEach(c=>{if(groups[c.segment])groups[c.segment].push(c)});
+    const sum=document.getElementById('sl-summary');
+    sum.innerHTML='<div class="item">總計 <b>'+cs.length+'</b> 個 Shopline 客戶</div>'+
+      '<div class="item" style="color:#B08D57">🔥 VIP <b>'+groups.vip.length+'</b></div>'+
+      '<div class="item" style="color:#3ddc84">💚 活躍 <b>'+groups.active.length+'</b></div>'+
+      '<div class="item" style="color:#4285F4">🆕 新客 <b>'+groups.new.length+'</b></div>'+
+      '<div class="item" style="color:#ff6b6b">😴 流失 <b>'+groups.atrisk.length+'</b></div>';
+    const cols=document.getElementById('sl-cols');
+    const conf=[
+      ['vip','#B08D57','🔥 VIP','累積 ≥ NT$10k 或 ≥2 單'],
+      ['active','#3ddc84','💚 活躍客','30 天內有訂單'],
+      ['new','#4285F4','🆕 新客','首次 30 天內'],
+      ['atrisk','#ff6b6b','😴 潛在流失','90+ 天沒下單']
+    ];
+    cols.innerHTML=conf.map(([k,c,h,d])=>'<div class="col" style="--c:'+c+'"><div class="head"><h3>'+h+'</h3><div class="desc">'+d+'</div><div class="count">'+groups[k].length+'</div></div><div class="body">'+(groups[k].length?groups[k].slice(0,8).map(c=>{
+      const ago=c.recency_days>=9000?'未下單':c.recency_days+' 天前';
+      return '<div class="card"><div class="name">💰 '+esc(c.name)+'</div><div class="meta">NT$'+c.ltv_total+' · '+c.order_count+' 單 · '+ago+'</div></div>';
+    }).join(''):'<div class="empty">目前沒人</div>')+'</div></div>').join('');
+  }catch(e){console.log('[shopline] LTV load failed',e)}
+}
 load();
+loadShoplineLTV();
 </script>
 </body>
 </html>
