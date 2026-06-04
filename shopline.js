@@ -200,6 +200,38 @@ async function listBlogPosts({ limit = 20 } = {}) {
   } catch (e) { return { ok: false, error: e.message }; }
 }
 
+async function getBlogPost(postId) {
+  if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token yet' };
+  if (!postId) return { ok: false, error: 'postId required' };
+  try {
+    const r = await openApiCall('/api/v1/merchants/' + MERCHANT_ID + '/blog/posts/' + encodeURIComponent(postId));
+    return { ok: true, post: r };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
+async function updateBlogPost(postId, fields = {}) {
+  if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token yet' };
+  if (!postId) return { ok: false, error: 'postId required' };
+  const allowed = ['title', 'content', 'status', 'tags', 'cover_image_url', 'category_id'];
+  const body = {};
+  for (const k of allowed) if (fields[k] !== undefined) body[k] = fields[k];
+  if (Object.keys(body).length === 0) return { ok: false, error: 'no updatable fields provided' };
+  try {
+    const r = await openApiCall('/api/v1/merchants/' + MERCHANT_ID + '/blog/posts/' + encodeURIComponent(postId), { method: 'PATCH', body });
+    return { ok: true, post: r };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
+async function deleteBlogPost(postId, { confirmed = false } = {}) {
+  if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token yet' };
+  if (!postId) return { ok: false, error: 'postId required' };
+  if (!confirmed) return { ok: false, error: 'confirmed:true required to delete' };
+  try {
+    const r = await openApiCall('/api/v1/merchants/' + MERCHANT_ID + '/blog/posts/' + encodeURIComponent(postId), { method: 'DELETE' });
+    return { ok: true, deleted: postId, response: r };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
 // ─────────── DEX 訂單分析輔助 (拿到 token 後 plug-and-play) ───────────
 async function getOrdersSummary({ days = 1 } = {}) {
   if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token yet' };
@@ -282,6 +314,18 @@ router.get('/blog/posts', async (req, res) => {
   try { res.json(await listBlogPosts({ limit: parseInt(req.query.limit) || 20 })); }
   catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
+router.get('/blog/posts/:id', async (req, res) => {
+  try { res.json(await getBlogPost(req.params.id)); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+router.patch('/blog/posts/:id', express.json(), async (req, res) => {
+  try { res.json(await updateBlogPost(req.params.id, req.body || {})); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+router.delete('/blog/posts/:id', express.json(), async (req, res) => {
+  try { res.json(await deleteBlogPost(req.params.id, { confirmed: req.body && req.body.confirmed === true })); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
 
 // DEX 訂單摘要
 router.get('/orders-summary', async (req, res) => {
@@ -344,6 +388,9 @@ module.exports.getOrders = getOrders;
 module.exports.getOrdersSummary = getOrdersSummary;
 module.exports.publishBlogPost = publishBlogPost;
 module.exports.listBlogPosts = listBlogPosts;
+module.exports.getBlogPost = getBlogPost;
+module.exports.updateBlogPost = updateBlogPost;
+module.exports.deleteBlogPost = deleteBlogPost;
 module.exports.handleAbandonedCheckout = handleAbandonedCheckout;
 module.exports.getCustomers = getCustomers;
 module.exports.getCheckouts = getCheckouts;
