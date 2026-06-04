@@ -106,7 +106,33 @@ function loadCache() {
   try { return JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')); } catch { return null; }
 }
 
+async function getProductsFromAPI({ limit = 100 } = {}) {
+  if (!OPEN_API_TOKEN) return null;
+  try {
+    const r = await openApiCall(withMid('/v1/products?per_page=' + limit));
+    const items = r.items || r.data || (Array.isArray(r) ? r : []);
+    return items.map(p => ({
+      title: (p.title_translations && (p.title_translations['zh-hant'] || p.title_translations.en)) || p.title || '(no title)',
+      price: p.price && p.price.dollars ? 'NT$' + p.price.dollars : '',
+      stock: p.quantity || (p.unlimited_quantity ? 'unlimited' : 0),
+      sku: p.sku || '',
+      url: 'https://' + STORE_DOMAIN + '/products/' + (p.handle || p.id),
+      image: (p.media && p.media[0] && p.media[0].images && p.media[0].images.original && p.media[0].images.original.url) || '',
+      id: p.id,
+      status: p.status || '',
+    }));
+  } catch { return null; }
+}
+
 async function getProducts({ refresh = false } = {}) {
+  // 有 token 優先用 Open API (含庫存)
+  if (OPEN_API_TOKEN) {
+    const apiList = await getProductsFromAPI({ limit: 50 });
+    if (apiList && apiList.length) {
+      return { source: 'open_api', synced_at: Date.now(), count: apiList.length, products: apiList };
+    }
+  }
+  // fallback: storefront scraper
   let c = loadCache();
   const stale = !c || !c.synced_at || (Date.now() - c.synced_at) > CACHE_TTL;
   if (refresh || stale) {
@@ -114,7 +140,7 @@ async function getProducts({ refresh = false } = {}) {
     if (r.products) c = r;
     else if (!c) c = { synced_at: Date.now(), count: 0, products: [] };
   }
-  return c;
+  return { source: 'storefront', ...c };
 }
 
 // 給其他員工模組 (CAMILLE/RINA/NOVA) 注入用
@@ -152,6 +178,53 @@ async function getOrders({ from, to, limit = 50 } = {}) {
 }
 async function getCustomers({ limit = 50 } = {}) { return openApiCall(withMid('/v1/customers?per_page=' + limit)); }
 async function getCheckouts({ limit = 50 } = {}) { return openApiCall(withMid('/v1/checkouts?per_page=' + limit)); }
+
+// 拉客人 + 累積訂單金額 (給客人畫像做真實 RFM)
+async function getCustomersWithLTV({ limit = 100 } = {}) {
+  if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token' };
+  try {
+    const cr = await openApiCall(withMid('/v1/customers?per_page=' + limit));
+    const customers = cr.items || cr.data || [];
+    // 一次拉所有訂單,按 customer_id 匯總
+    const or = await openApiCall(withMid('/v1/orders?per_page=200'));
+    const orders = or.items || or.data || [];
+    const ltv = {};
+    for (const o of orders) {
+      const cid = o.customer_id; if (!cid) continue;
+      const total = (o.total && typeof o.total === 'object') ? (o.total.dollars || 0) : (parseFloat(o.total) || 0);
+      if (!ltv[cid]) ltv[cid] = { total: 0, count: 0, last_order: null };
+      ltv[cid].total += total;
+      ltv[cid].count++;
+      const at = o.confirmed_at || o.created_at;
+      if (at && (!ltv[cid].last_order || at > ltv[cid].last_order)) ltv[cid].last_order = at;
+    }
+    const result = customers.map(c => {
+      const l = ltv[c.id] || { total: 0, count: 0, last_order: null };
+      const lastMs = l.last_order ? new Date(l.last_order).getTime() : 0;
+      const recencyDays = lastMs ? Math.floor((Date.now() - lastMs) / 86400000) : 9999;
+      let segment = 'unknown';
+      if (l.total >= 10000 || l.count >= 2) segment = 'vip';
+      else if (l.count >= 1 && recencyDays <= 30) segment = 'active';
+      else if (l.count === 0 && c.created_at && (Date.now() - new Date(c.created_at).getTime()) / 86400000 <= 30) segment = 'new';
+      else if (l.count >= 1 && recencyDays > 90) segment = 'atrisk';
+      else if (l.count === 0) segment = 'new';
+      else segment = 'active';
+      return {
+        id: c.id,
+        name: c.name || c.first_name || '(no name)',
+        email: c.email || '',
+        phone: c.phone || '',
+        ltv_total: l.total,
+        order_count: l.count,
+        last_order_at: l.last_order,
+        recency_days: recencyDays,
+        segment,
+      };
+    });
+    return { ok: true, count: result.length, customers: result };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
 
 // ─────────── Webhook 接收 (給 HANA 棄單) ───────────
 function verifyWebhook(req) {
@@ -377,6 +450,14 @@ router.get('/orders-summary', async (req, res) => {
 });
 
 // HANA 棄單佇列檢查
+router.get('/customers-ltv', async (req, res) => {
+  try { res.json(await getCustomersWithLTV({ limit: parseInt(req.query.limit) || 100 })); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+router.get('/send-digest', async (req, res) => {
+  try { res.json(await sendShoplineDigestToTelegram()); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
 router.get('/hana-queue', (req, res) => {
   try {
     const HANA_QUEUE = path.join(DATA_DIR, 'shopline-hana-queue.jsonl');
@@ -410,6 +491,29 @@ router.post('/webhook', express.json({ verify: (req, _res, buf) => { req.rawBody
 });
 
 // ─────────── Cron ───────────
+async function sendShoplineDigestToTelegram() {
+  const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+  const tgChat = process.env.TELEGRAM_CHAT_ID;
+  if (!tgToken || !tgChat) return { ok: false, reason: 'no telegram' };
+  if (!OPEN_API_TOKEN) return { ok: false, reason: 'no shopline token' };
+  try {
+    const s = await getOrdersSummary({ days: 1 });
+    const w = await getOrdersSummary({ days: 7 });
+    const text = '🛒 Shopline 早報 (昨日)\n'
+      + '────────────────\n'
+      + '訂單: ' + (s.count || 0) + ' 筆 | 營收 NT$' + (s.total_revenue || 0) + ' | AOV NT$' + (s.aov_all || 0) + '\n'
+      + '已付: ' + (s.paid_count || 0) + ' 筆 NT$' + (s.paid_revenue || 0) + '\n'
+      + '熱賣: ' + (s.top_skus || []).slice(0, 3).map(t => t.sku + '×' + t.q).join(' / ') + '\n\n'
+      + '📊 過去 7 天\n'
+      + '訂單 ' + (w.count || 0) + ' 筆 | 營收 NT$' + (w.total_revenue || 0) + ' | AOV NT$' + (w.aov_all || 0);
+    const r = await fetch('https://api.telegram.org/bot' + tgToken + '/sendMessage', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: tgChat, text })
+    });
+    return { ok: r.ok };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
 function registerCron(cron) {
   if (!cron || typeof cron.schedule !== 'function') return;
   const tz = process.env.TZ || 'Asia/Taipei';
@@ -417,6 +521,11 @@ function registerCron(cron) {
   cron.schedule('0 6 * * *', async () => {
     try { const r = await syncProducts(); console.log('[shopline] daily product sync:', r.count, 'items'); }
     catch (e) { console.error('[shopline] sync failed:', e.message); }
+  }, { timezone: tz });
+  // 每天 09:00 推 Shopline 早報到 Telegram (有 token 才推)
+  cron.schedule('0 9 * * *', async () => {
+    try { const r = await sendShoplineDigestToTelegram(); console.log('[shopline] morning digest:', r.ok ? 'sent' : r.reason || r.error); }
+    catch (e) { console.error('[shopline] digest failed:', e.message); }
   }, { timezone: tz });
   // 啟動時也跑一次 (確保 deploy 後立刻有資料)
   setTimeout(async () => { try { const r = await syncProducts(); console.log('[shopline] startup sync:', r.count, 'items'); } catch (e) { console.error('[shopline] startup sync:', e.message); } }, 8000);
@@ -434,6 +543,9 @@ module.exports.listBlogPosts = listBlogPosts;
 module.exports.getBlogPost = getBlogPost;
 module.exports.updateBlogPost = updateBlogPost;
 module.exports.deleteBlogPost = deleteBlogPost;
+module.exports.getCustomersWithLTV = getCustomersWithLTV;
+module.exports.sendShoplineDigestToTelegram = sendShoplineDigestToTelegram;
+module.exports.getProductsFromAPI = getProductsFromAPI;
 module.exports.handleAbandonedCheckout = handleAbandonedCheckout;
 module.exports.getCustomers = getCustomers;
 module.exports.getCheckouts = getCheckouts;
