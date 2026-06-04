@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>📝 Shopline 部落格管理 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/macaron-shared.css">
+<style>
+  body{margin:0;padding:24px;background:transparent;color:#f4e8d4;font-family:'Noto Sans TC','PingFang TC',sans-serif;line-height:1.65}
+  .wrap{max-width:1200px;margin:0 auto}
+  .hero{background:linear-gradient(135deg,#5e2a3a 0%,#3a1521 100%);border:1px solid rgba(176,141,87,.32);border-radius:18px;padding:24px 28px;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+  .hero h1{margin:0;font-size:24px}
+  .hero p{margin:4px 0 0;color:#e4d6bc;font-size:13px}
+  .actions{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{background:linear-gradient(135deg,#5e2a3a,#4a1e2c);color:#f4e8d4;border:1px solid rgba(176,141,87,.4);border-radius:10px;padding:10px 16px;cursor:pointer;font-size:13px;text-decoration:none;display:inline-block}
+  .btn:hover{filter:brightness(1.2)}
+  .btn.primary{background:linear-gradient(135deg,#B08D57,#8e6f43);border-color:#B08D57}
+  .btn.danger{background:linear-gradient(135deg,#7c2c2c,#4d1818);border-color:#a64a4a;color:#ffcfcf}
+  .btn.green{background:linear-gradient(135deg,#3a6c47,#2a5236);border-color:#3ddc84;color:#aaf2c3}
+  .alert{background:rgba(255,205,107,.12);border:1px solid #ffcd6b;color:#ffcd6b;padding:12px 18px;border-radius:10px;margin-bottom:16px;font-size:13px}
+  .alert.ok{background:rgba(61,220,132,.12);border-color:#3ddc84;color:#3ddc84}
+  .alert.err{background:rgba(255,107,107,.12);border-color:#ff6b6b;color:#ff9b9b}
+  section{background:rgba(0,0,0,.28);border:1px solid rgba(176,141,87,.18);border-radius:14px;padding:20px 24px;margin-bottom:18px}
+  section h2{margin:0 0 12px;font-size:18px;border-left:4px solid #B08D57;padding-left:10px}
+  .post-list{display:flex;flex-direction:column;gap:10px}
+  .post{background:rgba(0,0,0,.32);border:1px solid rgba(176,141,87,.22);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+  .post .info{flex:1;min-width:300px}
+  .post .title{font-weight:600;color:#fff;font-size:15px;margin-bottom:4px}
+  .post .meta{color:#a09186;font-size:12px}
+  .post .preview{color:#c9b89e;font-size:13px;margin-top:6px;max-height:60px;overflow:hidden}
+  .post .ops{display:flex;gap:6px;flex-wrap:wrap}
+  .post .ops .btn{padding:6px 12px;font-size:12px}
+  .empty{color:#7a6e62;font-style:italic;text-align:center;padding:30px;font-size:14px}
+  .editor{display:flex;flex-direction:column;gap:12px}
+  .editor label{font-size:13px;color:#d9c4a3;margin-bottom:4px}
+  .editor input,.editor textarea,.editor select{width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(176,141,87,.32);color:#f4e8d4;padding:10px 12px;border-radius:8px;font-family:inherit;font-size:14px;box-sizing:border-box}
+  .editor textarea{min-height:240px;font-family:monospace;font-size:13px;line-height:1.5}
+  .editor .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hidden{display:none}
+  .badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;margin-left:8px}
+  .badge.published{background:rgba(61,220,132,.18);color:#3ddc84;border:1px solid #3ddc84}
+  .badge.draft{background:rgba(255,205,107,.18);color:#ffcd6b;border:1px solid #ffcd6b}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:999}
+  .modal-bg.show{display:flex}
+  .modal{background:#2a1018;border:1px solid rgba(176,141,87,.4);border-radius:14px;padding:22px 26px;max-width:560px;width:90%;color:#f4e8d4}
+  .modal h3{margin:0 0 10px;font-size:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <div>
+    <h1>📝 Shopline 部落格管理</h1>
+    <p>查看 GIA 自動發的文章、手動編輯、刪除 · 對應 Shopline 商家 ID 69f1698b1f3f880036d82ae3</p>
+  </div>
+  <div class="actions">
+    <button class="btn primary" onclick="openCompose()">✍️ 手動建立文章</button>
+    <button class="btn" onclick="refresh()">🔄 重新載入</button>
+    <a href="/shopline-hub.html" class="btn">← 回 Shopline 中心</a>
+  </div>
+</div>
+
+<div id="status" class="alert">⏳ 載入中…</div>
+
+<section>
+  <h2>📚 文章列表</h2>
+  <div id="post-list" class="post-list"><div class="empty">載入中…</div></div>
+</section>
+
+<section id="editor-section" class="hidden">
+  <h2 id="editor-title">編輯文章</h2>
+  <form class="editor" onsubmit="event.preventDefault();saveEdit()">
+    <input type="hidden" id="edit-id">
+    <div>
+      <label>文章標題</label>
+      <input type="text" id="edit-title" required>
+    </div>
+    <div class="row">
+      <div>
+        <label>狀態</label>
+        <select id="edit-status">
+          <option value="published">已發佈 (published)</option>
+          <option value="draft">草稿 (draft)</option>
+        </select>
+      </div>
+      <div>
+        <label>封面圖 URL (選填)</label>
+        <input type="url" id="edit-cover" placeholder="https://...">
+      </div>
+    </div>
+    <div>
+      <label>標籤 (逗號分隔)</label>
+      <input type="text" id="edit-tags" placeholder="馬卡龍, 禮盒, 韓系">
+    </div>
+    <div>
+      <label>內容 (HTML)</label>
+      <textarea id="edit-content" required></textarea>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn green">💾 儲存</button>
+      <button type="button" class="btn" onclick="closeEditor()">取消</button>
+      <button type="button" class="btn danger" id="del-btn" onclick="confirmDelete()" style="margin-left:auto">🗑️ 刪除這篇</button>
+    </div>
+  </form>
+</section>
+
+</div>
+
+<!-- Compose Modal -->
+<div id="modal-compose" class="modal-bg" onclick="if(event.target===this)closeCompose()">
+  <div class="modal">
+    <h3>✍️ 建立新文章</h3>
+    <form class="editor" onsubmit="event.preventDefault();createPost()">
+      <input type="text" id="new-title" placeholder="文章標題" required>
+      <input type="text" id="new-tags" placeholder="標籤 (逗號分隔, 選填)">
+      <textarea id="new-content" placeholder="HTML 內容..." required></textarea>
+      <div class="actions">
+        <button type="submit" class="btn green">📤 建立並發佈</button>
+        <button type="button" class="btn" onclick="closeCompose()">取消</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div id="modal-confirm" class="modal-bg" onclick="if(event.target===this)closeConfirm()">
+  <div class="modal">
+    <h3>⚠️ 確認刪除</h3>
+    <p id="confirm-text">這篇文章將從 Shopline 永久刪除,無法復原。確定嗎?</p>
+    <div class="actions">
+      <button class="btn danger" onclick="doDelete()">確定刪除</button>
+      <button class="btn" onclick="closeConfirm()">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allPosts = [];
+
+function setStatus(text, type='') {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.className = 'alert' + (type ? ' ' + type : '');
+}
+
+async function refresh() {
+  setStatus('⏳ 載入中…');
+  try {
+    const r = await fetch('/api/shopline/blog/posts?limit=50');
+    const j = await r.json();
+    if (j.skipped) {
+      setStatus('🟡 ' + (j.reason || 'no token') + ' — 還在等 Shopline 開通,token 設好後文章會自動列出', 'err');
+      document.getElementById('post-list').innerHTML = '<div class="empty">等 Open API token 開通中…</div>';
+      return;
+    }
+    if (!j.ok) throw new Error(j.error || 'load failed');
+    allPosts = j.posts || [];
+    renderList();
+    setStatus('✅ 已載入 ' + allPosts.length + ' 篇文章', 'ok');
+  } catch (e) {
+    setStatus('❌ 載入失敗: ' + e.message, 'err');
+    document.getElementById('post-list').innerHTML = '<div class="empty">載入失敗</div>';
+  }
+}
+
+function esc(s) { return String(s||'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+function renderList() {
+  const el = document.getElementById('post-list');
+  if (!allPosts.length) { el.innerHTML = '<div class="empty">目前沒有文章。按右上「✍️ 手動建立文章」開始,或等 GIA 9:00 / 15:00 自動產出。</div>'; return; }
+  el.innerHTML = allPosts.map(p => {
+    const id = p.id || p._id || '';
+    const title = p.title || '(無標題)';
+    const status = (p.status||'').toLowerCase();
+    const createdAt = p.created_at || p.createdAt || '';
+    const tags = (p.tags || []).join(', ');
+    const preview = (p.content || p.excerpt || '').replace(/<[^>]+>/g,'').slice(0, 120);
+    return `<div class="post"><div class="info"><div class="title">${esc(title)}<span class="badge ${status||'draft'}">${esc(status||'draft')}</span></div><div class="meta">📅 ${esc(createdAt.slice(0,16))} ${tags ? ' · 🏷️ ' + esc(tags) : ''} · ID ${esc(String(id).slice(-12))}</div>${preview ? '<div class="preview">' + esc(preview) + '…</div>' : ''}</div><div class="ops"><button class="btn" onclick="loadForEdit('${esc(id)}')">✏️ 編輯</button><button class="btn danger" onclick="askDelete('${esc(id)}','${esc(title).replace(/'/g,"\\\\'")}')">🗑️ 刪除</button></div></div>`;
+  }).join('');
+}
+
+async function loadForEdit(id) {
+  setStatus('⏳ 載入文章…');
+  try {
+    const r = await fetch('/api/shopline/blog/posts/' + encodeURIComponent(id));
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || j.reason || 'load failed');
+    const p = j.post;
+    document.getElementById('edit-id').value = p.id || id;
+    document.getElementById('edit-title').value = p.title || '';
+    document.getElementById('edit-status').value = (p.status || 'published').toLowerCase();
+    document.getElementById('edit-cover').value = p.cover_image_url || '';
+    document.getElementById('edit-tags').value = (p.tags || []).join(', ');
+    document.getElementById('edit-content').value = p.content || '';
+    document.getElementById('editor-title').textContent = '編輯: ' + (p.title || '');
+    document.getElementById('editor-section').classList.remove('hidden');
+    document.getElementById('editor-section').scrollIntoView({behavior:'smooth'});
+    setStatus('✏️ 編輯中: ' + (p.title || ''));
+  } catch (e) { setStatus('❌ 載入失敗: ' + e.message, 'err'); }
+}
+
+async function saveEdit() {
+  const id = document.getElementById('edit-id').value;
+  const body = {
+    title: document.getElementById('edit-title').value,
+    status: document.getElementById('edit-status').value,
+    cover_image_url: document.getElementById('edit-cover').value,
+    tags: document.getElementById('edit-tags').value.split(',').map(s => s.trim()).filter(Boolean),
+    content: document.getElementById('edit-content').value,
+  };
+  setStatus('⏳ 儲存中…');
+  try {
+    const r = await fetch('/api/shopline/blog/posts/' + encodeURIComponent(id), { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'save failed');
+    setStatus('✅ 已儲存', 'ok');
+    closeEditor();
+    refresh();
+  } catch (e) { setStatus('❌ 儲存失敗: ' + e.message, 'err'); }
+}
+
+function closeEditor() { document.getElementById('editor-section').classList.add('hidden'); }
+
+function openCompose() { document.getElementById('modal-compose').classList.add('show'); }
+function closeCompose() { document.getElementById('modal-compose').classList.remove('show'); }
+
+async function createPost() {
+  const body = {
+    title: document.getElementById('new-title').value,
+    content_html: document.getElementById('new-content').value,
+    tags: document.getElementById('new-tags').value.split(',').map(s=>s.trim()).filter(Boolean),
+    status: 'published',
+  };
+  setStatus('⏳ 建立中…');
+  try {
+    const r = await fetch('/api/shopline/blog/posts', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'create failed');
+    setStatus('✅ 已建立文章', 'ok');
+    closeCompose();
+    document.getElementById('new-title').value = '';
+    document.getElementById('new-tags').value = '';
+    document.getElementById('new-content').value = '';
+    refresh();
+  } catch (e) { setStatus('❌ 建立失敗: ' + e.message, 'err'); }
+}
+
+let pendingDel = null;
+function askDelete(id, title) {
+  pendingDel = id;
+  document.getElementById('confirm-text').textContent = '確定要刪除「' + title + '」嗎? 從 Shopline 永久移除,無法復原。';
+  document.getElementById('modal-confirm').classList.add('show');
+}
+function confirmDelete() {
+  pendingDel = document.getElementById('edit-id').value;
+  document.getElementById('confirm-text').textContent = '確定要刪除「' + document.getElementById('edit-title').value + '」嗎? 從 Shopline 永久移除,無法復原。';
+  document.getElementById('modal-confirm').classList.add('show');
+}
+function closeConfirm() { document.getElementById('modal-confirm').classList.remove('show'); pendingDel = null; }
+async function doDelete() {
+  if (!pendingDel) return;
+  const id = pendingDel;
+  closeConfirm();
+  setStatus('⏳ 刪除中…');
+  try {
+    const r = await fetch('/api/shopline/blog/posts/' + encodeURIComponent(id), { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ confirmed: true }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'delete failed');
+    setStatus('✅ 已刪除', 'ok');
+    closeEditor();
+    refresh();
+  } catch (e) { setStatus('❌ 刪除失敗: ' + e.message, 'err'); }
+}
+
+refresh();
+</script>
+</body>
+</html>
