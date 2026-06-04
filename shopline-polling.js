@@ -73,7 +73,7 @@ router.get('/poll-abandoned', async (req, res) => {
   catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-function registerCron(cron) {
+router.get('/token-info', async (req, res) => {  if (!OPEN_API_TOKEN) return res.json({ ok: false, error: 'no token set' });  try {    const r = await fetch(OPEN_BASE + '/v1/token/info', { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': 'application/json' } });    const text = await r.text();    let data; try { data = JSON.parse(text); } catch { data = { raw: text.slice(0, 500) }; }    res.json({ ok: r.ok, status: r.status, data });  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }});function registerCron(cron) {
   if (!cron || typeof cron.schedule !== 'function') return;
   const tz = process.env.TZ || 'Asia/Taipei';
   cron.schedule('*/15 * * * *', async () => {
