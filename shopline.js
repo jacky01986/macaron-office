@@ -239,19 +239,27 @@ async function getOrdersSummary({ days = 1 } = {}) {
   try {
     const from = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
     const r = await openApiCall(withMid('/v1/orders?per_page=200&created_at_gte=' + from));
-    const orders = r.items || r.data || r;
+    const orders = r.items || r.data || (Array.isArray(r) ? r : []);
     let revenue = 0, count = orders.length, qty = 0;
+    let paidCount = 0, paidRevenue = 0;
     const skuQty = {};
+    const byStatus = {};
     for (const o of orders) {
-      revenue += parseFloat(o.total || o.subtotal || 0);
-      for (const li of (o.line_items || o.items || [])) {
-        const sku = li.product_title || li.title || li.sku || 'unknown';
-        skuQty[sku] = (skuQty[sku] || 0) + (li.quantity || 1);
-        qty += (li.quantity || 1);
+      const total = (o.total && typeof o.total === 'object') ? (o.total.dollars || (o.total.cents / 100) || 0) : (parseFloat(o.total) || 0);
+      revenue += total;
+      const status = o.status || 'unknown';
+      byStatus[status] = (byStatus[status] || 0) + 1;
+      if (['paid','confirmed','completed'].includes(status)) { paidCount++; paidRevenue += total; }
+      for (const li of (o.subtotal_items || o.line_items || o.items || [])) {
+        const itemData = li.item_data || {};
+        const title = (li.title_translations && (li.title_translations['zh-hant'] || li.title_translations['zh-Hant'] || li.title_translations.en)) || itemData.title || li.title || li.item_id || 'unknown';
+        const q = itemData.quantity || li.quantity || 1;
+        skuQty[title] = (skuQty[title] || 0) + q;
+        qty += q;
       }
     }
     const top = Object.entries(skuQty).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([sku, q]) => ({ sku, q }));
-    return { ok: true, days, count, revenue: Math.round(revenue), aov: count ? Math.round(revenue / count) : 0, total_qty: qty, top_skus: top };
+    return { ok: true, days, count, status_breakdown: byStatus, total_revenue: Math.round(revenue), paid_count: paidCount, paid_revenue: Math.round(paidRevenue), aov_all: count ? Math.round(revenue / count) : 0, aov_paid: paidCount ? Math.round(paidRevenue / paidCount) : 0, total_qty: qty, top_skus: top };
   } catch (e) { return { ok: false, error: e.message }; }
 }
 
