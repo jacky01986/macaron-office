@@ -71,7 +71,7 @@
     <a href="#employees">👥 13 位員工</a>
     <a href="#files">📁 文件生成 (NEW)</a>
     <a href="#customers">👥 客人畫像 (NEW)</a>
-    <a href="#cron">⏰ 自動排程</a>
+    <a href="#shopline">🛒 Shopline (NEW)</a>    <a href="#cron">⏰ 自動排程</a>
     <a href="#tips">💡 用得好的小技巧</a>
     <a href="#faq">❓ FAQ</a>
   </div>
@@ -247,11 +247,11 @@
       <div class="cron-item"><b>每天 22:00</b><span>每位員工自我反省（讀自己昨天的最差 3 件）</span></div>
       <div class="cron-item"><b>每週一 08:00</b><span>SCOUT 完整週報</span></div>
       <div class="cron-item"><b>每週五 17:00</b><span>DEX 數據週報</span></div>
-      <div class="cron-item"><b>每月 1 號 03:30</b><span>Token 體檢</span></div>
+      <div class="cron-item"><b>每月 1 號 03:30</b><span>Token 體檢</span></div>      <div class="cron-item" style="border-left-color:#3ddc84"><b>每天 06:00</b><span>🛒 Shopline 商品快取同步</span></div>      <div class="cron-item" style="border-left-color:#3ddc84"><b>每天 09:00</b><span>🛒 Shopline 早報 → Telegram</span></div>      <div class="cron-item" style="border-left-color:#3ddc84"><b>每天 09:00 + 15:00</b><span>🎨 GIA 自動發 FB 長文 (+ Shopline 部落格)</span></div>      <div class="cron-item" style="border-left-color:#3ddc84"><b>每 15 分鐘</b><span>🛒 Shopline 棄單 polling → HANA</span></div>
     </div>
   </section>
 
-  <section id="tips">
+  <section id="shopline">    <h2>🛒 Shopline 整合<span class="new-badge">NEW</span></h2>    <p>溫點電商平台串接,主控台「🛒 Shopline」按鈕進入專區。</p>    <div class="grid">      <div class="card"><div class="icon">📊</div><h4>DEX 訂單分析<span class="new-badge">NEW</span></h4><p>Open API 直連,每天 09:00 早報送 Telegram (訂單/營收/AOV/熱賣)。</p></div>      <div class="card"><div class="icon">👥</div><h4>客人 LTV + RFM<span class="new-badge">NEW</span></h4><p>按消費總額分 VIP/活躍/新客/流失四群。/customers.html 下方有 Shopline LTV 區。</p></div>      <div class="card"><div class="icon">🛍️</div><h4>商品 + 庫存<span class="new-badge">NEW</span></h4><p>RINA/CAMILLE 寫文案時自動帶真實商品名/價/庫存,不瞎掰。/shopline-hub.html 看全部。</p></div>      <div class="card"><div class="icon">⏰</div><h4>HANA 棄單 polling<span class="new-badge">NEW</span></h4><p>每 15 分鐘掃 pending 超過 30 分鐘的訂單,寫進 hana-queue 給 HANA agent 跟客。</p></div>      <div class="card"><div class="icon">🎨</div><h4>GIA 雙發 FB+Shopline<span class="new-badge">NEW</span></h4><p>09:00 + 15:00 自動發 GEO 長文到 FB,同步嘗試發 Shopline 部落格 (blog API 未開放會 graceful 略過)。</p></div>      <div class="card"><div class="icon">📡</div><h4>Webhook 待 partner</h4><p>realtime webhook 需 Shopline partner app,目前 polling 已可接收 95% 用例。</p></div>    </div>  </section>  <section id="tips">
     <h2>💡 用得好的小技巧</h2>
     <div class="tip"><b>1. 不知道派誰，就問 VICTOR</b><br>「這事該誰做？」VICTOR 會分析後派給對的人，或自己接手。</div>
     <div class="tip"><b>2. 加「請呼叫 XXX 工具」會強制觸發</b><br>例如「請呼叫 get_meta_posts 看我家 IG 最近 5 篇」確保用工具不是憑記憶亂掰。</div>
