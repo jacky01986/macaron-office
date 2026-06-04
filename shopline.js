@@ -286,39 +286,36 @@ router.get('/_debug_html', async (req, res) => {
 
 router.get('/_debug_probe', async (req, res) => {
   if (!OPEN_API_TOKEN) return res.json({ ok: false, error: 'no token set' });
-  // 試各種 base URL + path 組合,看哪個回 JSON (不是 HTML)
-  const bases = [
-    'https://open.shoplineapp.com',
-    'https://open-api.shoplineapp.com',
-    'https://api.shopline.com',
-    'https://open.shopline.com',
-    'https://open.shoplineapp.com/api',
-  ];
-  const paths = [
-    '/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
-    '/api/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1',
-    '/v1/orders?per_page=1',
-    '/merchants/' + MERCHANT_ID + '/orders?per_page=1',
+  // 已確定 URL,試各種 Accept header 找 200
+  const url = 'https://open.shoplineapp.com/v1/merchants/' + MERCHANT_ID + '/orders?per_page=1';
+  const accepts = [
+    'application/vnd.shoplineapp.com; version=1',
+    'application/vnd.shoplineapp.com.v1+json',
+    'application/vnd.shoplineapp.v1+json',
+    'application/vnd.shopline.com.v1+json',
+    'application/vnd.shopline.com+json',
+    'application/vnd.api+json',
+    'application/vnd.shoplineapp+json; version=1',
+    'application/vnd.shopline.api.v1+json',
+    'application/vnd.api.v1+json',
+    'application/json; version=1',
+    'application/json; charset=utf-8',
   ];
   const out = [];
-  for (const base of bases) {
-    for (const path of paths) {
-      const url = base + path;
-      try {
-        const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': 'application/json' } });
-        const text = await r.text();
-        const isJSON = text.trim().startsWith('{') || text.trim().startsWith('[');
-        out.push({
-          url: base + path,
-          status: r.status,
-          ct: (r.headers.get('content-type') || '').split(';')[0],
-          isJSON,
-          preview: text.slice(0, 200).replace(/\s+/g, ' ').slice(0, 150),
-        });
-      } catch (e) { out.push({ url: base + path, error: e.message.slice(0, 100) }); }
-    }
+  for (const accept of accepts) {
+    try {
+      const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': accept } });
+      const text = await r.text();
+      out.push({ accept, status: r.status, preview: text.slice(0, 150).replace(/\s+/g, ' ') });
+    } catch (e) { out.push({ accept, error: e.message.slice(0, 80) }); }
   }
-  res.json({ ok: true, token_len: OPEN_API_TOKEN.length, results: out });
+  // 也試完全空的 Accept 看 Shopline 預設要什麼
+  try {
+    const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN } });
+    const text = await r.text();
+    out.push({ accept: '(none)', status: r.status, preview: text.slice(0, 200).replace(/\s+/g, ' '), headers_returned: Object.fromEntries([...r.headers.entries()].slice(0,8)) });
+  } catch {}
+  res.json({ ok: true, url, results: out });
 });
 
 router.get('/_status', async (req, res) => {
