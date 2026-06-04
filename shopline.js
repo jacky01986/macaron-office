@@ -173,6 +173,74 @@ function logWebhook(event, body) {
   } catch {}
 }
 
+
+// ─────────── 部落格 (Blog Posts) ───────────
+async function publishBlogPost({ title, content_html, tags = [], cover_image_url = '', category_id = null, status = 'published' } = {}) {
+  if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token yet' };
+  const body = {
+    title, content: content_html,
+    status,
+    tags: Array.isArray(tags) ? tags : [],
+    ...(cover_image_url ? { cover_image_url } : {}),
+    ...(category_id ? { category_id } : {}),
+  };
+  try {
+    const r = await openApiCall('/api/v1/merchants/' + MERCHANT_ID + '/blog/posts', { method: 'POST', body });
+    return { ok: true, post_id: r.id || r.data?.id, response: r };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+async function listBlogPosts({ limit = 20 } = {}) {
+  if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token yet' };
+  try {
+    const r = await openApiCall('/api/v1/merchants/' + MERCHANT_ID + '/blog/posts?per_page=' + limit);
+    return { ok: true, posts: r.items || r.data || r, count: (r.items || r.data || r || []).length };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
+// ─────────── DEX 訂單分析輔助 (拿到 token 後 plug-and-play) ───────────
+async function getOrdersSummary({ days = 1 } = {}) {
+  if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token yet' };
+  try {
+    const from = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+    const r = await openApiCall('/api/v1/merchants/' + MERCHANT_ID + '/orders?per_page=200&created_at_gte=' + from);
+    const orders = r.items || r.data || r;
+    let revenue = 0, count = orders.length, qty = 0;
+    const skuQty = {};
+    for (const o of orders) {
+      revenue += parseFloat(o.total || o.subtotal || 0);
+      for (const li of (o.line_items || o.items || [])) {
+        const sku = li.product_title || li.title || li.sku || 'unknown';
+        skuQty[sku] = (skuQty[sku] || 0) + (li.quantity || 1);
+        qty += (li.quantity || 1);
+      }
+    }
+    const top = Object.entries(skuQty).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([sku, q]) => ({ sku, q }));
+    return { ok: true, days, count, revenue: Math.round(revenue), aov: count ? Math.round(revenue / count) : 0, total_qty: qty, top_skus: top };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
+// ─────────── 棄單事件處理 (給 HANA) ───────────
+async function handleAbandonedCheckout(payload) {
+  ensureDir();
+  const rec = {
+    ts: new Date().toISOString(),
+    event: 'abandoned_checkout',
+    customer_email: (payload && (payload.customer_email || payload.email)) || '',
+    customer_phone: (payload && (payload.customer_phone || payload.phone)) || '',
+    cart_total: (payload && payload.total) || '',
+    line_items: (payload && (payload.line_items || payload.items)) || [],
+    payload_keys: payload ? Object.keys(payload) : [],
+  };
+  // 暫存到 disk,HANA 之後讀
+  const HANA_QUEUE = path.join(DATA_DIR, 'shopline-hana-queue.jsonl');
+  try { fs.appendFileSync(HANA_QUEUE, JSON.stringify(rec) + '\n'); } catch {}
+  // TODO: 之後加: 比對 SaleSmartly chat_user_id (用 email/phone) → 推 HANA 寫 DM 草稿
+  return { ok: true, queued: true };
+}
+
 // ─────────── Routes ───────────
 router.get('/_debug_html', async (req, res) => {
   try {
@@ -205,6 +273,32 @@ router.get('/sync', async (req, res) => {
   try { res.json({ ok: true, ...(await syncProducts()) }); }
   catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
+// 部落格
+router.post('/blog/posts', express.json(), async (req, res) => {
+  try { res.json(await publishBlogPost(req.body || {})); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+router.get('/blog/posts', async (req, res) => {
+  try { res.json(await listBlogPosts({ limit: parseInt(req.query.limit) || 20 })); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// DEX 訂單摘要
+router.get('/orders-summary', async (req, res) => {
+  try { res.json(await getOrdersSummary({ days: parseInt(req.query.days) || 1 })); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// HANA 棄單佇列檢查
+router.get('/hana-queue', (req, res) => {
+  try {
+    const HANA_QUEUE = path.join(DATA_DIR, 'shopline-hana-queue.jsonl');
+    if (!fs.existsSync(HANA_QUEUE)) return res.json({ ok: true, count: 0, items: [] });
+    const items = fs.readFileSync(HANA_QUEUE, 'utf8').trim().split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    res.json({ ok: true, count: items.length, items: items.slice(-50) });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
 
 // 等 token 後可用
 router.get('/orders', async (req, res) => {
@@ -221,7 +315,10 @@ router.post('/webhook', express.json({ verify: (req, _res, buf) => { req.rawBody
   if (!verifyWebhook(req)) return res.status(401).json({ ok: false, error: 'invalid signature' });
   const event = req.get('x-shopline-event') || (req.body && req.body.event) || 'unknown';
   logWebhook(event, req.body);
-  // TODO: if event === 'abandoned_checkout' → trigger HANA DM draft
+  // 棄單事件 → 進 HANA 佇列
+  if (/abandoned[_-]?checkout|abandoned[_-]?cart/i.test(event)) {
+    handleAbandonedCheckout(req.body).catch(e => console.error('[shopline] HANA queue:', e.message));
+  }
   res.json({ ok: true, received: event });
 });
 
@@ -244,6 +341,10 @@ module.exports.getProducts = getProducts;
 module.exports.getProductContext = getProductContext;
 module.exports.syncProducts = syncProducts;
 module.exports.getOrders = getOrders;
+module.exports.getOrdersSummary = getOrdersSummary;
+module.exports.publishBlogPost = publishBlogPost;
+module.exports.listBlogPosts = listBlogPosts;
+module.exports.handleAbandonedCheckout = handleAbandonedCheckout;
 module.exports.getCustomers = getCustomers;
 module.exports.getCheckouts = getCheckouts;
 module.exports.registerCron = registerCron;
