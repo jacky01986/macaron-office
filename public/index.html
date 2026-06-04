@@ -705,7 +705,7 @@
     <div class="tab-bar">
       <button class="tab active" data-tab="features" onclick="switchTab('features')">🎯 功能</button>
       <button class="tab" data-tab="history" onclick="switchTab('history')">📚 歷史紀錄</button>
-      <button class="tab" data-tab="reports" onclick="switchTab('reports')">排程報告</button>
+      <button class="tab" data-tab="shopline" onclick="switchTab('shopline')">🛒 Shopline</button>
     </div>
     <div id="features">
       <div class="ff-group">
@@ -745,7 +745,22 @@
     </div>
     <div id="feed" style="display:none;"></div>
     <div id="history" style="display:none;"></div>
-    <div id="reports" style="display:none;"></div>
+    <div id="shopline" style="display:none;">
+      <div class="ff-group">
+        <div class="ff-title">🛒 Shopline 整合中心</div>
+        <a href="/shopline-hub.html" target="_blank" class="ff-link"><span class="ff-ic">🏪</span><span>完整能力盤點 + 4 階段整合</span></a>
+        <a href="/api/shopline/_status" target="_blank" class="ff-link"><span class="ff-ic">⚙️</span><span>連線狀態 (Storefront / Open API)</span></a>
+        <a href="/api/shopline/products" target="_blank" class="ff-link"><span class="ff-ic">📦</span><span>商品庫 JSON (5 個商品)</span></a>
+        <a href="/api/shopline/sync" target="_blank" class="ff-link"><span class="ff-ic">🔄</span><span>手動觸發同步</span></a>
+      </div>
+      <div class="ff-group">
+        <div class="ff-title">⏳ 等 Open API Token 接通</div>
+        <a href="/shopline-hub.html#gia-blog" class="ff-link"><span class="ff-ic">✍️</span><span>GIA 自動發 Shopline 部落格</span></a>
+        <a href="/shopline-hub.html#dex-orders" class="ff-link"><span class="ff-ic">📊</span><span>DEX 真實訂單分析</span></a>
+        <a href="/shopline-hub.html#hana-cart" class="ff-link"><span class="ff-ic">🛒</span><span>HANA 棄單救回 DM</span></a>
+        <a href="/shopline-hub.html#cust-rfm" class="ff-link"><span class="ff-ic">👥</span><span>客人畫像 真實 RFM</span></a>
+      </div>
+    </div>
   </aside>
 </div>
 

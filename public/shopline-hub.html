@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>🛒 Shopline 整合中心 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/macaron-shared.css">
+<style>
+  body{margin:0;padding:24px;background:transparent;color:#f4e8d4;font-family:'Noto Sans TC','PingFang TC',sans-serif;line-height:1.65}
+  .wrap{max-width:1200px;margin:0 auto}
+  .hero{background:linear-gradient(135deg,#5e2a3a 0%,#3a1521 100%);border:1px solid rgba(176,141,87,.32);border-radius:18px;padding:28px 32px;margin-bottom:24px}
+  .hero h1{margin:0 0 8px;font-size:28px}
+  .hero p{margin:0;color:#e4d6bc;font-size:14px}
+  .status-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+  .status-pill{background:rgba(0,0,0,.32);border:1px solid rgba(176,141,87,.4);border-radius:24px;padding:8px 16px;font-size:13px}
+  .status-pill.ok{border-color:#3ddc84;color:#3ddc84}
+  .status-pill.wait{border-color:#ffcd6b;color:#ffcd6b}
+  .status-pill.plan{border-color:#a09186;color:#a09186}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin-bottom:24px}
+  .card{background:rgba(0,0,0,.32);border:1px solid rgba(176,141,87,.22);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column}
+  .card .head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .card .ic{font-size:30px;background:linear-gradient(135deg,#5e2a3a,#3a1521);width:54px;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px solid rgba(176,141,87,.4)}
+  .card h3{margin:0;font-size:17px;color:#fff}
+  .card .badge{display:inline-block;padding:3px 8px;border-radius:8px;font-size:11px;margin-left:auto}
+  .card .badge.ok{background:rgba(61,220,132,.18);color:#3ddc84;border:1px solid #3ddc84}
+  .card .badge.wait{background:rgba(255,205,107,.18);color:#ffcd6b;border:1px solid #ffcd6b}
+  .card .badge.plan{background:rgba(160,145,134,.18);color:#a09186;border:1px solid #a09186}
+  .card .desc{color:#c9b89e;font-size:13px;margin:8px 0 14px}
+  .card ul{margin:8px 0;padding-left:18px;color:#d9c4a3;font-size:13px}
+  .card ul li{margin-bottom:4px}
+  .card .live-data{background:rgba(176,141,87,.08);border:1px solid rgba(176,141,87,.22);border-radius:8px;padding:10px 12px;margin-top:auto;font-size:12px;color:#c9b89e}
+  .card .endpoint{background:rgba(0,0,0,.4);font-family:monospace;font-size:11px;color:#9ebd8d;padding:6px 10px;border-radius:6px;margin-top:6px;word-break:break-all}
+  .card .who{margin-top:8px;color:#a09186;font-size:11px;font-style:italic}
+
+  section{background:rgba(0,0,0,.28);border:1px solid rgba(176,141,87,.18);border-radius:14px;padding:22px 26px;margin-bottom:22px}
+  section h2{margin:0 0 14px;font-size:20px;border-left:4px solid #B08D57;padding-left:10px}
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:14px}
+  .stat{background:rgba(0,0,0,.32);border:1px solid rgba(176,141,87,.22);border-radius:10px;padding:14px 16px;text-align:center}
+  .stat .n{font-size:24px;font-weight:600;color:#fff;display:block;margin-bottom:4px}
+  .stat .lbl{font-size:12px;color:#c9b89e}
+
+  .btn{background:linear-gradient(135deg,#5e2a3a,#4a1e2c);color:#f4e8d4;border:1px solid rgba(176,141,87,.4);border-radius:10px;padding:10px 16px;cursor:pointer;font-size:13px;text-decoration:none;display:inline-block;margin-top:8px}
+  .btn:hover{filter:brightness(1.2)}
+  .table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+  .table th,.table td{text-align:left;padding:8px 12px;border-bottom:1px solid rgba(176,141,87,.18)}
+  .table th{color:#d9c4a3;font-weight:600;font-size:12px;text-transform:uppercase}
+  .table td{color:#e4d6bc}
+  code{background:rgba(0,0,0,.5);padding:2px 6px;border-radius:4px;font-size:12px;color:#9ebd8d}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+<h1>🛒 Shopline 整合中心</h1>
+<p>溫點 WarmPlace · warmplacehere.shoplineapp.com · 商家 ID 69f1698b1f3f880036d82ae3</p>
+<div class="status-row">
+<span class="status-pill ok" id="pill-storefront">⚪ 載入中…</span>
+<span class="status-pill wait" id="pill-openapi">⚪ 載入中…</span>
+<span class="status-pill ok">🛒 商品爬蟲: 每天 06:00 + 啟動時 自動同步</span>
+</div>
+</div>
+
+<section>
+<h2>📊 即時資料快照</h2>
+<div class="stat-row">
+<div class="stat"><span class="n" id="s-products">—</span><span class="lbl">商品庫存中</span></div>
+<div class="stat"><span class="n" id="s-cache-age">—</span><span class="lbl">商品快取分鐘前</span></div>
+<div class="stat"><span class="n" id="s-token">—</span><span class="lbl">Open API Token</span></div>
+<div class="stat"><span class="n" id="s-webhook">—</span><span class="lbl">Webhook Secret</span></div>
+</div>
+<button class="btn" onclick="manualSync()">🔄 手動同步商品</button>
+<a href="/api/shopline/products" target="_blank" class="btn">📦 看商品 JSON</a>
+<a href="/api/shopline/_status" target="_blank" class="btn">⚙️ 看連線狀態</a>
+</section>
+
+<section>
+<h2>🎯 Phase 1 — 已上線 (不需 Token)</h2>
+<div class="grid">
+
+<div class="card">
+<div class="head"><div class="ic">🛒</div><h3>商品庫</h3><span class="badge ok">已上線</span></div>
+<div class="desc">爬 Storefront 抓商品名 + 價格 + 圖 + URL，每天 06:00 自動 sync 一次。</div>
+<ul>
+<li>5 個商品實時抓到</li>
+<li>title 用 og:meta 標籤</li>
+<li>price 來自詳情頁 product:price:amount</li>
+<li>啟動時 + 每天 06:00 各跑一次</li>
+</ul>
+<div class="endpoint">GET /api/shopline/products</div>
+<div class="who">→ CAMILLE / RINA / NOVA 用真實品名寫文案</div>
+</div>
+
+<div class="card">
+<div class="head"><div class="ic">🔗</div><h3>GIA 連結指向 Shopline</h3><span class="badge ok">已上線</span></div>
+<div class="desc">GIA 每天 9am+3pm 自動發 FB 長文，底部 CTA 連結指向 warmplacehere.shoplineapp.com。</div>
+<ul>
+<li>不需要 token,單向引流</li>
+<li>commit 353974c 上線</li>
+<li>同一篇文章同時推 FB</li>
+</ul>
+<div class="who">→ GIA · 每天 2 篇</div>
+</div>
+
+</div>
+</section>
+
+<section>
+<h2>🟡 Phase 2 — 等 Open API Token (4 個整合骨架已寫好)</h2>
+<div class="grid">
+
+<div class="card">
+<div class="head"><div class="ic">✍️</div><h3>GIA 自動發 Shopline 部落格</h3><span class="badge wait">等 Token</span></div>
+<div class="desc">GIA 每天 9am+3pm 寫的長文,額外發到你 Shopline 部落格頁面,跟 FB 同步。</div>
+<ul>
+<li>用 POST /api/v1/merchants/{mid}/blog/posts</li>
+<li>取 og:image 當 cover</li>
+<li>Tags 從 GIA 文章自動抓</li>
+<li>失敗自動 retry 3 次</li>
+</ul>
+<div class="endpoint">POST shopline.publishBlogPost(title, html, tags, coverUrl)</div>
+<div class="who">→ GIA · 每天 2 篇 · 跟 FB 同步</div>
+</div>
+
+<div class="card">
+<div class="head"><div class="ic">📊</div><h3>DEX 真實訂單分析</h3><span class="badge wait">等 Token</span></div>
+<div class="desc">每天 08:30 拉昨日訂單,自動算營收 / AOV / TOP 品 / 來源轉換,接 VICTOR 早報。</div>
+<ul>
+<li>昨日營收 / AOV / 訂單數</li>
+<li>熱賣 TOP 5 (含 SKU + 數量)</li>
+<li>退貨率 / 取消率</li>
+<li>異常告警 (今日訂單 &lt; 平均 -60%)</li>
+<li>真 ROAS (Meta 廣告 ÷ Shopline 營收)</li>
+</ul>
+<div class="endpoint">GET /api/shopline/orders?from=YYYY-MM-DD</div>
+<div class="who">→ DEX 數據分析師 · VICTOR 早報 · 週五 17:00 週報</div>
+</div>
+
+<div class="card">
+<div class="head"><div class="ic">🛒</div><h3>HANA 棄單救回 DM</h3><span class="badge wait">等 Token</span></div>
+<div class="desc">客戶加購物車沒結帳 → Shopline Webhook 推到我們 → HANA 5 分鐘內寫個人化追單 DM。</div>
+<ul>
+<li>比對 SaleSmartly 是否同一客人 (email/phone)</li>
+<li>是: 對話歷史寫個人化 DM</li>
+<li>否: 加進客人畫像 + 自動 email 追單</li>
+<li>5 分鐘黃金期 (轉換率 +5x)</li>
+<li>業界平均救回率 15-30%</li>
+</ul>
+<div class="endpoint">POST /api/shopline/webhook (abandoned_checkout event)</div>
+<div class="who">→ HANA 私訊成交客服 · 預估每月 +NT$30k 棄單救回</div>
+</div>
+
+<div class="card">
+<div class="head"><div class="ic">👥</div><h3>客人畫像 真實 RFM</h3><span class="badge wait">等 Token</span></div>
+<div class="desc">客人畫像 4 個分群改用 Shopline 真實消費金額 + 訂單頻率,不再只看 DM 頻率。</div>
+<ul>
+<li>VIP: 累積 ≥ NT$10k 或 月下單 ≥ 2 次</li>
+<li>活躍: 30 天內有訂單</li>
+<li>新客: 首次購買 ≤ 30 天</li>
+<li>流失: 90+ 天沒下單但以前買過</li>
+<li>Member Points 一起進畫像</li>
+</ul>
+<div class="endpoint">GET /api/shopline/customers + /api/shopline/orders</div>
+<div class="who">→ 客人畫像頁 · HANA 看板 · JUNE 行銷企劃</div>
+</div>
+
+</div>
+</section>
+
+<section>
+<h2>🟢 Phase 3 — 進階規劃中</h2>
+<div class="grid">
+
+<div class="card">
+<div class="head"><div class="ic">📝</div><h3>商品評價接入</h3><span class="badge plan">規劃中</span></div>
+<div class="desc">拉 Shopline Product Reviews API,給 CAMILLE 寫文案時用真實客戶評價當素材。</div>
+<ul><li>每天 06:00 同步新評價</li><li>5★ 評價自動推 CAMILLE 寫推文</li><li>低星評價推 HANA 處理</li></ul>
+<div class="who">→ CAMILLE · HANA</div>
+</div>
+
+<div class="card">
+<div class="head"><div class="ic">🎁</div><h3>會員點數活動</h3><span class="badge plan">規劃中</span></div>
+<div class="desc">用 Member Points API + Campaign API,讓 JUNE 自動排「點數活動」,推給對的會員。</div>
+<ul><li>看到 VIP 點數爆量 → 自動推「兌換好禮」</li><li>新客滿額送會員等級升級</li></ul>
+<div class="who">→ JUNE 行銷專案總管</div>
+</div>
+
+<div class="card">
+<div class="head"><div class="ic">📦</div><h3>庫存連動</h3><span class="badge plan">規劃中</span></div>
+<div class="desc">JUNE 排專案前自動查庫存,不會推沒貨的。AUTO 看到低庫存自動產「快搶」貼文。</div>
+<ul><li>JUNE 排檔期自動考慮庫存</li><li>SKU 庫存 ≤ 5 → AUTO 提醒「快搶」</li></ul>
+<div class="who">→ JUNE · AUTO</div>
+</div>
+
+<div class="card">
+<div class="head"><div class="ic">🏷️</div><h3>優惠券自動產生</h3><span class="badge plan">規劃中</span></div>
+<div class="desc">JUNE / CAMILLE 寫活動文時,自動 call Promotions API 建專屬優惠券 + 嵌入文章。</div>
+<ul><li>節慶活動自動建 coupon</li><li>KOL 合作專屬 coupon</li></ul>
+<div class="who">→ JUNE · CAMILLE</div>
+</div>
+
+<div class="card">
+<div class="head"><div class="ic">📤</div><h3>退貨流程整合</h3><span class="badge plan">規劃中</span></div>
+<div class="desc">退貨單推到 HANA,讓 HANA 主動關心 + 處理退款後關懷 DM。</div>
+<ul><li>降低退貨後客戶流失</li><li>退貨原因進客人畫像</li></ul>
+<div class="who">→ HANA</div>
+</div>
+
+<div class="card">
+<div class="head"><div class="ic">💬</div><h3>Shopline 內建客服整合</h3><span class="badge plan">規劃中</span></div>
+<div class="desc">Shopline 自己有 Conversations / Messages API,跟 SaleSmartly 合併成統一收件匣。</div>
+<ul><li>SaleSmartly (FB DM/IG DM) + Shopline (LINE/站內) 整合</li><li>HANA 一個看板看全部</li></ul>
+<div class="who">→ HANA</div>
+</div>
+
+</div>
+</section>
+
+<section>
+<h2>🔌 全部 API 分類 (我們可拿到的)</h2>
+<table class="table">
+<tr><th>分類</th><th>能做</th><th>用在哪</th></tr>
+<tr><td>Customers</td><td>客人 CRUD + Tag + Subscription + Email 驗證</td><td>客人畫像 · HANA</td></tr>
+<tr><td>Member Points</td><td>會員點數讀寫 + 批次</td><td>VIP 分群</td></tr>
+<tr><td>Membership Tiers</td><td>會員等級</td><td>客人畫像</td></tr>
+<tr><td>Orders</td><td>訂單 CRUD + 出貨標籤 + 物流</td><td>DEX</td></tr>
+<tr><td>Carts</td><td>購物車 (含棄單)</td><td>HANA 棄單追單</td></tr>
+<tr><td>Transactions</td><td>金流交易</td><td>DEX 真 ROAS</td></tr>
+<tr><td>Products</td><td>商品 CRUD + 批次庫存/價格/狀態</td><td>JUNE · CAMILLE · AUTO</td></tr>
+<tr><td>Product Reviews</td><td>評價讀寫</td><td>CAMILLE 文案有實證</td></tr>
+<tr><td>Promotions / Campaigns</td><td>促銷活動讀寫</td><td>JUNE 自動排</td></tr>
+<tr><td>Categories</td><td>分類管理</td><td>NOVA · CAMILLE</td></tr>
+<tr><td>Tags</td><td>標籤系統</td><td>客人畫像 · 商品</td></tr>
+<tr><td>Custom Fields</td><td>自訂欄位</td><td>客人/商品額外資料</td></tr>
+<tr><td>部落格 Posts</td><td>建立 / 列出 / 編輯文章</td><td>GIA 同步發布</td></tr>
+<tr><td>Pages</td><td>靜態頁面</td><td>SOLA SEO 頁面</td></tr>
+<tr><td>Media</td><td>圖片上傳</td><td>所有員工的圖片素材</td></tr>
+<tr><td>Webhooks</td><td>即時推送</td><td>棄單 / 新單 / 新會員 觸發</td></tr>
+<tr><td>Suppliers</td><td>供應商</td><td>JUNE 採購規劃</td></tr>
+<tr><td>Warehouses</td><td>倉庫</td><td>JUNE 庫存規劃</td></tr>
+<tr><td>Return Orders</td><td>退貨</td><td>HANA 客戶關懷</td></tr>
+<tr><td>Conversations / Messages</td><td>Shopline 內建客服</td><td>HANA 統一收件匣</td></tr>
+</table>
+</section>
+
+</div>
+
+<script>
+async function loadStatus(){
+  try {
+    const r = await fetch('/api/shopline/_status').then(x=>x.json());
+    const ps = document.getElementById('pill-storefront');
+    const po = document.getElementById('pill-openapi');
+    if(r.storefront){
+      ps.textContent = '🟢 Storefront 已通 · 商品 ' + r.storefront.cached_products + ' 項 · 快取 ' + (r.storefront.cache_age_min||0) + ' 分鐘前';
+      ps.classList.remove('wait','plan'); ps.classList.add('ok');
+    }
+    if(r.open_api){
+      if(r.open_api.token_set){
+        po.textContent = '🟢 Open API Token 已設定';
+        po.classList.remove('wait','plan'); po.classList.add('ok');
+      } else {
+        po.textContent = '🟡 Open API 等 Shopline 客服開通';
+        po.classList.remove('ok','plan'); po.classList.add('wait');
+      }
+    }
+    document.getElementById('s-products').textContent = (r.storefront && r.storefront.cached_products) || 0;
+    document.getElementById('s-cache-age').textContent = (r.storefront && r.storefront.cache_age_min)||0;
+    document.getElementById('s-token').textContent = (r.open_api && r.open_api.token_set)?'✓':'✗';
+    document.getElementById('s-webhook').textContent = (r.open_api && r.open_api.webhook_secret_set)?'✓':'✗';
+  } catch(e){
+    document.getElementById('pill-storefront').textContent = '❌ 載入失敗';
+  }
+}
+async function manualSync(){
+  const btn = event.target; const txt = btn.textContent;
+  btn.textContent='⏳ 同步中…'; btn.disabled=true;
+  try {
+    const r = await fetch('/api/shopline/sync').then(x=>x.json());
+    btn.textContent = '✅ 同步完成 ('+(r.count||0)+' 項)';
+    setTimeout(()=>{btn.textContent=txt; btn.disabled=false; loadStatus()}, 2000);
+  } catch(e){
+    btn.textContent = '❌ 失敗'; setTimeout(()=>{btn.textContent=txt; btn.disabled=false}, 2000);
+  }
+}
+loadStatus();
+</script>
+</body>
+</html>
