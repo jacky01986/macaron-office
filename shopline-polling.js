@@ -1,8 +1,5 @@
 // ============================================================
-// shopline-polling.js — HANA 棄單 polling (Open API 沒 webhook 改用 polling)
-// ============================================================
-// 每 15 分鐘抓 /v1/orders 找 status=pending 超過 30min 的未付款訂單
-// 視為「棄單」→ 寫進 shopline-hana-queue.jsonl 給 HANA agent 跟客
+// shopline-polling.js — HANA 棄單 polling + extra endpoints
 // ============================================================
 const express = require('express');
 const fs = require('fs');
@@ -14,15 +11,16 @@ const OPEN_API_TOKEN = process.env.SHOPLINE_ACCESS_TOKEN || '';
 const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 const HANA_QUEUE = path.join(DATA_DIR, 'shopline-hana-queue.jsonl');
 const OPEN_BASE = 'https://open.shopline.io';
-const HANA_SEEN = new Set();  // 已處理過的 order_id (重啟清空,避免重發)
+const HANA_SEEN = new Set();
 
-function ensureDir() { try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {} }
+function ensureDir() { try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {} }
 function withMid(qs) { return qs + (qs.includes('?') ? '&' : '?') + 'merchant_id=' + MERCHANT_ID; }
 
 async function callOpen(endpoint) {
   const r = await fetch(OPEN_BASE + endpoint, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': 'application/json' } });
   const text = await r.text();
-  let data; try { data = JSON.parse(text); } catch { data = { raw: text.slice(0, 200) }; }
+  let data;
+  try { data = JSON.parse(text); } catch (e) { data = { raw: text.slice(0, 200) }; }
   if (!r.ok) throw new Error('Shopline ' + r.status);
   return data;
 }
@@ -56,11 +54,11 @@ async function pollAbandonedOrders() {
         customer_phone: customer.phone || o.customer_phone || '',
         cart_total: total,
         minutes_old: Math.round(minutesOld),
-        line_item_count: (o.subtotal_items || o.line_items || []).length,
+        line_item_count: (o.subtotal_items || o.line_items || []).length
       };
       abandoned.push(rec);
       ensureDir();
-      try { fs.appendFileSync(HANA_QUEUE, JSON.stringify(rec) + '\n'); } catch {}
+      try { fs.appendFileSync(HANA_QUEUE, JSON.stringify(rec) + '\n'); } catch (e) {}
     }
     return { ok: true, total_checked: orders.length, new_abandoned: abandoned.length, abandoned };
   } catch (e) {
@@ -73,12 +71,91 @@ router.get('/poll-abandoned', async (req, res) => {
   catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-router.get('/probe-paths', async (req, res) => {  if (!OPEN_API_TOKEN) return res.json({ ok: false, error: 'no token' });  const paths = (req.query.paths || '').split(',').filter(Boolean);  if (!paths.length) return res.json({ ok: false, error: 'pass ?paths=p1,p2,p3 (without leading /v1)' });  const out = [];  for (const raw of paths) {    const p = raw.startsWith('/') ? raw : '/v1/' + raw;    try {      const url = OPEN_BASE + p + (p.includes('?') ? '&' : '?') + 'merchant_id=' + MERCHANT_ID;      const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': 'application/json' } });      const text = await r.text();      out.push({ path: p, status: r.status, isJson: text.trim().startsWith('{') || text.trim().startsWith('['), sample: text.slice(0, 120) });    } catch (e) { out.push({ path: p, error: e.message.slice(0, 60) }); }  }  res.json({ ok: true, results: out });});// Friendly wrappers for discovered Shopline endpointsrouter.get('/token-info', async (req, res) => {  if (!OPEN_API_TOKEN) return res.json({ ok: false, error: 'no token set' });  try {    const r = await fetch(OPEN_BASE + '/v1/token/info', { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': 'application/json' } });    const text = await r.text();    let data; try { data = JSON.parse(text); } catch { data = { raw: text.slice(0, 500) }; }    res.json({ ok: r.ok, status: r.status, data });  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }});function registerCron(cron) {
+router.get('/probe-paths', async (req, res) => {
+  if (!OPEN_API_TOKEN) return res.json({ ok: false, error: 'no token' });
+  const paths = (req.query.paths || '').split(',').filter(Boolean);
+  if (!paths.length) return res.json({ ok: false, error: 'pass ?paths=p1,p2,p3' });
+  const out = [];
+  for (const raw of paths) {
+    const p = raw.startsWith('/') ? raw : '/v1/' + raw;
+    try {
+      const url = OPEN_BASE + p + (p.includes('?') ? '&' : '?') + 'merchant_id=' + MERCHANT_ID;
+      const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': 'application/json' } });
+      const text = await r.text();
+      out.push({ path: p, status: r.status, isJson: text.trim().startsWith('{') || text.trim().startsWith('['), sample: text.slice(0, 120) });
+    } catch (e) {
+      out.push({ path: p, error: e.message.slice(0, 60) });
+    }
+  }
+  res.json({ ok: true, results: out });
+});
+
+// Friendly GET wrappers for discovered endpoints
+function wrapGet(p) {
+  return async (req, res) => {
+    if (!OPEN_API_TOKEN) return res.json({ ok: false, error: 'no token' });
+    try {
+      const url = OPEN_BASE + '/v1/' + p + '?merchant_id=' + MERCHANT_ID;
+      const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': 'application/json' } });
+      res.json(await r.json());
+    } catch (e) {
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  };
+}
+
+router.get('/categories', wrapGet('categories'));
+router.get('/promotions', wrapGet('promotions'));
+router.get('/staffs', wrapGet('staffs'));
+router.get('/warehouses', wrapGet('warehouses'));
+router.get('/customer-groups', wrapGet('customer_groups'));
+router.get('/payments', wrapGet('payments'));
+router.get('/webhooks', wrapGet('webhooks'));
+
+// Test register webhook via GET
+router.get('/test-register-webhook', async (req, res) => {
+  if (!OPEN_API_TOKEN) return res.json({ ok: false, error: 'no token' });
+  const topic = req.query.topic || 'orders/create';
+  const callback_url = req.query.callback_url || 'https://macaron-office.onrender.com/api/shopline/webhook';
+  try {
+    const url = OPEN_BASE + '/v1/webhooks?merchant_id=' + MERCHANT_ID;
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ webhook: { topic, callback_url, format: 'json' } })
+    });
+    const text = await r.text();
+    let data;
+    try { data = JSON.parse(text); } catch (e) { data = { raw: text.slice(0, 500) }; }
+    res.json({ ok: r.ok, status: r.status, topic, callback_url, data });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+router.get('/token-info', async (req, res) => {
+  if (!OPEN_API_TOKEN) return res.json({ ok: false, error: 'no token set' });
+  try {
+    const r = await fetch(OPEN_BASE + '/v1/token/info', { headers: { 'Authorization': 'Bearer ' + OPEN_API_TOKEN, 'Accept': 'application/json' } });
+    const text = await r.text();
+    let data;
+    try { data = JSON.parse(text); } catch (e) { data = { raw: text.slice(0, 500) }; }
+    res.json({ ok: r.ok, status: r.status, data });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+function registerCron(cron) {
   if (!cron || typeof cron.schedule !== 'function') return;
   const tz = process.env.TZ || 'Asia/Taipei';
   cron.schedule('*/15 * * * *', async () => {
-    try { const r = await pollAbandonedOrders(); if (r.new_abandoned) console.log('[shopline-polling] HANA polled,', r.new_abandoned, '個新棄單'); }
-    catch (e) { console.error('[shopline-polling] failed:', e.message); }
+    try {
+      const r = await pollAbandonedOrders();
+      if (r.new_abandoned) console.log('[shopline-polling] HANA polled,', r.new_abandoned, 'new');
+    } catch (e) {
+      console.error('[shopline-polling] failed:', e.message);
+    }
   }, { timezone: tz });
   console.log('[shopline-polling] cron registered (every 15 min)');
 }
