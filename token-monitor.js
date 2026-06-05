@@ -28,7 +28,7 @@ async function checkTokenExpiry(token, label) {
     const dbg = await dbgResp.json();
     
     if (dbg.data) {
-      const expiresAt = dbg.data.expires_at || dbg.data.data_access_expires_at || 0;
+      const expiresAt = (dbg.data.expires_at !== undefined) ? dbg.data.expires_at : (dbg.data.data_access_expires_at || 0);
       if (expiresAt === 0) {
         return { label, ok: true, expires: 'never', user: me.name || me.id, isValid: true };
       }
@@ -41,7 +41,7 @@ async function checkTokenExpiry(token, label) {
         expiresAt: new Date(expiresAt * 1000).toISOString().slice(0, 10),
         daysLeft,
         isValid: dbg.data.is_valid !== false,
-        scopes: (dbg.data.scopes || []).slice(0, 5)
+        scopes: (dbg.data.scopes || [])
       };
     }
     return { label, ok: true, user: me.name || me.id, expires: 'unknown', isValid: true };
