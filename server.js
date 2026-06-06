@@ -905,7 +905,7 @@ async function executeReadTool(name, input) {
         return top5.map(c => ({ userId: c.userId, userName: c.userName, lastMessages: (c.messages||[]).slice(0,5).map(m=>({ text:m.text, ts:m.timestamp, intent:m.intent, replied:m.replied, replyText:m.replyText })) }));
       } catch(e) { return { error: e.message }; }
     }
-    case "get_shopline_brief": { try { const sp = require("./shopline-polling"); return await sp.buildTeamBrief(); } catch (e) { return { error: e.message }; } } case "get_meta_posts": {
+    case "get_offline_reports": { try { const o = require("./offline-reports"); return o.buildSummaryForAI(); } catch (e) { return { error: e.message }; } } case "get_shopline_brief": { try { const sp = require("./shopline-polling"); return await sp.buildTeamBrief(); } catch (e) { return { error: e.message }; } } case "get_meta_posts": {
       try {
         const lim = input.limit || 10;
         const plat = input.platform || 'both';
