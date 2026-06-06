@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>📋 線下報告中心 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/macaron-shared.css">
+<style>
+  body{margin:0;padding:24px;background:transparent;color:#f4e8d4;font-family:'Noto Sans TC','PingFang TC',sans-serif;line-height:1.5}
+  .wrap{max-width:1200px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 6px;color:#fff;display:flex;align-items:center;gap:12px}
+  .subtitle{color:#c9b89e;font-size:13px;margin:0 0 24px}
+  .grid{display:grid;gap:16px}
+  .grid-2{grid-template-columns:1fr 1fr}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+  .card{background:linear-gradient(135deg,rgba(94,42,58,.45),rgba(58,21,33,.35));border:1px solid rgba(176,141,87,.32);border-radius:16px;padding:20px 22px}
+  .section{margin-top:28px}
+  .section-title{font-size:18px;color:#f4e8d4;margin:0 0 14px;display:flex;align-items:center;gap:10px;border-left:4px solid #B08D57;padding-left:10px}
+  label{display:block;color:#d9c4a3;font-size:12px;letter-spacing:.5px;margin-bottom:6px;text-transform:uppercase}
+  input,select,textarea{width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(176,141,87,.32);color:#f4e8d4;padding:10px 12px;border-radius:8px;font-family:inherit;font-size:14px;box-sizing:border-box}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:#B08D57;background:rgba(0,0,0,.45)}
+  textarea{min-height:90px;resize:vertical}
+  .form-row{margin-bottom:14px}
+  .btn{background:linear-gradient(135deg,#B08D57,#d4a87e);color:#3a1521;border:none;padding:12px 28px;border-radius:24px;font-weight:600;cursor:pointer;font-size:14px}
+  .btn:hover{filter:brightness(1.1)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-secondary{background:rgba(0,0,0,.28);color:#e4d6bc;border:1px solid rgba(176,141,87,.32)}
+  .stat-card{text-align:center}
+  .stat-card .label{color:#d9c4a3;font-size:12px;letter-spacing:1px;margin-bottom:6px}
+  .stat-card .value{font-size:30px;font-weight:700;color:#fff;line-height:1.1}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:rgba(0,0,0,.32);text-align:left;padding:10px 12px;color:#d9c4a3;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid rgba(176,141,87,.22)}
+  td{padding:10px 12px;border-bottom:1px solid rgba(176,141,87,.15);color:#e4d6bc;vertical-align:top}
+  .pill{display:inline-block;background:rgba(176,141,87,.18);border:1px solid rgba(176,141,87,.35);color:#f4e8d4;border-radius:12px;padding:2px 8px;font-size:11px;margin-right:4px}
+  .pill.daily{background:rgba(61,220,132,.18);border-color:rgba(61,220,132,.42);color:#9bcdb1}
+  .pill.weekly{background:rgba(66,133,244,.18);border-color:rgba(66,133,244,.42);color:#aac8ff}
+  .pill.problem{background:rgba(255,107,107,.18);border-color:rgba(255,107,107,.42);color:#ffb3b3}
+  .empty{color:#9c8973;font-size:13px;font-style:italic;padding:24px;text-align:center;background:rgba(0,0,0,.18);border-radius:10px;border:1px dashed rgba(176,141,87,.22)}
+  .toast{position:fixed;top:24px;right:24px;background:linear-gradient(135deg,#3ddc84,#2b9c5e);color:#0a2a16;padding:14px 22px;border-radius:12px;font-weight:600;display:none;z-index:1000;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .toast.error{background:linear-gradient(135deg,#ff6b6b,#c5424a);color:#fff}
+  .toast.show{display:block}
+  .nav-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .nav-tab{background:rgba(0,0,0,.28);border:1px solid rgba(176,141,87,.22);color:#e4d6bc;padding:8px 14px;border-radius:10px;text-decoration:none;font-size:13px;cursor:pointer}
+  .trend-bar{display:flex;align-items:end;gap:4px;height:80px;margin-top:8px}
+  .trend-bar > div{flex:1;background:linear-gradient(180deg,#d4a87e,#B08D57);border-radius:4px 4px 0 0;min-height:4px;position:relative}
+  .trend-bar .lbl{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:#9c8973;white-space:nowrap}
+  .ts{font-size:11px;color:#9c8973}
+  .prob-chip{background:rgba(255,107,107,.15);border:1px solid rgba(255,107,107,.3);color:#ffb3b3;padding:6px 10px;border-radius:8px;font-size:12px;display:inline-block;margin:3px 4px 3px 0}
+  .branch-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed rgba(176,141,87,.18)}
+  details{background:rgba(0,0,0,.18);border:1px solid rgba(176,141,87,.22);border-radius:10px;padding:10px 14px;margin-bottom:8px}
+  summary{cursor:pointer;color:#f4e8d4;font-weight:600;font-size:14px}
+  details[open] summary{margin-bottom:10px}
+  .detail-body{font-size:13px;color:#e4d6bc;padding-left:6px;border-left:3px solid rgba(176,141,87,.3);margin-top:8px}
+  .row-flex{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="row-flex">
+    <div><h1>📋 線下報告中心</h1><p class="subtitle">門市/部門線下報告上傳 · AI 自動聚合 · 每天 08:00 推 Telegram 早報</p></div>
+    <div><button class="btn" onclick="document.getElementById('upload-form').scrollIntoView({behavior:'smooth'})">📤 上傳新報告</button></div>
+  </div>
+  <div class="nav-tabs">
+    <a class="nav-tab" href="/">← 主控台</a>
+    <a class="nav-tab" href="/shopline-dashboard.html">🛒 Shopline 儀表板</a>
+    <a class="nav-tab" href="/api/offline-reports/send-digest" target="_blank">📱 立刻推早報</a>
+  </div>
+  <div class="grid grid-4">
+    <div class="card stat-card"><div class="label">30 天報告數</div><div class="value" id="kpi-count-30">—</div></div>
+    <div class="card stat-card"><div class="label">30 天總營收</div><div class="value">NT$<span id="kpi-rev-30">—</span></div></div>
+    <div class="card stat-card"><div class="label">過去 7 天</div><div class="value"><span id="kpi-count-7">—</span><span style="font-size:14px;color:#c9b89e"> 份</span></div></div>
+    <div class="card stat-card"><div class="label">待解問題</div><div class="value" id="kpi-problems">—</div></div>
+  </div>
+  <div class="section grid grid-2">
+    <div class="card"><div class="section-title" style="margin-top:0">📈 14 日營收趨勢</div><div class="trend-bar" id="trend-bar"></div><div id="trend-empty" style="display:none" class="empty">沒有趨勢資料</div></div>
+    <div class="card"><div class="section-title" style="margin-top:0">🏪 門市表現 (30 天)</div><div id="branch-list"></div></div>
+  </div>
+  <div class="section grid grid-2">
+    <div class="card"><div class="section-title" style="margin-top:0">🚨 近期問題點</div><div id="problem-list"></div></div>
+    <div class="card"><div class="section-title" style="margin-top:0">✅ 行動項目</div><div id="action-list"></div></div>
+  </div>
+  <div class="section"><div class="section-title">📑 最近 20 份報告</div><div id="reports-list"></div></div>
+  <div class="section" id="upload-form">
+    <div class="section-title">📤 上傳新報告</div>
+    <div class="card">
+      <div class="grid grid-3" style="margin-bottom:16px">
+        <div class="form-row"><label>報告類型</label><select id="f-type"><option value="daily">日報</option><option value="weekly">週報</option><option value="event">活動檢討</option><option value="problem">問題回報</option><option value="other">其他</option></select></div>
+        <div class="form-row"><label>日期</label><input type="date" id="f-date"></div>
+        <div class="form-row"><label>門市/部門</label><input type="text" id="f-branch" placeholder="例如:台南樹林總店"></div>
+      </div>
+      <div class="grid grid-3" style="margin-bottom:16px">
+        <div class="form-row"><label>填寫人</label><input type="text" id="f-author" placeholder="姓名"></div>
+        <div class="form-row"><label>當日營收 (NT$)</label><input type="number" id="f-revenue" placeholder="0"></div>
+        <div class="form-row"><label>訂單筆數</label><input type="number" id="f-orders" placeholder="0"></div>
+      </div>
+      <div class="form-row"><label>遇到的問題點 (一行一個)</label><textarea id="f-problems" placeholder="例如:&#10;招牌燈不亮&#10;早班人手不足"></textarea></div>
+      <div class="form-row"><label>檢討 / 觀察</label><textarea id="f-review" placeholder="今日狀況、客流觀察、員工反饋等"></textarea></div>
+      <div class="form-row"><label>行動項目 / 待辦 (一行一個)</label><textarea id="f-action" placeholder="例如:&#10;明早 9 點請黑貓修燈&#10;增聘早班一名"></textarea></div>
+      <div class="form-row"><label>備註</label><textarea id="f-notes" placeholder="任何其他想記下的"></textarea></div>
+      <div class="form-row"><label>附件 URL (選填)</label><input type="url" id="f-attach" placeholder="https://..."></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
+        <button class="btn btn-secondary" onclick="clearForm()">清空</button>
+        <button class="btn" id="submit-btn" onclick="submitReport()">📤 送出報告</button>
+      </div>
+    </div>
+  </div>
+  <p class="ts" id="ts-stamp" style="text-align:center;margin-top:30px"></p>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmt=n=>(n||0).toLocaleString();
+function toast(msg,isErr){const t=$('toast');t.textContent=msg;t.className='toast show'+(isErr?' error':'');setTimeout(()=>t.classList.remove('show'),4000);}
+function clearForm(){['f-branch','f-author','f-revenue','f-orders','f-problems','f-review','f-action','f-notes','f-attach'].forEach(id=>$(id).value='');$('f-date').value=new Date().toISOString().slice(0,10);$('f-type').value='daily';}
+async function submitReport(){const btn=$('submit-btn');btn.disabled=true;btn.textContent='送出中...';try{const body={type:$('f-type').value,report_date:$('f-date').value||new Date().toISOString().slice(0,10),branch:$('f-branch').value.trim(),author:$('f-author').value.trim(),revenue:$('f-revenue').value,orders:$('f-orders').value,problems:$('f-problems').value.trim(),review:$('f-review').value.trim(),action_items:$('f-action').value.trim(),notes:$('f-notes').value.trim(),attachment_url:$('f-attach').value.trim()};if(!body.branch&&!body.review&&!body.problems){toast('至少填一項:門市、檢討、或問題',true);btn.disabled=false;btn.textContent='📤 送出報告';return;}const r=await fetch('/api/offline-reports/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!d.ok)throw new Error(d.error||'submit failed');toast('✅ 已上傳 (ID: '+d.id.slice(0,14)+'...)');clearForm();await loadAll();}catch(e){toast('❌ 上傳失敗: '+e.message,true);}finally{btn.disabled=false;btn.textContent='📤 送出報告';}}
+async function loadAll(){try{const [sum,list]=await Promise.all([fetch('/api/offline-reports/summary').then(r=>r.json()),fetch('/api/offline-reports/list?limit=20').then(r=>r.json())]);if(!sum.ok)throw new Error(sum.error);renderSummary(sum);renderList(list.reports||[]);$('ts-stamp').textContent='最後更新: '+new Date().toLocaleString('zh-TW');}catch(e){toast('載入失敗: '+e.message,true);}}
+function renderSummary(s){$('kpi-count-30').textContent=fmt(s.recent_30);$('kpi-rev-30').textContent=fmt(s.revenue_30);$('kpi-count-7').textContent=fmt(s.recent_7);$('kpi-problems').textContent=fmt(s.problem_count);const trend=s.revenue_trend||[];if(trend.length===0){$('trend-bar').style.display='none';$('trend-empty').style.display='block';}else{$('trend-bar').style.display='flex';$('trend-empty').style.display='none';const max=Math.max(...trend.map(t=>t.revenue));$('trend-bar').innerHTML=trend.map(t=>'<div style="height:'+(t.revenue/max*100).toFixed(0)+'%" title="'+t.date+': NT$'+fmt(t.revenue)+'"><span class="lbl">'+t.date.slice(5)+'</span></div>').join('');}const branches=s.by_branch||[];$('branch-list').innerHTML=branches.length===0?'<div class="empty">尚無門市資料</div>':branches.slice(0,8).map(b=>'<div class="branch-row"><div><div style="color:#fff;font-weight:600">'+esc(b.branch)+'</div><div class="ts">'+b.count+' 份報告 / '+b.problems+' 問題</div></div><div style="color:#fff;font-weight:700">NT$'+fmt(b.revenue)+'</div></div>').join('');const probs=s.recent_problems||[];$('problem-list').innerHTML=probs.length===0?'<div class="empty">✅ 沒有問題回報</div>':probs.slice(0,12).map(p=>'<span class="prob-chip">'+esc(p.p)+'</span>').join('');const acts=s.action_items||[];$('action-list').innerHTML=acts.length===0?'<div class="empty">尚無行動項目</div>':acts.map(a=>'<details><summary>'+esc(a.branch||'(no branch)')+' · '+esc(a.date)+'</summary><div class="detail-body">'+esc(a.items).replace(/\n/g,'<br>')+'</div></details>').join('');}
+function renderList(reports){if(reports.length===0){$('reports-list').innerHTML='<div class="empty">尚未有報告 — 用下方表單上傳第一份</div>';return;}$('reports-list').innerHTML=reports.map(r=>{const typeClass=['daily','weekly','problem'].includes(r.type)?r.type:'daily';return '<details><summary>'+esc(r.report_date)+' · '+esc(r.branch||'(no branch)')+' · <span class="pill '+typeClass+'">'+esc(r.type)+'</span> · NT$'+fmt(r.revenue)+'</summary><div class="detail-body">'+(r.problems?'<div><b style="color:#ffb3b3">問題:</b><br>'+esc(r.problems).replace(/\n/g,'<br>')+'</div>':'')+(r.review?'<div style="margin-top:6px"><b style="color:#aac8ff">檢討:</b><br>'+esc(r.review).replace(/\n/g,'<br>')+'</div>':'')+(r.action_items?'<div style="margin-top:6px"><b style="color:#9bcdb1">行動:</b><br>'+esc(r.action_items).replace(/\n/g,'<br>')+'</div>':'')+'<div class="ts" style="margin-top:6px">id: '+esc(r.id)+'</div></div></details>';}).join('');}
+$('f-date').value=new Date().toISOString().slice(0,10);
+loadAll();
+</script>
+</body>
+</html>
