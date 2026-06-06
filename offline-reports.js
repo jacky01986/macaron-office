@@ -194,7 +194,7 @@ function buildSummaryForAI() {
   const branchMap = {};
   d30.forEach(r => {
     const b = r.branch || '(無門市)';
-    if (!branchMap[b]) branchMap[b] = { branch: b, count: 0, revenue: 0, problems: 0 };
+    if (!branchMap[b]) branchMap[b] = { branch: b, count: 0, revenue: 0, problems: 0, total_orders: 0, reports: [] }; branchMap[b].reports.push({ id: r.id, date: r.report_date, type: r.type, revenue: r.revenue, orders: r.orders, summary: r.summary, problems: r.problems, review: r.review, action_items: r.action_items, notes: r.notes, source_file: r.source_file, attachment_url: r.attachment_url, author: r.author }); branchMap[b].total_orders += Number(r.orders) || 0;
     branchMap[b].count++;
     branchMap[b].revenue += Number(r.revenue) || 0;
     if (r.problems) branchMap[b].problems++;
