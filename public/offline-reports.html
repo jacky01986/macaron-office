@@ -66,7 +66,7 @@ details[open] summary{margin-bottom:10px}
 <div class="wrap">
   <div class="row-flex">
     <div><h1>📋 線下報告中心</h1><p class="subtitle">上傳 PDF / 照片 / Excel / Word — AI 自動讀取、結構化、餵給所有 AI 員工</p></div>
-    <div><button class="btn btn-secondary" onclick="document.getElementById('manual-form').open=true;document.getElementById('manual-form').scrollIntoView({behavior:'smooth'})">手動填表</button></div>
+    
   </div>
   <div class="nav-tabs">
     <a class="nav-tab" href="/">← 主控台</a>
@@ -107,8 +107,8 @@ details[open] summary{margin-bottom:10px}
   </div>
   <div class="section"><div class="section-title">📑 最近 20 份報告</div><div id="reports-list"></div></div>
   <div class="section">
-    <details id="manual-form">
-      <summary>📝 手動填表 (備援,通常用上方上傳即可)</summary>
+    <!--MF_START--><details style="display:none" id="manual-form">
+      <summary style="display:none">manual</summary>
       <div class="card" style="margin-top:14px">
         <div class="grid grid-3" style="margin-bottom:12px">
           <div><label>類型</label><select id="f-type"><option value="daily">日報</option><option value="weekly">週報</option><option value="event">活動檢討</option><option value="problem">問題回報</option><option value="other">其他</option></select></div>
@@ -161,7 +161,7 @@ function showResult(r){
   $('result-card').classList.add('show');
 }
 function hideResult(){$('result-card').classList.remove('show');}
-function clearForm(){['f-branch','f-author','f-revenue','f-orders','f-problems','f-review','f-action','f-notes'].forEach(id=>$(id).value='');$('f-date').value=new Date().toISOString().slice(0,10);$('f-type').value='daily';}
+function clearForm(){return;['f-branch','f-author','f-revenue','f-orders','f-problems','f-review','f-action','f-notes'].forEach(id=>$(id).value='');$('f-date').value=new Date().toISOString().slice(0,10);$('f-type').value='daily';}
 async function submitReport(){
   try{
     const body={type:$('f-type').value,report_date:$('f-date').value||new Date().toISOString().slice(0,10),branch:$('f-branch').value.trim(),author:$('f-author').value.trim(),revenue:$('f-revenue').value,orders:$('f-orders').value,problems:$('f-problems').value.trim(),review:$('f-review').value.trim(),action_items:$('f-action').value.trim(),notes:$('f-notes').value.trim()};
@@ -196,10 +196,10 @@ function renderSummary(s){
 }
 function renderList(reports){
   if(reports.length===0){$('reports-list').innerHTML='<div class="empty">尚未有報告 — 直接拖檔案到上方</div>';return;}
-  $('reports-list').innerHTML=reports.map(r=>{
+  $('reports-list').innerHTML=reports.map((r,idx)=>{
     const typeClass=['daily','weekly','problem'].includes(r.type)?r.type:'daily';
     const att=r.attachment_url?'<a href="'+r.attachment_url+'" target="_blank" style="color:#d4a87e;font-size:12px">📎 原始檔</a>':'';
-    return '<details><summary>'+esc(r.report_date)+' · '+esc(r.branch||'(無門市)')+' · <span class="pill '+typeClass+'">'+esc(r.type)+'</span> · NT$'+fmt(r.revenue)+' '+att+'</summary><div class="detail-body">'+(r.summary?'<div><b style="color:#d4a87e">摘要:</b> '+esc(r.summary)+'</div>':'')+(r.problems?'<div style="margin-top:6px"><b style="color:#ffb3b3">問題:</b><br>'+esc(r.problems).replace(/\n/g,'<br>')+'</div>':'')+(r.review?'<div style="margin-top:6px"><b style="color:#aac8ff">檢討:</b><br>'+esc(r.review).replace(/\n/g,'<br>')+'</div>':'')+(r.action_items?'<div style="margin-top:6px"><b style="color:#9bcdb1">行動:</b><br>'+esc(r.action_items).replace(/\n/g,'<br>')+'</div>':'')+(r.source_file?'<div class="ts" style="margin-top:6px">原始: '+esc(r.source_file)+' · id: '+esc(r.id)+'</div>':'<div class="ts" style="margin-top:6px">id: '+esc(r.id)+'</div>')+'</div></details>';
+    return '<details'+(idx<5?' open':'')+'><summary>'+esc(r.report_date)+' · '+esc(r.branch||'(無門市)')+' · <span class="pill '+typeClass+'">'+esc(r.type)+'</span> · NT$'+fmt(r.revenue)+' '+att+'</summary><div class="detail-body">'+(r.summary?'<div><b style="color:#d4a87e">摘要:</b> '+esc(r.summary)+'</div>':'')+(r.problems?'<div style="margin-top:6px"><b style="color:#ffb3b3">問題:</b><br>'+esc(r.problems).replace(/\n/g,'<br>')+'</div>':'')+(r.review?'<div style="margin-top:6px"><b style="color:#aac8ff">檢討:</b><br>'+esc(r.review).replace(/\n/g,'<br>')+'</div>':'')+(r.action_items?'<div style="margin-top:6px"><b style="color:#9bcdb1">行動:</b><br>'+esc(r.action_items).replace(/\n/g,'<br>')+'</div>':'')+(r.source_file?'<div class="ts" style="margin-top:6px">原始: '+esc(r.source_file)+' · id: '+esc(r.id)+'</div>':'<div class="ts" style="margin-top:6px">id: '+esc(r.id)+'</div>')+'</div></details>';
   }).join('');
 }
 $('f-date').value=new Date().toISOString().slice(0,10);
@@ -323,11 +323,11 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const fmt=n=>(n||0).toLocaleString();
 function toast(msg,isErr){const t=$('toast');t.textContent=msg;t.className='toast show'+(isErr?' error':'');setTimeout(()=>t.classList.remove('show'),4000);}
-function clearForm(){['f-branch','f-author','f-revenue','f-orders','f-problems','f-review','f-action','f-notes','f-attach'].forEach(id=>$(id).value='');$('f-date').value=new Date().toISOString().slice(0,10);$('f-type').value='daily';}
+function clearForm(){return;['f-branch','f-author','f-revenue','f-orders','f-problems','f-review','f-action','f-notes','f-attach'].forEach(id=>$(id).value='');$('f-date').value=new Date().toISOString().slice(0,10);$('f-type').value='daily';}
 async function submitReport(){const btn=$('submit-btn');btn.disabled=true;btn.textContent='送出中...';try{const body={type:$('f-type').value,report_date:$('f-date').value||new Date().toISOString().slice(0,10),branch:$('f-branch').value.trim(),author:$('f-author').value.trim(),revenue:$('f-revenue').value,orders:$('f-orders').value,problems:$('f-problems').value.trim(),review:$('f-review').value.trim(),action_items:$('f-action').value.trim(),notes:$('f-notes').value.trim(),attachment_url:$('f-attach').value.trim()};if(!body.branch&&!body.review&&!body.problems){toast('至少填一項:門市、檢討、或問題',true);btn.disabled=false;btn.textContent='📤 送出報告';return;}const r=await fetch('/api/offline-reports/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!d.ok)throw new Error(d.error||'submit failed');toast('✅ 已上傳 (ID: '+d.id.slice(0,14)+'...)');clearForm();await loadAll();}catch(e){toast('❌ 上傳失敗: '+e.message,true);}finally{btn.disabled=false;btn.textContent='📤 送出報告';}}
 async function loadAll(){try{const [sum,list]=await Promise.all([fetch('/api/offline-reports/summary').then(r=>r.json()),fetch('/api/offline-reports/list?limit=20').then(r=>r.json())]);if(!sum.ok)throw new Error(sum.error);renderSummary(sum);renderList(list.reports||[]);$('ts-stamp').textContent='最後更新: '+new Date().toLocaleString('zh-TW');}catch(e){toast('載入失敗: '+e.message,true);}}
 function renderSummary(s){$('kpi-count-30').textContent=fmt(s.recent_30);$('kpi-rev-30').textContent=fmt(s.revenue_30);$('kpi-count-7').textContent=fmt(s.recent_7);$('kpi-problems').textContent=fmt(s.problem_count);const trend=s.revenue_trend||[];if(trend.length===0){$('trend-bar').style.display='none';$('trend-empty').style.display='block';}else{$('trend-bar').style.display='flex';$('trend-empty').style.display='none';const max=Math.max(...trend.map(t=>t.revenue));$('trend-bar').innerHTML=trend.map(t=>'<div style="height:'+(t.revenue/max*100).toFixed(0)+'%" title="'+t.date+': NT$'+fmt(t.revenue)+'"><span class="lbl">'+t.date.slice(5)+'</span></div>').join('');}const branches=s.by_branch||[];$('branch-list').innerHTML=branches.length===0?'<div class="empty">尚無門市資料</div>':branches.slice(0,8).map(b=>'<div class="branch-row"><div><div style="color:#fff;font-weight:600">'+esc(b.branch)+'</div><div class="ts">'+b.count+' 份報告 / '+b.problems+' 問題</div></div><div style="color:#fff;font-weight:700">NT$'+fmt(b.revenue)+'</div></div>').join('');const probs=s.recent_problems||[];$('problem-list').innerHTML=probs.length===0?'<div class="empty">✅ 沒有問題回報</div>':probs.slice(0,12).map(p=>'<span class="prob-chip">'+esc(p.p)+'</span>').join('');const acts=s.action_items||[];$('action-list').innerHTML=acts.length===0?'<div class="empty">尚無行動項目</div>':acts.map(a=>'<details><summary>'+esc(a.branch||'(no branch)')+' · '+esc(a.date)+'</summary><div class="detail-body">'+esc(a.items).replace(/\n/g,'<br>')+'</div></details>').join('');}
-function renderList(reports){if(reports.length===0){$('reports-list').innerHTML='<div class="empty">尚未有報告 — 用下方表單上傳第一份</div>';return;}$('reports-list').innerHTML=reports.map(r=>{const typeClass=['daily','weekly','problem'].includes(r.type)?r.type:'daily';return '<details><summary>'+esc(r.report_date)+' · '+esc(r.branch||'(no branch)')+' · <span class="pill '+typeClass+'">'+esc(r.type)+'</span> · NT$'+fmt(r.revenue)+'</summary><div class="detail-body">'+(r.problems?'<div><b style="color:#ffb3b3">問題:</b><br>'+esc(r.problems).replace(/\n/g,'<br>')+'</div>':'')+(r.review?'<div style="margin-top:6px"><b style="color:#aac8ff">檢討:</b><br>'+esc(r.review).replace(/\n/g,'<br>')+'</div>':'')+(r.action_items?'<div style="margin-top:6px"><b style="color:#9bcdb1">行動:</b><br>'+esc(r.action_items).replace(/\n/g,'<br>')+'</div>':'')+'<div class="ts" style="margin-top:6px">id: '+esc(r.id)+'</div></div></details>';}).join('');}
+function renderList(reports){if(reports.length===0){$('reports-list').innerHTML='<div class="empty">尚未有報告 — 用下方表單上傳第一份</div>';return;}$('reports-list').innerHTML=reports.map((r,idx)=>{const typeClass=['daily','weekly','problem'].includes(r.type)?r.type:'daily';return '<details'+(idx<5?' open':'')+'><summary>'+esc(r.report_date)+' · '+esc(r.branch||'(no branch)')+' · <span class="pill '+typeClass+'">'+esc(r.type)+'</span> · NT$'+fmt(r.revenue)+'</summary><div class="detail-body">'+(r.problems?'<div><b style="color:#ffb3b3">問題:</b><br>'+esc(r.problems).replace(/\n/g,'<br>')+'</div>':'')+(r.review?'<div style="margin-top:6px"><b style="color:#aac8ff">檢討:</b><br>'+esc(r.review).replace(/\n/g,'<br>')+'</div>':'')+(r.action_items?'<div style="margin-top:6px"><b style="color:#9bcdb1">行動:</b><br>'+esc(r.action_items).replace(/\n/g,'<br>')+'</div>':'')+'<div class="ts" style="margin-top:6px">id: '+esc(r.id)+'</div></div></details>';}).join('');}
 $('f-date').value=new Date().toISOString().slice(0,10);
 loadAll();
 </script>
