@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>🛒 Shopline 商業儀表板 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/macaron-shared.css">
+<style>
+  body{margin:0;padding:24px;background:transparent;color:#f4e8d4;font-family:'Noto Sans TC','PingFang TC',sans-serif;line-height:1.5}
+  .wrap{max-width:1200px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 6px;color:#fff;display:flex;align-items:center;gap:12px}
+  .subtitle{color:#c9b89e;font-size:13px;margin:0 0 24px}
+  .grid{display:grid;gap:16px}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:900px){.grid-3,.grid-4{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.grid-3,.grid-4{grid-template-columns:1fr}}
+  .card{background:linear-gradient(135deg,rgba(94,42,58,.45),rgba(58,21,33,.35));border:1px solid rgba(176,141,87,.32);border-radius:16px;padding:20px 22px}
+  .stat-card{text-align:center}
+  .stat-card .label{color:#d9c4a3;font-size:12px;letter-spacing:1px;margin-bottom:6px}
+  .stat-card .value{font-size:30px;font-weight:700;color:#fff;line-height:1.1}
+  .stat-card .unit{color:#c9b89e;font-size:13px;margin-left:4px}
+  .stat-card .delta{margin-top:6px;font-size:12px;color:#9bcdb1}
+  .section{margin-top:28px}
+  .section-title{font-size:18px;color:#f4e8d4;margin:0 0 14px;display:flex;align-items:center;gap:10px;border-left:4px solid #B08D57;padding-left:10px}
+  .pill{display:inline-block;background:rgba(176,141,87,.18);border:1px solid rgba(176,141,87,.35);color:#f4e8d4;border-radius:24px;padding:4px 12px;font-size:11px}
+  .pill.live{background:rgba(61,220,132,.18);border-color:rgba(61,220,132,.42);color:#9bcdb1}
+  .pill.warn{background:rgba(255,107,107,.18);border-color:rgba(255,107,107,.42);color:#ffb3b3}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:rgba(0,0,0,.32);text-align:left;padding:10px 12px;color:#d9c4a3;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid rgba(176,141,87,.22)}
+  td{padding:10px 12px;border-bottom:1px solid rgba(176,141,87,.15);color:#e4d6bc}
+  tr:hover td{background:rgba(176,141,87,.08)}
+  .sku-bar{background:rgba(176,141,87,.18);border-radius:6px;height:8px;overflow:hidden;margin-top:4px}
+  .sku-bar-fill{background:linear-gradient(90deg,#B08D57,#d4a87e);height:100%;transition:width .6s}
+  .sku-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed rgba(176,141,87,.18);font-size:13px}
+  .sku-row:last-child{border:none}
+  .empty{color:#9c8973;font-size:13px;font-style:italic;padding:24px;text-align:center;background:rgba(0,0,0,.18);border-radius:10px;border:1px dashed rgba(176,141,87,.22)}
+  .loading{color:#c9b89e;font-size:14px;padding:40px;text-align:center}
+  .refresh-btn{background:linear-gradient(135deg,#B08D57,#d4a87e);color:#3a1521;border:none;padding:8px 18px;border-radius:24px;font-weight:600;cursor:pointer;font-size:13px}
+  .refresh-btn:hover{filter:brightness(1.1)}
+  .nav-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .nav-tab{background:rgba(0,0,0,.28);border:1px solid rgba(176,141,87,.22);color:#e4d6bc;padding:8px 14px;border-radius:10px;text-decoration:none;font-size:13px;cursor:pointer}
+  .nav-tab:hover{background:rgba(176,141,87,.18);color:#fff}
+  .nav-tab.active{background:linear-gradient(135deg,#5e2a3a,#3a1521);color:#fff;border-color:#B08D57}
+  .seg-vip{background:linear-gradient(135deg,#B08D57,#8a6b3f);color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600}
+  .seg-new{background:#4285F4;color:#fff;padding:2px 8px;border-radius:8px;font-size:11px}
+  .seg-active{background:#3ddc84;color:#1a3a26;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600}
+  .seg-atrisk{background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:8px;font-size:11px}
+  .ts{font-size:11px;color:#9c8973}
+  .row-flex{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="row-flex">
+    <div>
+      <h1>🛒 Shopline 商業儀表板</h1>
+      <p class="subtitle">即時抓 Shopline Open API · 給 AI 員工分析用 · 給你看趨勢</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="pill live" id="status-pill">● 載入中</span>
+      <button class="refresh-btn" onclick="loadAll()">🔄 重新整理</button>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <a class="nav-tab" href="/">← 主控台</a>
+    <a class="nav-tab" href="/shopline-hub.html">📚 完整能力盤點</a>
+    <a class="nav-tab" href="/customers.html">👥 客人畫像 (含 SaleSmartly)</a>
+    <a class="nav-tab" href="/api/shopline-polling/team-brief" target="_blank">📦 原始 JSON</a>
+  </div>
+
+  <!-- 今日 4 大指標 -->
+  <div class="grid grid-4" id="kpi-row">
+    <div class="card stat-card"><div class="label">今日訂單</div><div class="value" id="kpi-today-count">—</div></div>
+    <div class="card stat-card"><div class="label">今日營收</div><div class="value">NT$<span id="kpi-today-revenue">—</span></div></div>
+    <div class="card stat-card"><div class="label">今日已付</div><div class="value" id="kpi-today-paid">—</div></div>
+    <div class="card stat-card"><div class="label">客人總數</div><div class="value" id="kpi-customers">—</div></div>
+  </div>
+
+  <!-- 今日 vs 7天 -->
+  <div class="section">
+    <div class="section-title">📊 今日 vs 過去 7 天</div>
+    <div class="grid grid-3">
+      <div class="card">
+        <div style="color:#d9c4a3;font-size:12px;letter-spacing:1px;margin-bottom:10px">訂單筆數</div>
+        <div style="font-size:13px;color:#c9b89e">今日 <span style="color:#fff;font-weight:700" id="cmp-orders-today">—</span> / 7日 <span style="color:#fff;font-weight:700" id="cmp-orders-week">—</span></div>
+      </div>
+      <div class="card">
+        <div style="color:#d9c4a3;font-size:12px;letter-spacing:1px;margin-bottom:10px">總營收</div>
+        <div style="font-size:13px;color:#c9b89e">今日 NT$<span style="color:#fff;font-weight:700" id="cmp-rev-today">—</span> / 7日 NT$<span style="color:#fff;font-weight:700" id="cmp-rev-week">—</span></div>
+      </div>
+      <div class="card">
+        <div style="color:#d9c4a3;font-size:12px;letter-spacing:1px;margin-bottom:10px">已付筆數</div>
+        <div style="font-size:13px;color:#c9b89e">今日 <span style="color:#fff;font-weight:700" id="cmp-paid-today">—</span> / 7日 <span style="color:#fff;font-weight:700" id="cmp-paid-week">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 熱賣 SKU + VIP 客人 兩欄 -->
+  <div class="section grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="section-title" style="margin-top:0">🔥 過去 7 天熱賣 SKU</div>
+      <div id="hot-skus"><div class="loading">載入中...</div></div>
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-top:0">⭐ VIP 候選客戶</div>
+      <div id="vip-list"><div class="loading">載入中...</div></div>
+    </div>
+  </div>
+
+  <!-- 商品庫存表 -->
+  <div class="section">
+    <div class="section-title">🛍️ 商品庫存 (Top 10)</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table id="prod-table">
+        <thead><tr><th>商品</th><th>價格</th><th>庫存</th><th>狀態</th></tr></thead>
+        <tbody><tr><td colspan="4" class="loading">載入中...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 進行中促銷 -->
+  <div class="section">
+    <div class="section-title">🎯 進行中促銷</div>
+    <div class="card" id="promo-box"><div class="loading">載入中...</div></div>
+  </div>
+
+  <!-- HANA 棄單 -->
+  <div class="section">
+    <div class="section-title">⏰ HANA 棄單佇列(超過 30 分鐘未付)</div>
+    <div class="card" id="abandoned-box"><div class="loading">載入中...</div></div>
+  </div>
+
+  <p class="ts" id="ts-stamp" style="text-align:center;margin-top:30px"></p>
+</div>
+
+<script>
+function fmtNum(n){return (n||0).toLocaleString()}
+function esc(s){return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+async function loadAll(){
+  document.getElementById('status-pill').textContent='● 載入中';
+  document.getElementById('status-pill').className='pill';
+  try{
+    const [brief, abandoned] = await Promise.all([
+      fetch('/api/shopline-polling/team-brief').then(r=>r.json()),
+      fetch('/api/shopline-polling/poll-abandoned').then(r=>r.json())
+    ]);
+    if(!brief.ok){throw new Error(brief.error||'team-brief 失敗')}
+    render(brief, abandoned);
+    document.getElementById('status-pill').textContent='● 即時數據';
+    document.getElementById('status-pill').className='pill live';
+    document.getElementById('ts-stamp').textContent='更新時間: '+new Date(brief.generated_at).toLocaleString('zh-TW');
+  }catch(e){
+    document.getElementById('status-pill').textContent='⚠ 載入失敗: '+e.message;
+    document.getElementById('status-pill').className='pill warn';
+  }
+}
+
+function render(b, ab){
+  // KPI row
+  document.getElementById('kpi-today-count').textContent=fmtNum(b.today.count);
+  document.getElementById('kpi-today-revenue').textContent=fmtNum(b.today.revenue);
+  document.getElementById('kpi-today-paid').textContent=fmtNum(b.today.paid);
+  document.getElementById('kpi-customers').textContent=fmtNum(b.customer_count);
+  // Comparison
+  document.getElementById('cmp-orders-today').textContent=fmtNum(b.today.count);
+  document.getElementById('cmp-orders-week').textContent=fmtNum(b.week.count);
+  document.getElementById('cmp-rev-today').textContent=fmtNum(b.today.revenue);
+  document.getElementById('cmp-rev-week').textContent=fmtNum(b.week.revenue);
+  document.getElementById('cmp-paid-today').textContent=fmtNum(b.today.paid);
+  document.getElementById('cmp-paid-week').textContent=fmtNum(b.week.paid);
+  // Hot SKUs (use week)
+  const skus = b.week.top_skus || [];
+  const skuHtml = skus.length === 0
+    ? '<div class="empty">過去 7 天無熱賣資料</div>'
+    : (()=>{ const max=Math.max(...skus.map(s=>s[1])); return skus.map(([name,qty])=>`<div class="sku-row"><div style="flex:1;padding-right:10px"><div>${esc(name)}</div><div class="sku-bar"><div class="sku-bar-fill" style="width:${(qty/max*100).toFixed(0)}%"></div></div></div><div style="font-weight:700;color:#fff;margin-left:10px;min-width:40px;text-align:right">×${qty}</div></div>`).join('') })();
+  document.getElementById('hot-skus').innerHTML = skuHtml;
+  // VIP candidates
+  const vips = b.vip_candidates || [];
+  const vipHtml = vips.length === 0
+    ? '<div class="empty">尚無客戶資料</div>'
+    : vips.map(c=>`<div class="sku-row"><div><div style="color:#fff;font-weight:600">${esc(c.name)||'(no name)'}</div><div class="ts">${esc(c.email||c.phone||'-')}</div></div></div>`).join('');
+  document.getElementById('vip-list').innerHTML = vipHtml;
+  // Products
+  const prods = b.top_products || [];
+  const prodHtml = prods.length === 0
+    ? '<tr><td colspan="4" class="empty">無商品資料</td></tr>'
+    : prods.map(p=>{
+        const stockColor = p.stock != null && p.stock < 10 ? '#ff9c6b' : '#3ddc84';
+        const statusColor = p.status === 'active' ? 'seg-active' : p.status === 'draft' ? 'seg-new' : 'seg-atrisk';
+        return `<tr><td>${esc(p.title)}</td><td>NT$${p.price||'-'}</td><td style="color:${stockColor};font-weight:600">${p.stock!=null?p.stock:'∞'}</td><td><span class="${statusColor}">${esc(p.status||'?')}</span></td></tr>`;
+      }).join('');
+  document.querySelector('#prod-table tbody').innerHTML = prodHtml;
+  // Promotions
+  const proms = b.active_promotions || [];
+  document.getElementById('promo-box').innerHTML = proms.length === 0
+    ? '<div class="empty">目前沒有進行中的促銷活動</div>'
+    : '<div class="grid grid-3">' + proms.map(p=>`<div style="background:rgba(176,141,87,.12);border:1px solid rgba(176,141,87,.28);padding:14px 16px;border-radius:10px"><div style="color:#fff;font-weight:600;margin-bottom:4px">${esc(p.name)||'(無名稱)'}</div>${p.discount?`<div style="color:#9bcdb1;font-size:13px">折扣: ${esc(p.discount)}%</div>`:''}${p.code?`<div class="ts">code: ${esc(p.code)}</div>`:''}</div>`).join('') + '</div>';
+  // Abandoned
+  if (!ab.ok) {
+    document.getElementById('abandoned-box').innerHTML = '<div class="empty">棄單佇列載入失敗</div>';
+  } else if (!ab.abandoned || ab.abandoned.length === 0) {
+    document.getElementById('abandoned-box').innerHTML = `<div class="empty">✅ 沒有棄單!掃了 ${ab.total_checked||0} 筆訂單,全部都正常處理中</div>`;
+  } else {
+    document.getElementById('abandoned-box').innerHTML = '<table><thead><tr><th>訂單編號</th><th>客人</th><th>金額</th><th>棄置時長</th><th>聯絡方式</th></tr></thead><tbody>' +
+      ab.abandoned.map(o=>`<tr><td><code style="background:rgba(0,0,0,.28);padding:2px 6px;border-radius:4px;font-size:11px">${esc(o.order_number||o.order_id)}</code></td><td>${esc(o.customer_name)||'(no name)'}</td><td>NT$${fmtNum(o.cart_total)}</td><td><span class="seg-atrisk">${o.minutes_old} 分鐘前</span></td><td class="ts">${esc(o.customer_email||o.customer_phone||'-')}</td></tr>`).join('') + '</tbody></table>';
+  }
+}
+
+loadAll();
+</script>
+</body>
+</html>
