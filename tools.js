@@ -251,7 +251,7 @@ const TOOL_DEFINITIONS = {
   },
 
   // ── (1) 讀自家 FB + IG 歷史貼文 + 互動數 (學成功公式) ──
-  get_shopline_brief: { category: "read", description: "拿溫點 WarmPlace 即時 Shopline 商業 brief: 今日/7日訂單摘要 + 熱賣 SKU + VIP 客人 + 商品庫存 + 進行中促銷. 寫策略/早報/客人應對前先 call.", input_schema: { type: "object", properties: {} } }, get_meta_posts: {
+  get_offline_reports: { description: 'Query offline reports center: aggregated stats from manually uploaded branch/department reports (revenue, problems, action items, reviews). Returns 30-day report count, total revenue, recent problem points, and brief of recent 5 reports. Use this to discuss branch performance, recurring issues, and operational feedback from the team.', input_schema: { type: 'object', properties: {} } }, get_shopline_brief: { category: "read", description: "拿溫點 WarmPlace 即時 Shopline 商業 brief: 今日/7日訂單摘要 + 熱賣 SKU + VIP 客人 + 商品庫存 + 進行中促銷. 寫策略/早報/客人應對前先 call.", input_schema: { type: "object", properties: {} } }, get_meta_posts: {
     category: "read",
     description: "抓 溫點 WarmPlace 自己 FB Page + IG 最近 N 篇貼文 + 互動數 (讚/留言/分享). 用來分析哪種文案/視覺/題材成效最好, 學成功公式. 寫新內容前先 call 一次.",
     input_schema: {
