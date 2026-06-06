@@ -106,28 +106,7 @@ details[open] summary{margin-bottom:10px}
     <div class="card"><div class="section-title" style="margin-top:0">✅ 行動項目</div><div id="action-list"></div></div>
   </div>
   <div class="section"><div class="section-title">📑 最近 20 份報告</div><div id="reports-list"></div></div>
-  <div class="section">
-    <!--MF_START--><details style="display:none" id="manual-form">
-      <summary style="display:none">manual</summary>
-      <div class="card" style="margin-top:14px">
-        <div class="grid grid-3" style="margin-bottom:12px">
-          <div><label>類型</label><select id="f-type"><option value="daily">日報</option><option value="weekly">週報</option><option value="event">活動檢討</option><option value="problem">問題回報</option><option value="other">其他</option></select></div>
-          <div><label>日期</label><input type="date" id="f-date"></div>
-          <div><label>門市/部門</label><input type="text" id="f-branch" placeholder="例:台南樹林總店"></div>
-        </div>
-        <div class="grid grid-3" style="margin-bottom:12px">
-          <div><label>填寫人</label><input type="text" id="f-author" placeholder="姓名"></div>
-          <div><label>當日營收</label><input type="number" id="f-revenue" placeholder="0"></div>
-          <div><label>訂單數</label><input type="number" id="f-orders" placeholder="0"></div>
-        </div>
-        <div style="margin-bottom:12px"><label>問題點 (換行分隔)</label><textarea id="f-problems"></textarea></div>
-        <div style="margin-bottom:12px"><label>檢討/觀察</label><textarea id="f-review"></textarea></div>
-        <div style="margin-bottom:12px"><label>行動項目 (換行分隔)</label><textarea id="f-action"></textarea></div>
-        <div style="margin-bottom:12px"><label>備註</label><textarea id="f-notes"></textarea></div>
-        <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-secondary" onclick="clearForm()">清空</button><button class="btn" onclick="submitReport()">📤 送出</button></div>
-      </div>
-    </details>
-  </div>
+  
   <p class="ts" id="ts-stamp" style="text-align:center;margin-top:30px"></p>
 </div>
 <div class="toast" id="toast"></div>
