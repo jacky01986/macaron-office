@@ -52,7 +52,7 @@ router.post('/upload-file', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ ok: false, error: '沒有檔案' });
     const filePath = req.file.path;
-    const origName = req.file.originalname;
+    const origName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
     const ext = (path.extname(origName) || '').toLowerCase();
     const mime = (req.file.mimetype || '').toLowerCase();
     let messages, preview = '';
@@ -174,8 +174,8 @@ function buildSummaryForAI() {
   const all = loadAll();
   const now = Date.now();
   const day = 86400000;
-  const d30 = all.filter(r => (now - new Date(r.report_date).getTime()) <= 30 * day);
-  const d7 = all.filter(r => (now - new Date(r.report_date).getTime()) <= 7 * day);
+  const d90 = all.filter(r => (now - new Date(r.report_date).getTime()) <= 90 * day); const d30 = all;
+  const d7 = all.filter(r => (now - new Date(r.report_date).getTime()) <= 7 * day); const d90n = d90;
   const revenue_30 = d30.reduce((s, r) => s + (Number(r.revenue) || 0), 0);
   const revenue_7 = d7.reduce((s, r) => s + (Number(r.revenue) || 0), 0);
   const recent_problems = [];
