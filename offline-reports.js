@@ -199,12 +199,35 @@ function buildSummaryForAI() {
     branchMap[b].revenue += Number(r.revenue) || 0;
     if (r.problems) branchMap[b].problems++;
   });
-  const by_branch = Object.values(branchMap).sort((a, b) => b.revenue - a.revenue);
+  const by_branch = Object.values(branchMap).sort((a, b) => b.revenue - a.revenue); by_branch.forEach(br => { const mm = {}; (br.reports||[]).forEach(r => { const m = (r.date||"").slice(0,7); if (!m) return; if (!mm[m]) mm[m] = { month: m, revenue: 0, orders: 0, count: 0, problems_count: 0, problems: [], actions: [] }; mm[m].revenue += Number(r.revenue)||0; mm[m].orders += Number(r.orders)||0; mm[m].count++; if (r.problems) { r.problems.split("
+").filter(Boolean).forEach(p => { mm[m].problems.push(p.trim()); mm[m].problems_count++; }); } if (r.action_items) r.action_items.split("
+").filter(Boolean).forEach(a => mm[m].actions.push(a.trim())); }); br.by_month = Object.values(mm).sort((a,b) => b.month.localeCompare(a.month)); });
   const recent_reports_brief = all.slice(-5).reverse().map(r => ({ date: r.report_date, branch: r.branch, summary: r.summary || (r.review || '').slice(0, 80), revenue: r.revenue }));
   return { ok: true, generated_at: new Date().toISOString(), total_reports: all.length, recent_30: d30.length, recent_7: d7.length, revenue_30, revenue_7, problem_count: recent_problems.length, recent_problems: recent_problems.slice(0, 15), action_items, revenue_trend: trend, by_branch, recent_reports_brief };
 }
 
-router.get('/summary', (req, res) => {
+router.get('/branch-analysis/:branch', async (req, res) => { try { const wantedBranch = decodeURIComponent(req.params.branch); const all = loadAll().filter(r => r.branch === wantedBranch); if (all.length === 0) return res.status(404).json({ ok:false, error: '無此門市報告' }); const byMonth = {}; all.forEach(r => { const m = (r.report_date||'').slice(0,7); if (!byMonth[m]) byMonth[m] = { month:m, revenue:0, orders:0, count:0, problems:[], reviews:[], actions:[] }; byMonth[m].revenue += Number(r.revenue)||0; byMonth[m].orders += Number(r.orders)||0; byMonth[m].count++; if (r.problems) r.problems.split('
+').filter(Boolean).forEach(p => byMonth[m].problems.push(p.trim())); if (r.review) byMonth[m].reviews.push(r.review.slice(0,200)); if (r.action_items) r.action_items.split('
+').filter(Boolean).forEach(a => byMonth[m].actions.push(a.trim())); }); const monthList = Object.values(byMonth).sort((a,b) => b.month.localeCompare(a.month)); const totalRev = all.reduce((s,r) => s+(Number(r.revenue)||0), 0); const totalOrd = all.reduce((s,r) => s+(Number(r.orders)||0), 0); const allProblems = all.flatMap(r => (r.problems||'').split('
+').filter(Boolean).map(p => p.trim())); const allActions = all.flatMap(r => (r.action_items||'').split('
+').filter(Boolean).map(a => a.trim())); const allReviews = all.map(r => r.review).filter(Boolean); const ctx = '門市:' + wantedBranch + '
+累計營收:NT$' + totalRev.toLocaleString() + ' / 訂單' + totalOrd + ' / ' + all.length + ' 份報告
+
+月份明細:
+' + monthList.map(m => '【' + m.month + '】NT$' + m.revenue.toLocaleString() + ' / ' + m.orders + ' 單 / ' + m.count + ' 份報告 / 問題' + m.problems.length + ' 件').join('
+') + '
+
+所有問題點:
+' + allProblems.map(p => '• ' + p).join('
+') + '
+
+所有檢討觀察:
+' + allReviews.map(r => '• ' + r).join('
+') + '
+
+現有行動項目:
+' + allActions.map(a => '• ' + a).join('
+'); const sys = '你是溫點 WarmPlace 烘焙坊的資深營運顧問。針對單一門市的線下報告做深度分析。回傳純 JSON,不要 markdown 標記,欄位:{"executive_summary":"3-5句執行摘要","monthly_trend_analysis":"逐月營收/訂單趨勢評析(150字內)","top_issues":[{"issue":"問題描述","severity":"high|medium|low","root_cause":"根本原因推斷"}],"recommendations":[{"priority":"P1|P2|P3","title":"建議標題","detail":"具體做法(80字內)","expected_impact":"預期效益"}],"quick_wins":["立刻可做的小改善","..."],"watch_outs":["需注意的風險"]}'; const result = await anthropic.messages.create({ model: 'claude-sonnet-4-5', max_tokens: 3000, system: sys, messages: [{ role: 'user', content: ctx }] }); const respText = (result.content||[]).map(c => c.text||'').join(''); let analysis = {}; try { const m = respText.match(/\{[\s\S]*\}/); if (m) analysis = JSON.parse(m[0]); } catch(e) { analysis = { _raw: respText.slice(0,500), _err: e.message }; } res.json({ ok:true, branch: wantedBranch, total_revenue: totalRev, total_orders: totalOrd, report_count: all.length, by_month: monthList, analysis }); } catch (e) { console.error('[offline-reports] branch-analysis err', e); res.status(500).json({ ok:false, error: e.message }); } }); router.get('/summary', (req, res) => {
   try { res.json(buildSummaryForAI()); } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
