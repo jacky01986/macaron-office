@@ -146,7 +146,7 @@ async function uploadFile(file){
     $('proc-msg').textContent='AI 讀取中… (10-30 秒)';
     const r=await fetch('/api/offline-reports/upload-file',{method:'POST',body:fd});const d=await r.json();
     $('proc-banner').classList.remove('show');
-    if(!d.ok)throw new Error(d.error);toast('✅ 已分析存入');await loadAll();
+    if(!d.ok)throw new Error(d.error);toast('✅ 已分析存入');await async function reanalyzeAll(){ if(!confirm('AI 將重讀所有 Excel/CSV 並逐日展開,每份檔案約 30-60 秒,需 2-5 分鐘。期間請勿關閉頁面。確定?')) return; toast('🔄 全部重新分析中…可能需數分鐘',false,true); try{ const r=await fetch('/api/offline-reports/reanalyze-all',{method:'POST'}); const d=await r.json(); if(!d.ok) throw new Error(d.error||'failed'); const x=d.results; toast('✅ 完成:展開 '+x.expanded+' 份 / 跳過 '+x.skipped+' 份 / 錯誤 '+x.errors.length+' 份'); await loadAll(); }catch(e){toast('❌ '+e.message,true);} } loadAll();
   }catch(e){$('proc-banner').classList.remove('show');toast('❌ '+e.message,true);}
 }
 async function loadAll(){
@@ -165,19 +165,19 @@ function renderUploads(ups){
 async function deleteUpload(uploadId,count){
   if(!confirm('確定刪除此檔案及其 '+count+' 筆紀錄?無法復原'))return;
   try{const r=await fetch('/api/offline-reports/upload/'+uploadId,{method:'DELETE'});const d=await r.json();
-    if(!d.ok)throw new Error(d.error);toast('✅ 已刪除 '+d.removed_count+' 筆');await loadAll();
+    if(!d.ok)throw new Error(d.error);toast('✅ 已刪除 '+d.removed_count+' 筆');await async function reanalyzeAll(){ if(!confirm('AI 將重讀所有 Excel/CSV 並逐日展開,每份檔案約 30-60 秒,需 2-5 分鐘。期間請勿關閉頁面。確定?')) return; toast('🔄 全部重新分析中…可能需數分鐘',false,true); try{ const r=await fetch('/api/offline-reports/reanalyze-all',{method:'POST'}); const d=await r.json(); if(!d.ok) throw new Error(d.error||'failed'); const x=d.results; toast('✅ 完成:展開 '+x.expanded+' 份 / 跳過 '+x.skipped+' 份 / 錯誤 '+x.errors.length+' 份'); await loadAll(); }catch(e){toast('❌ '+e.message,true);} } loadAll();
   }catch(e){toast('❌ '+e.message,true);}
 }
 async function reanalyzeReport(id){
   if(!confirm('重讀此檔案並展開為每日紀錄,需 30-60 秒,確定?'))return;
   toast('🔄 AI 展開中…',false,true);
   try{const r=await fetch('/api/offline-reports/reanalyze/'+id,{method:'POST'});const d=await r.json();
-    if(!d.ok)throw new Error(d.error);toast('✅ 展開為 '+d.expanded_to+' 筆每日');await loadAll();
+    if(!d.ok)throw new Error(d.error);toast('✅ 展開為 '+d.expanded_to+' 筆每日');await async function reanalyzeAll(){ if(!confirm('AI 將重讀所有 Excel/CSV 並逐日展開,每份檔案約 30-60 秒,需 2-5 分鐘。期間請勿關閉頁面。確定?')) return; toast('🔄 全部重新分析中…可能需數分鐘',false,true); try{ const r=await fetch('/api/offline-reports/reanalyze-all',{method:'POST'}); const d=await r.json(); if(!d.ok) throw new Error(d.error||'failed'); const x=d.results; toast('✅ 完成:展開 '+x.expanded+' 份 / 跳過 '+x.skipped+' 份 / 錯誤 '+x.errors.length+' 份'); await loadAll(); }catch(e){toast('❌ '+e.message,true);} } loadAll();
   }catch(e){toast('❌ '+e.message,true);}
 }
 async function saveTarget(branch,month,value,el){
   try{el.disabled=true;const r=await fetch('/api/offline-reports/targets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({branch,month,target:Number(value)||0})});const d=await r.json();
-    if(!d.ok)throw new Error(d.error);toast('✅ 目標已存');await loadAll();
+    if(!d.ok)throw new Error(d.error);toast('✅ 目標已存');await async function reanalyzeAll(){ if(!confirm('AI 將重讀所有 Excel/CSV 並逐日展開,每份檔案約 30-60 秒,需 2-5 分鐘。期間請勿關閉頁面。確定?')) return; toast('🔄 全部重新分析中…可能需數分鐘',false,true); try{ const r=await fetch('/api/offline-reports/reanalyze-all',{method:'POST'}); const d=await r.json(); if(!d.ok) throw new Error(d.error||'failed'); const x=d.results; toast('✅ 完成:展開 '+x.expanded+' 份 / 跳過 '+x.skipped+' 份 / 錯誤 '+x.errors.length+' 份'); await loadAll(); }catch(e){toast('❌ '+e.message,true);} } loadAll();
   }catch(e){toast('❌ '+e.message,true);el.disabled=false;}
 }
 function renderSummary(s){
@@ -261,7 +261,7 @@ async function getAnalysis(scope,btn,targetSlot,branchEnc,extra){
     btn.innerHTML=orig;btn.disabled=false;toast('✅ 分析完成');
   }catch(e){toast('❌ '+e.message,true);btn.innerHTML=orig;btn.disabled=false;}
 }
-loadAll();
+async function reanalyzeAll(){ if(!confirm('AI 將重讀所有 Excel/CSV 並逐日展開,每份檔案約 30-60 秒,需 2-5 分鐘。期間請勿關閉頁面。確定?')) return; toast('🔄 全部重新分析中…可能需數分鐘',false,true); try{ const r=await fetch('/api/offline-reports/reanalyze-all',{method:'POST'}); const d=await r.json(); if(!d.ok) throw new Error(d.error||'failed'); const x=d.results; toast('✅ 完成:展開 '+x.expanded+' 份 / 跳過 '+x.skipped+' 份 / 錯誤 '+x.errors.length+' 份'); await loadAll(); }catch(e){toast('❌ '+e.message,true);} } loadAll();
 </script>
 </body>
 </html>
