@@ -284,6 +284,18 @@ router.get('/summary', (req, res) => {
 // ---- branch analysis ----
 const BRANCH_ANALYSIS_SYS = "你是溫點 WarmPlace 烘焙坊的資深營運顧問。針對單一門市的線下報告做深度分析。只回傳純 JSON,絕對不要 markdown 標記。欄位:{\"executive_summary\":\"3-5句執行摘要\",\"monthly_trend_analysis\":\"逐月營收/訂單/目標達成趨勢評析(150字內)\",\"top_issues\":[{\"issue\":\"問題描述\",\"severity\":\"high|medium|low\",\"root_cause\":\"根本原因推斷\"}],\"recommendations\":[{\"priority\":\"P1|P2|P3\",\"title\":\"建議標題\",\"detail\":\"具體做法(80字內)\",\"expected_impact\":\"預期效益\"}],\"quick_wins\":[\"立刻可做\"],\"watch_outs\":[\"需注意的風險\"]}";
 
+router.get('/branch-source-aggregate/:branch', async (req, res) => { try { const wantedBranch = decodeURIComponent(req.params.branch); const all = loadAll().filter(r => r.branch === wantedBranch); if (all.length === 0) return res.status(404).json({ ok:false, error:'無此門市' }); const blocks = []; for (const r of all) { let content = ''; const attUrl = r.attachment_url || ''; const fname = attUrl ? path.basename(attUrl) : null; const fpath = fname ? path.join(UPLOADS_DIR, fname) : null; if (fpath && fs.existsSync(fpath)) { const ext = (path.extname(r.source_file||'')||'').toLowerCase(); try { if (ext === '.xlsx' || ext === '.xls') { const wb = new ExcelJS.Workbook(); await wb.xlsx.readFile(fpath); const rows = []; wb.eachSheet(sheet => { rows.push('=== ' + sheet.name + ' ==='); sheet.eachRow(row => { rows.push((row.values||[]).slice(1).map(v => (v===null||v===undefined)?'':String(v)).join('	')); }); }); content = rows.join('
+').slice(0, 18000); } else if (ext === '.csv' || ext === '.txt' || ext === '.md') { content = fs.readFileSync(fpath, 'utf8').slice(0, 18000); } else { content = '(非文字檔: ' + ext + ' — 用記錄摘要)'; } } catch(e) { content = '(讀檔錯: ' + e.message + ')'; } } blocks.push('=== 報告 ' + r.report_date + ' / 檔案 ' + (r.source_file||'手填') + ' ===
+摘要: ' + (r.summary||'') + '
+原始內容:
+' + (content || '(無原始檔)') + '
+總營收(報告填寫): NT$' + r.revenue + ' / 訂單 ' + (r.orders||0)); } const ctx = '門市: ' + wantedBranch + '
+以下是該門市所有上傳的報告原始內容 (含 Excel 每日列表)。請逐日萃取營收、按月份結算。
+
+' + blocks.join('
+
+').slice(0, 80000); const sys = '你是溫點 WarmPlace 烘焙坊的會計總監。從原始報告(尤其是 Excel)逐日萃取營收紀錄,再按月份結算。只回傳純 JSON,不要 markdown 標記。欄位:{"months":[{"month":"YYYY-MM","revenue":數字,"orders":數字,"days_with_data":數字,"best_day":{"date":"YYYY-MM-DD","revenue":數字},"worst_day":{"date":"YYYY-MM-DD","revenue":數字},"avg_daily_revenue":數字,"notes":"該月觀察(30字內)"}],"total_revenue":數字,"total_orders":數字,"total_days":數字,"summary":"整體月份結算的 3-5 句總結","best_month":{"month":"YYYY-MM","revenue":數字},"worst_month":{"month":"YYYY-MM","revenue":數字},"key_findings":["發現1","發現2"]}'; const result = await anthropic.messages.create({ model:'claude-sonnet-4-5', max_tokens:4096, system:sys, messages:[{role:'user',content:ctx}] }); const respText = (result.content||[]).map(c=>c.text||'').join(''); let aggregate = {}; try { const m = respText.match(/\{[\s\S]*\}/); if (m) aggregate = JSON.parse(m[0]); } catch(e) { aggregate = { _raw: respText.slice(0,500), _err: e.message }; } res.json({ ok:true, branch: wantedBranch, source_reports: all.length, aggregate }); } catch(e) { console.error('[offline-reports] source-aggregate err', e); res.status(500).json({ ok:false, error: e.message }); } });
+
 router.get('/branch-analysis/:branch', async (req, res) => {
   try {
     const wantedBranch = decodeURIComponent(req.params.branch);
