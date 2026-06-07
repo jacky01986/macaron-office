@@ -310,6 +310,15 @@ function registerCron(cron) {
   console.log('[offline-reports] cron registered: 0 8 * * * Asia/Taipei');
 }
 
+const REANALYZE_SYS = '逐日萃取營收。回傳純 JSON,不要 markdown。欄位:{"daily":[{"date":"YYYY-MM-DD","revenue":數字,"orders":數字,"notes":"當日備註30字內"}]}。若報告有月份標頭,推斷該月起訖。所有抓到的日期都要列出,不要省略。'; router.post('/reanalyze/:id', async (req, res) => { try { const all = loadAll(); const idx = all.findIndex(r => r.id === req.params.id); if (idx < 0) return res.status(404).json({ ok:false, error:'找不到報告' }); const orig = all[idx]; if (!orig.attachment_url) return res.status(400).json({ ok:false, error:'無原始檔可重新分析' }); const fpath = path.join(UPLOADS_DIR, path.basename(orig.attachment_url)); if (!fs.existsSync(fpath)) return res.status(400).json({ ok:false, error:'原始檔不存在' }); const ext = (path.extname(orig.source_file || '') || '').toLowerCase(); let content = ''; if (ext === '.xlsx' || ext === '.xls') { const wb = new ExcelJS.Workbook(); await wb.xlsx.readFile(fpath); const rows = []; wb.eachSheet(sheet => { rows.push('=== ' + sheet.name + ' ==='); sheet.eachRow(row => { rows.push((row.values||[]).slice(1).map(v => (v===null||v===undefined)?'':String(v)).join('	')); }); }); content = rows.join('
+').slice(0, 30000); } else if (ext === '.csv' || ext === '.txt' || ext === '.md') { content = fs.readFileSync(fpath, 'utf8').slice(0, 30000); } else { return res.status(400).json({ ok:false, error:'此檔案類型(' + ext + ')無法逐日展開' }); } const result = await anthropic.messages.create({ model:'claude-sonnet-4-5', max_tokens:4096, system: REANALYZE_SYS, messages:[{ role:'user', content: '門市: ' + (orig.branch||'') + '
+原始檔: ' + (orig.source_file||'') + '
+
+內容:
+' + content }] }); const respText = (result.content||[]).map(c=>c.text||'').join(''); let parsed = {}; try { const m = respText.match(/\{[\s\S]*\}/); if (m) parsed = JSON.parse(m[0]); } catch(e) { return res.status(500).json({ ok:false, error:'解析失敗: ' + e.message, raw: respText.slice(0,200) }); } const days = Array.isArray(parsed.daily) ? parsed.daily : []; if (days.length === 0) return res.status(400).json({ ok:false, error:'Claude 沒有抽出任何日記錄' }); all.splice(idx, 1); const newRecords = days.map((d, i) => ({ id: genId(), ts: new Date().toISOString(), report_date: (d.date && /^\d{4}-\d{2}-\d{2}$/.test(d.date)) ? d.date : orig.report_date, type: 'daily', branch: orig.branch, author: orig.author || '', revenue: Number(d.revenue)||0, orders: Number(d.orders)||0, problems: '', review: '', action_items: '', notes: d.notes || '', summary: '', source_file: orig.source_file + ' [展開 ' + (i+1) + '/' + days.length + ']', source_size: orig.source_size, source_mime: orig.source_mime, attachment_url: orig.attachment_url, expanded_from: orig.id })); fs.writeFileSync(REPORTS_FILE, all.concat(newRecords).map(r => JSON.stringify(r)).join('
+') + '
+'); res.json({ ok:true, expanded_to: days.length, sample: days.slice(0,3) }); } catch(e) { console.error('[offline-reports] reanalyze err', e); res.status(500).json({ ok:false, error: e.message }); } });
+
 module.exports = router;
 module.exports.buildSummaryForAI = buildSummaryForAI;
 module.exports.sendDailyDigestToTelegram = sendDailyDigestToTelegram;
