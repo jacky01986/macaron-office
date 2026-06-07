@@ -145,7 +145,7 @@ router.post('/reanalyze/:id', async (req, res) => {
     } else if (ext === '.csv' || ext === '.txt' || ext === '.md') { content = fs.readFileSync(fpath, 'utf8').slice(0, 30000); }
     else { return res.status(400).json({ ok: false, error: '此檔案類型無法逐日展開: ' + ext }); }
 
-    const result = await anthropic.messages.create({ model: 'claude-sonnet-4-5', max_tokens: 4096, system: REANALYZE_SYS, messages: [{ role: 'user', content: '門市: ' + (orig.branch || '') + '\n原始檔: ' + (orig.source_file || '') + '\n\n內容:\n' + content }] });
+    const result = await anthropic.messages.create({ model: 'claude-sonnet-4-5', max_tokens: 8192, system: REANALYZE_SYS, messages: [{ role: 'user', content: '門市: ' + (orig.branch || '') + '\n原始檔: ' + (orig.source_file || '') + '\n\n內容:\n' + content }] });
     const respText = (result.content || []).map(c => c.text || '').join('');
     let parsed = {};
     try { const m = respText.match(/\{[\s\S]*\}/); if (m) parsed = JSON.parse(m[0]); }
