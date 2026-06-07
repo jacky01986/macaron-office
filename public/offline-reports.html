@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>📋 線下報告中心 · 溫點 WarmPlace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/macaron-shared.css">
+<style>
+body{margin:0;padding:24px;background:transparent;color:#f4e8d4;font-family:'Noto Sans TC','PingFang TC',sans-serif;line-height:1.5}
+.wrap{max-width:1200px;margin:0 auto}
+h1{font-size:26px;margin:0 0 6px;color:#fff;display:flex;align-items:center;gap:12px}
+.subtitle{color:#c9b89e;font-size:13px;margin:0 0 24px}
+.grid{display:grid;gap:16px}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.grid-4{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.grid-4{grid-template-columns:1fr}}
+.card{background:linear-gradient(135deg,rgba(94,42,58,.45),rgba(58,21,33,.35));border:1px solid rgba(176,141,87,.32);border-radius:16px;padding:20px 22px}
+.section{margin-top:28px}
+.section-title{font-size:18px;color:#f4e8d4;margin:0 0 14px;display:flex;align-items:center;gap:10px;border-left:4px solid #B08D57;padding-left:10px}
+.stat-card{text-align:center}.stat-card .label{color:#d9c4a3;font-size:12px;letter-spacing:1px;margin-bottom:6px}.stat-card .value{font-size:30px;font-weight:700;color:#fff;line-height:1.1}
+.pill{display:inline-block;background:rgba(176,141,87,.18);border:1px solid rgba(176,141,87,.35);color:#f4e8d4;border-radius:12px;padding:2px 8px;font-size:11px;margin-right:4px}
+.pill.daily{background:rgba(61,220,132,.18);border-color:rgba(61,220,132,.42);color:#9bcdb1}
+.pill.weekly{background:rgba(66,133,244,.18);border-color:rgba(66,133,244,.42);color:#aac8ff}
+.pill.high{background:rgba(255,107,107,.2);border-color:rgba(255,107,107,.5);color:#ffb3b3}
+.pill.medium{background:rgba(255,184,107,.2);border-color:rgba(255,184,107,.5);color:#ffd59b}
+.pill.low{background:rgba(61,220,132,.15);border-color:rgba(61,220,132,.4);color:#9bcdb1}
+.pill.p1{background:rgba(255,107,107,.2);border-color:rgba(255,107,107,.5);color:#ffb3b3}
+.pill.p2{background:rgba(255,184,107,.2);border-color:rgba(255,184,107,.5);color:#ffd59b}
+.pill.p3{background:rgba(170,200,255,.15);border-color:rgba(170,200,255,.4);color:#aac8ff}
+.empty{color:#9c8973;font-size:13px;font-style:italic;padding:24px;text-align:center;background:rgba(0,0,0,.18);border-radius:10px;border:1px dashed rgba(176,141,87,.22)}
+.toast{position:fixed;top:24px;right:24px;background:linear-gradient(135deg,#3ddc84,#2b9c5e);color:#0a2a16;padding:14px 22px;border-radius:12px;font-weight:600;display:none;z-index:1000;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.toast.error{background:linear-gradient(135deg,#ff6b6b,#c5424a);color:#fff}.toast.show{display:block}
+.nav-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.nav-tab{background:rgba(0,0,0,.28);border:1px solid rgba(176,141,87,.22);color:#e4d6bc;padding:8px 14px;border-radius:10px;text-decoration:none;font-size:13px;cursor:pointer}
+.trend-bar{display:flex;align-items:end;gap:4px;height:80px;margin-top:8px}
+.trend-bar > div{flex:1;background:linear-gradient(180deg,#d4a87e,#B08D57);border-radius:4px 4px 0 0;min-height:4px;position:relative}
+.trend-bar .lbl{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:#9c8973;white-space:nowrap}
+.ts{font-size:11px;color:#9c8973}
+details{background:rgba(0,0,0,.18);border:1px solid rgba(176,141,87,.22);border-radius:10px;padding:10px 14px;margin-bottom:8px}
+summary{cursor:pointer;color:#f4e8d4;font-weight:600;font-size:14px}
+details[open] summary{margin-bottom:10px}
+.dropzone{border:2.5px dashed rgba(176,141,87,.55);border-radius:18px;padding:48px 28px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(0,0,0,.16)}
+.dropzone:hover,.dropzone.drag{border-color:#d4a87e;background:rgba(212,168,126,.08)}
+.dropzone .ic{font-size:54px;margin-bottom:8px}
+.dropzone .big{color:#fff;font-size:18px;font-weight:600;margin:4px 0}
+.dropzone .sub{color:#c9b89e;font-size:13px}
+#file-input{display:none}
+.process-banner{background:linear-gradient(135deg,rgba(66,133,244,.2),rgba(66,133,244,.1));border:1px solid rgba(66,133,244,.4);padding:14px 18px;border-radius:12px;margin-top:14px;display:none;align-items:center;gap:12px;color:#aac8ff}
+.process-banner.show{display:flex}
+.spinner{width:18px;height:18px;border:2px solid rgba(170,200,255,.3);border-top-color:#aac8ff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.result-card{background:linear-gradient(135deg,rgba(61,220,132,.16),rgba(61,220,132,.06));border:1px solid rgba(61,220,132,.4);padding:18px;border-radius:14px;margin-top:14px;display:none}
+.result-card.show{display:block}
+.result-card h3{color:#9bcdb1;margin:0 0 12px;font-size:16px}
+.result-card .kv{display:flex;gap:8px;padding:4px 0;border-bottom:1px dashed rgba(176,141,87,.18);font-size:13px}
+.result-card .kv .k{color:#9c8973;min-width:90px}
+.result-card .kv .v{color:#e4d6bc;flex:1}
+.btn{background:linear-gradient(135deg,#B08D57,#d4a87e);color:#3a1521;border:none;padding:10px 20px;border-radius:20px;font-weight:600;cursor:pointer;font-size:13px}
+.btn-secondary{background:rgba(0,0,0,.28);color:#e4d6bc;border:1px solid rgba(176,141,87,.32)}
+.btn-ai{background:linear-gradient(135deg,#4285f4,#2b6cd4);color:#fff;border:none;padding:10px 16px;border-radius:20px;font-weight:600;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.btn-ai:hover{filter:brightness(1.15)}.btn-ai:disabled{opacity:.5;cursor:wait}
+.branch-card{background:linear-gradient(135deg,rgba(94,42,58,.5),rgba(58,21,33,.35));border:1px solid rgba(176,141,87,.4);border-radius:14px;padding:0;margin-bottom:14px;overflow:hidden}
+.branch-card summary{padding:18px 22px;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.branch-card summary::-webkit-details-marker{display:none}
+.branch-card summary::after{content:'▶';color:#d4a87e;transition:transform .2s;margin-left:8px}
+.branch-card[open] summary::after{transform:rotate(90deg)}
+.bch-head-l{display:flex;flex-direction:column;gap:4px}
+.bch-name{color:#fff;font-size:18px;font-weight:700}
+.bch-meta{color:#c9b89e;font-size:12px}
+.bch-head-r{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.bch-stat{text-align:right}
+.bch-stat .v{color:#fff;font-weight:700;font-size:16px;line-height:1}
+.bch-stat .l{color:#9c8973;font-size:10px;letter-spacing:.5px;text-transform:uppercase}
+.bch-stat.warn .v{color:#ffb3b3}
+.bch-stat.good .v{color:#9bcdb1}
+.bch-stat.bad .v{color:#ffb3b3}
+.branch-card .body{padding:0 22px 18px;border-top:1px solid rgba(176,141,87,.2)}
+.bch-block{margin-top:14px}
+.bch-block h4{margin:0 0 8px;font-size:13px;color:#d4a87e;letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.bch-block .chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.prob-chip{background:rgba(255,107,107,.15);border:1px solid rgba(255,107,107,.3);color:#ffb3b3;padding:5px 10px;border-radius:8px;font-size:12px}
+.action-chip{background:rgba(61,220,132,.12);border:1px solid rgba(61,220,132,.3);color:#9bcdb1;padding:5px 10px;border-radius:8px;font-size:12px}
+.bch-rep{background:rgba(0,0,0,.22);border:1px solid rgba(176,141,87,.18);border-radius:10px;padding:12px 14px;margin-top:8px;font-size:13px}
+.bch-rep .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px}
+.bch-rep .head .lbl{color:#fff;font-weight:600}
+.bch-rep .head .rev{color:#d4a87e;font-weight:600}
+.bch-rep .seg{margin-top:6px;padding-left:8px;border-left:2px solid rgba(176,141,87,.25)}
+.bch-attach{color:#d4a87e;font-size:11px;text-decoration:none}
+.month-table{width:100%;border-collapse:collapse;font-size:12px;background:rgba(0,0,0,.18);border-radius:8px;overflow:hidden}
+.month-table th{background:rgba(176,141,87,.18);text-align:left;padding:8px 8px;color:#d4a87e;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.month-table td{padding:8px 8px;border-top:1px solid rgba(176,141,87,.1);color:#e4d6bc;white-space:nowrap}
+.month-table tr:hover td{background:rgba(176,141,87,.06)}
+.month-table .num{text-align:right;color:#fff;font-weight:600}
+.month-table .warn{color:#ffb3b3}
+.month-table .good{color:#9bcdb1}
+.month-table .meh{color:#ffd59b}
+.month-table .delta-up{color:#9bcdb1}
+.month-table .delta-down{color:#ffb3b3}
+.month-table .target-input{background:rgba(0,0,0,.4);border:1px solid rgba(176,141,87,.3);color:#fff;padding:4px 6px;border-radius:6px;width:90px;font-family:inherit;font-size:12px;text-align:right}
+.month-table .target-input:focus{outline:none;border-color:#d4a87e;background:rgba(0,0,0,.6)}
+.ai-result{background:linear-gradient(135deg,rgba(66,133,244,.12),rgba(66,133,244,.04));border:1px solid rgba(66,133,244,.35);border-radius:12px;padding:14px;margin-top:10px;display:none}
+.ai-result.show{display:block}
+.ai-result h5{margin:14px 0 6px;color:#aac8ff;font-size:13px;letter-spacing:.5px}
+.ai-result h5:first-child{margin-top:0}
+.ai-result .exec{color:#fff;font-size:14px;line-height:1.6;margin:0}
+.ai-result .trend{color:#e4d6bc;font-size:13px}
+.ai-item{background:rgba(0,0,0,.22);border-left:3px solid #4285f4;padding:8px 12px;border-radius:6px;margin-bottom:6px}
+.ai-item .ttl{color:#fff;font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ai-item .det{color:#c9b89e;font-size:12px;margin-top:4px}
+.ai-item .imp{color:#9bcdb1;font-size:11px;margin-top:4px}
+.ai-list{margin:0;padding-left:20px;color:#e4d6bc;font-size:13px}
+.ai-list li{margin-bottom:4px}
+.bar-cell{position:relative;height:18px;background:rgba(0,0,0,.3);border-radius:4px;overflow:hidden;min-width:80px}
+.bar-cell .fill{position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg,#9bcdb1,#3ddc84);transition:width .3s}
+.bar-cell .fill.warn{background:linear-gradient(90deg,#ffd59b,#ff9b3d)}
+.bar-cell .fill.bad{background:linear-gradient(90deg,#ffb3b3,#ff6b6b)}
+.bar-cell .txt{position:absolute;left:0;right:0;top:0;line-height:18px;text-align:center;color:#fff;font-weight:700;font-size:11px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+</style></head>
+<body>
+<div class="wrap">
+  <div><h1>📋 線下報告中心</h1><p class="subtitle">上傳 PDF / 照片 / Excel / Word — AI 自動讀取、結構化、依門市分析建議</p></div>
+  <div class="nav-tabs">
+    <a class="nav-tab" href="/">← 主控台</a>
+  </div>
+  <div class="card">
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+      <div class="ic">📤</div>
+      <div class="big">點擊或拖放檔案到這裡</div>
+      <div class="sub">支援 PDF · 照片 (JPG/PNG) · Excel (XLSX) · Word (DOCX) · CSV · TXT — 最大 25MB</div>
+      <div class="sub" style="margin-top:8px;color:#d4a87e">💡 直接拍門市日報、收據、會議紀錄,AI 會自動讀懂、抓出營收/問題/行動項目</div>
+      <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.xlsx,.xls,.csv,.txt,.md,.docx,image/*,application/pdf">
+    </div>
+    <div class="process-banner" id="proc-banner"><div class="spinner"></div><div><b>AI 分析中…</b> <span id="proc-msg">讀取檔案內容</span></div></div>
+    <div class="result-card" id="result-card"><h3>✅ AI 萃取完成</h3><div id="result-body"></div><div style="margin-top:12px;display:flex;gap:8px"><button class="btn btn-secondary" onclick="hideResult()">關閉</button><button class="btn" onclick="hideResult();window.scrollTo({top:600,behavior:'smooth'})">看儀表板</button></div></div>
+  </div>
+  <div class="section grid grid-4">
+    <div class="card stat-card"><div class="label">報告總數</div><div class="value" id="kpi-count-30">—</div></div>
+    <div class="card stat-card"><div class="label">總營收</div><div class="value">NT$<span id="kpi-rev-30">—</span></div></div>
+    <div class="card stat-card"><div class="label">過去 7 天</div><div class="value"><span id="kpi-count-7">—</span><span style="font-size:14px;color:#c9b89e"> 份</span></div></div>
+    <div class="card stat-card"><div class="label">總問題數</div><div class="value" id="kpi-problems">—</div></div>
+  </div>
+  <div class="section"><div class="card"><div class="section-title" style="margin-top:0">📈 14 日營收趨勢</div><div class="trend-bar" id="trend-bar"></div><div id="trend-empty" style="display:none" class="empty">尚無趨勢資料</div></div></div>
+  <div class="section"><div class="section-title">🏪 各門市詳情(點開查看月明細 + 設定目標 + AI 分析)</div><div id="branch-detail-list"></div></div>
+  <p class="ts" id="ts-stamp" style="text-align:center;margin-top:30px"></p>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmt=n=>(n||0).toLocaleString();
+function toast(msg,err){const t=$('toast');t.textContent=msg;t.className='toast show'+(err?' error':'');setTimeout(()=>t.classList.remove('show'),4500);}
+const dz=$('dropzone');
+['dragenter','dragover'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.add('drag');}));
+['dragleave','drop'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.remove('drag');}));
+dz.addEventListener('drop',ev=>{const f=ev.dataTransfer.files[0];if(f)uploadFile(f);});
+$('file-input').addEventListener('change',ev=>{const f=ev.target.files[0];if(f)uploadFile(f);});
+async function uploadFile(file){
+  if(file.size>25*1024*1024){toast('檔案太大,上限 25MB',true);return;}
+  $('proc-banner').classList.add('show');$('result-card').classList.remove('show');
+  $('proc-msg').textContent='上傳 '+file.name+' ('+(file.size/1024).toFixed(0)+'KB)';
+  try{
+    const fd=new FormData();fd.append('file',file);
+    $('proc-msg').textContent='AI 讀取與萃取中… (約 10-30 秒)';
+    const r=await fetch('/api/offline-reports/upload-file',{method:'POST',body:fd});
+    const d=await r.json();
+    $('proc-banner').classList.remove('show');
+    if(!d.ok)throw new Error(d.error||'upload failed');
+    showResult(d.record);toast('✅ 已分析並存入');await loadAll();
+  }catch(e){$('proc-banner').classList.remove('show');toast('❌ '+e.message,true);}
+}
+function showResult(r){
+  const fields=[['日期',r.report_date],['類型',r.type],['門市',r.branch||'(未填)'],['填寫人',r.author||'(未填)'],['營收','NT$'+fmt(r.revenue)],['訂單',r.orders+' 單'],['一句摘要',r.summary||'(無)'],['問題點',(r.problems||'(無)').slice(0,200)],['檢討',(r.review||'(無)').slice(0,200)],['行動項目',(r.action_items||'(無)').slice(0,200)],['原始檔',r.source_file+' ('+(r.source_size/1024).toFixed(0)+'KB)']];
+  $('result-body').innerHTML=fields.map(([k,v])=>'<div class="kv"><div class="k">'+k+'</div><div class="v">'+esc(v).replace(/\n/g,'<br>')+'</div></div>').join('');
+  $('result-card').classList.add('show');
+}
+function hideResult(){$('result-card').classList.remove('show');}
+async function loadAll(){
+  try{
+    const sum=await(await fetch('/api/offline-reports/summary')).json();
+    if(!sum.ok)throw new Error(sum.error);
+    renderSummary(sum);
+    $('ts-stamp').textContent='最後更新: '+new Date().toLocaleString('zh-TW');
+  }catch(e){toast('載入失敗: '+e.message,true);}
+}
+function renderSummary(s){
+  $('kpi-count-30').textContent=fmt(s.recent_30);$('kpi-rev-30').textContent=fmt(s.revenue_30);$('kpi-count-7').textContent=fmt(s.recent_7);$('kpi-problems').textContent=fmt(s.problem_count);
+  const trend=s.revenue_trend||[];
+  if(trend.length===0){$('trend-bar').style.display='none';$('trend-empty').style.display='block';}
+  else{$('trend-bar').style.display='flex';$('trend-empty').style.display='none';
+    const max=Math.max(...trend.map(t=>t.revenue),1);
+    $('trend-bar').innerHTML=trend.map(t=>'<div style="height:'+(t.revenue/max*100).toFixed(0)+'%" title="'+t.date+': NT$'+fmt(t.revenue)+'"><span class="lbl">'+t.date.slice(5)+'</span></div>').join('');
+  }
+  renderBranches(s.by_branch||[]);
+}
+async function saveTarget(branch,month,value,inputEl){
+  try{
+    inputEl.disabled=true;
+    const r=await fetch('/api/offline-reports/targets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({branch,month,target:Number(value)||0})});
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error);
+    toast('✅ 已存目標 '+month);await loadAll();
+  }catch(e){toast('❌ '+e.message,true);inputEl.disabled=false;}
+}
+function pctClass(p){if(p===null||p===undefined)return '';if(p>=100)return 'good';if(p>=80)return 'meh';return 'bad';}
+function renderBranches(branches){
+  if(branches.length===0){$('branch-detail-list').innerHTML='<div class="empty">尚無門市資料 — 直接拖檔案到上方上傳</div>';return;}
+  $('branch-detail-list').innerHTML=branches.map((b,idx)=>{
+    const reports=(b.reports||[]).slice().sort((a,c)=>(c.date||'').localeCompare(a.date||''));
+    const months=b.by_month||[];
+    const allProblems=[];const allActions=[];
+    reports.forEach(r=>{if(r.problems)r.problems.split('\n').filter(Boolean).forEach(p=>allProblems.push(p.trim()));if(r.action_items)r.action_items.split('\n').filter(Boolean).forEach(a=>allActions.push(a.trim()));});
+    const monthsHtml=months.length===0?'':'<div class="bch-block"><h4>📅 月份明細 ('+months.length+' 個月) · 在「目標」欄位輸入數字按 Enter 即儲存</h4><div style="overflow-x:auto"><table class="month-table"><thead><tr><th>月份</th><th class="num">目標 (NT$)</th><th class="num">營收</th><th>達成率</th><th class="num">訂單</th><th class="num">客單價</th><th class="num">報告</th><th class="num">問題</th><th class="num">月增減</th></tr></thead><tbody>'+months.map(m=>{
+      const pct=m.achievement_pct;
+      const pctCls=pct===null?'':pctClass(pct);
+      const barFillClass=pct===null?'':(pct>=100?'':(pct>=80?'warn':'bad'));
+      const barWidth=pct===null?0:Math.min(pct,100);
+      const barTxt=pct===null?'未設':(pct.toFixed(1)+'%');
+      const dlt=m.delta_pct_vs_prev;
+      const dltStr=dlt===null?'—':((dlt>=0?'▲ +':'▼ ')+dlt.toFixed(1)+'%');
+      const dltCls=dlt===null?'':(dlt>=0?'delta-up':'delta-down');
+      return '<tr><td>'+esc(m.month)+'</td><td class="num"><input type="number" class="target-input" value="'+(m.target||'')+'" placeholder="設定" data-branch="'+esc(b.branch)+'" data-month="'+m.month+'" onkeydown="if(event.key===\'Enter\')saveTarget(this.dataset.branch,this.dataset.month,this.value,this)" onblur="if(this.value!=\''+(m.target||'')+'\')saveTarget(this.dataset.branch,this.dataset.month,this.value,this)"></td><td class="num">NT$'+fmt(m.revenue)+'</td><td><div class="bar-cell"><div class="fill '+barFillClass+'" style="width:'+barWidth+'%"></div><div class="txt">'+barTxt+'</div></div></td><td class="num">'+fmt(m.orders)+'</td><td class="num">'+(m.avg_order_value?'NT$'+fmt(m.avg_order_value):'—')+'</td><td class="num">'+m.count+'</td><td class="num '+(m.problems_count>0?'warn':'')+'">'+m.problems_count+'</td><td class="num '+dltCls+'">'+dltStr+'</td></tr>';
+    }).join('')+'</tbody></table></div></div>';
+    const reportsHtml=reports.map(r=>{
+      const att=r.attachment_url?'<a class="bch-attach" href="'+r.attachment_url+'" target="_blank">📎 原始檔</a>':'';
+      const typeClass=['daily','weekly','problem'].includes(r.type)?r.type:'daily';
+      return '<div class="bch-rep"><div class="head"><div class="lbl">'+esc(r.date)+' <span class="pill '+typeClass+'">'+esc(r.type)+'</span>'+(r.author?' · '+esc(r.author):'')+'</div><div class="rev">NT$'+fmt(r.revenue)+(r.orders?' / '+r.orders+' 單':'')+' '+att+'</div></div>'+(r.summary?'<div class="seg"><b style="color:#d4a87e">摘要:</b> '+esc(r.summary)+'</div>':'')+(r.review?'<div class="seg"><b style="color:#aac8ff">檢討:</b> '+esc(r.review).replace(/\n/g,'<br>')+'</div>':'')+(r.problems?'<div class="seg"><b style="color:#ffb3b3">問題:</b><br>'+esc(r.problems).replace(/\n/g,'<br>')+'</div>':'')+(r.action_items?'<div class="seg"><b style="color:#9bcdb1">行動:</b><br>'+esc(r.action_items).replace(/\n/g,'<br>')+'</div>':'')+(r.notes?'<div class="seg"><b style="color:#c9b89e">備註:</b> '+esc(r.notes)+'</div>':'')+'</div>';
+    }).join('');
+    const branchId='br_'+idx;
+    const overallPct=b.overall_achievement_pct;
+    const overallCls=overallPct===null?'':pctClass(overallPct);
+    return '<details class="branch-card"'+(idx<2?' open':'')+'><summary><div class="bch-head-l"><div class="bch-name">🏪 '+esc(b.branch)+'</div><div class="bch-meta">'+b.count+' 份報告'+(b.total_orders?' · '+fmt(b.total_orders)+' 單':'')+(months.length?' · '+months.length+' 個月':'')+(b.avg_order_value?' · 客單價 NT$'+fmt(b.avg_order_value):'')+'</div></div><div class="bch-head-r"><div class="bch-stat"><div class="v">NT$'+fmt(b.revenue)+'</div><div class="l">累計營收</div></div>'+(b.total_target>0?'<div class="bch-stat"><div class="v">NT$'+fmt(b.total_target)+'</div><div class="l">累計目標</div></div><div class="bch-stat '+overallCls+'"><div class="v">'+(overallPct!==null?overallPct.toFixed(1)+'%':'—')+'</div><div class="l">整體達成</div></div>':'')+(b.problems>0?'<div class="bch-stat warn"><div class="v">'+b.problems+'</div><div class="l">含問題</div></div>':'')+'</div></summary><div class="body">'+monthsHtml+'<div class="bch-block"><h4>🤖 AI 深度分析與建議 <button class="btn-ai" onclick="getAnalysis(this,\''+encodeURIComponent(b.branch)+'\',\''+branchId+'\')">🤖 取得 AI 分析建議</button></h4><div class="ai-result" id="ai-'+branchId+'"></div></div>'+(allProblems.length?'<div class="bch-block"><h4>🚨 全部問題點 ('+allProblems.length+')</h4><div class="chip-row">'+allProblems.slice(0,30).map(p=>'<span class="prob-chip">'+esc(p)+'</span>').join('')+'</div></div>':'')+(allActions.length?'<div class="bch-block"><h4>✅ 全部行動項目 ('+allActions.length+')</h4><div class="chip-row">'+allActions.slice(0,30).map(a=>'<span class="action-chip">'+esc(a)+'</span>').join('')+'</div></div>':'')+'<div class="bch-block"><h4>📑 各份報告 ('+reports.length+')</h4>'+reportsHtml+'</div></div></details>';
+  }).join('');
+}
+async function getAnalysis(btn,branchEnc,id){
+  btn.disabled=true;const orig=btn.textContent;btn.innerHTML='<span class="spinner" style="width:14px;height:14px;border-width:2px"></span> 分析中 (20-40秒)…';
+  try{
+    const r=await fetch('/api/offline-reports/branch-analysis/'+branchEnc);const d=await r.json();
+    if(!d.ok)throw new Error(d.error||'analysis failed');
+    const a=d.analysis||{};
+    let html='';
+    if(a.executive_summary)html+='<h5>📌 執行摘要</h5><p class="exec">'+esc(a.executive_summary)+'</p>';
+    if(a.monthly_trend_analysis)html+='<h5>📈 月份趨勢評析</h5><p class="trend">'+esc(a.monthly_trend_analysis)+'</p>';
+    if(Array.isArray(a.top_issues)&&a.top_issues.length){html+='<h5>🚨 核心問題分析</h5>';a.top_issues.forEach(i=>{html+='<div class="ai-item"><div class="ttl">'+esc(i.issue||'')+' <span class="pill '+(i.severity||'medium').toLowerCase()+'">'+esc(i.severity||'')+'</span></div>'+(i.root_cause?'<div class="det">根本原因: '+esc(i.root_cause)+'</div>':'')+'</div>';});}
+    if(Array.isArray(a.recommendations)&&a.recommendations.length){html+='<h5>💡 改善建議</h5>';a.recommendations.forEach(r=>{html+='<div class="ai-item"><div class="ttl"><span class="pill '+(r.priority||'p2').toLowerCase()+'">'+esc(r.priority||'')+'</span>'+esc(r.title||'')+'</div>'+(r.detail?'<div class="det">'+esc(r.detail)+'</div>':'')+(r.expected_impact?'<div class="imp">↑ 預期效益: '+esc(r.expected_impact)+'</div>':'')+'</div>';});}
+    if(Array.isArray(a.quick_wins)&&a.quick_wins.length){html+='<h5>⚡ 立刻可做</h5><ul class="ai-list">'+a.quick_wins.map(q=>'<li>'+esc(q)+'</li>').join('')+'</ul>';}
+    if(Array.isArray(a.watch_outs)&&a.watch_outs.length){html+='<h5>⚠️ 需注意的風險</h5><ul class="ai-list">'+a.watch_outs.map(q=>'<li>'+esc(q)+'</li>').join('')+'</ul>';}
+    if(!html)html='<p style="color:#9c8973">AI 沒有回傳分析(資料太少?)</p>';
+    const target=$('ai-'+id);target.innerHTML=html;target.classList.add('show');
+    btn.style.display='none';toast('✅ 分析完成');
+  }catch(e){toast('❌ '+e.message,true);btn.textContent=orig;btn.disabled=false;}
+}
+loadAll();
+</script>
+</body>
+</html>
