@@ -117,7 +117,7 @@ h1{font-size:26px;margin:0 0 6px;color:#fff;display:flex;align-items:center;gap:
     <div class="card stat-card"><div class="label">總問題數</div><div class="value" id="kpi-problems">—</div></div>
   </div>
 
-  <div class="section"><div class="card"><div class="section-title" style="margin-top:0">📁 已上傳檔案管理(刪除一份檔案會移除其所有展開紀錄)</div><div id="uploads-list"></div></div></div>
+  <div class="section"><div class="card"><div class="section-title" style="margin-top:0">📁 已上傳檔案管理 <button class="btn-ai" style="background:linear-gradient(135deg,#d4a87e,#B08D57);color:#3a1521;margin-left:auto" onclick="reanalyzeAll()">🔄 重新分析所有報告 (每份檔案 30-60 秒)</button></div><div id="uploads-list"></div></div></div>
 
   <div class="section"><div class="card"><div class="section-title" style="margin-top:0">🌐 全體月份總和(各月 × 各門市)<button class="btn-ai" onclick="getAnalysis('all',this,'all-stores')" style="margin-left:auto">🤖 全體跨店 AI 分析</button></div><div id="all-stores-matrix"></div><div class="ai-result" id="ai-all-stores"></div></div></div>
 
