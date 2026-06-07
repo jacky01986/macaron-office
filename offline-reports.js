@@ -116,8 +116,8 @@ router.get('/uploads', (req, res) => {
   const all = loadAll();
   const groups = {};
   all.forEach(r => {
-    const uid = r.upload_id || ('orphan_' + (r.source_file || 'manual'));
-    if (!groups[uid]) groups[uid] = { upload_id: uid, source_file: r.source_file || '手填', branch: r.branch, count: 0, total_revenue: 0, first_date: r.report_date, last_date: r.report_date, has_expanded: false };
+    const cleanFile = (r.source_file || 'manual').split(' [')[0]; const uid = r.upload_id || ('orphan_' + cleanFile);
+    if (!groups[uid]) groups[uid] = { upload_id: uid, source_file: cleanFile || '手填', branch: r.branch, count: 0, total_revenue: 0, first_date: r.report_date, last_date: r.report_date, has_expanded: false };
     groups[uid].count++;
     groups[uid].total_revenue += Number(r.revenue) || 0;
     if (r.report_date < groups[uid].first_date) groups[uid].first_date = r.report_date;
