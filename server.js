@@ -2169,7 +2169,6 @@ app.get('/api/voc/mine', async (req, res) => {
     }
     if (!allMsgs.length) return res.json({ ok: true, total_sessions: list.length, customer_messages: 0, sample_keys: firstSampleKeys, message: 'Sessions found but no message content extracted' });
     const Anthropic = require('@anthropic-ai/sdk');
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); try { const _enh = require("./ai-enhancements"); const _orig = anthropic.messages.create.bind(anthropic.messages); anthropic.messages.create = function(o) { try { if (o && typeof o.system === "string" && o.system.length > 200 && !o.system.includes("只回傳純 JSON") && !o.system.includes("不要 markdown") && !o.system.includes("回傳純 JSON")) { o.system = o.system + _enh.EVIDENCE_RULE; } } catch (e) {} return _orig(o); }; console.log("[ai-enhancements] evidence wrapper auto-injected to all Claude calls"); } catch (e) { console.error("[ai-enhancements] wrapper inject failed:", e.message); }
     const prompt = '以下是 溫點 WarmPlace 過去 ' + days + ' 天，SaleSmartly / Messenger 的對話紀錄（' + allMsgs.length + ' 則訊息）。每則前面標記 [CUSTOMER] 或 [UNKNOWN]。請當「顧客之聲」分析師，著重看 [CUSTOMER] 訊息（也可參考 [UNKNOWN] 推論），歸納：\n\n1. **Top 10 最常被問的問題**（用客戶原話風格）\n2. **Top 5 客戶顧慮 / 反對意見**\n3. **客戶常用的詞彙 / 說法**\n4. **意圖分類百分比**（價格 / 預約 / 客戶教育 / 售後 / 其他）\n5. **3 個立即可執行的行銷動作**\n\n用條列輸出，給 溫點 WarmPlace 行銷團隊用，直接結論不要客套。\n\n--- 訊息 ---\n' + allMsgs.map((m, i) => (i+1) + '. ' + (m.from_customer ? '[CUSTOMER]' : '[UNKNOWN]') + ' ' + m.text).join('\n');
     const resp = await client.messages.create({
       model: 'claude-sonnet-4-6',
