@@ -1,5 +1,6 @@
-// ai-enhancements.js — Tier 1/2/3 升級包
-// 整合: 證據+信心 wrapper, 天氣, 異常偵測, 多模型, 反饋, 簡易向量記憶, web 搜尋, Google 商家評論
+// ai-enhancements.js — Tier 1/2/3 升級包 + 免費網路搜尋
+// 整合: 證據+信心 wrapper, 天氣, 異常偵測, 多模型, 反饋, 簡易向量記憶, 免費 web 搜尋, Google 商家評論
+// + enhancedCreate: 攔截所有 Claude 呼叫,自動加 EVIDENCE_RULE + web_search tool + tool_use 循環
 const fs = require('fs');
 const path = require('path');
 const Anthropic = require('@anthropic-ai/sdk');
@@ -13,11 +14,33 @@ try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ---- #3 證據+信心 wrapper ----
-const EVIDENCE_RULE = "\n\n--- 全體規則(必遵守) ---\n回答策略性建議時,結尾必須附:\n📊 根據哪些數據:[具體列出 2-3 個數據來源,如 Shopline 訂單/門市報告/Meta 廣告]\n🎯 信心度:X%(80-100%=有把握 / 60-79%=合理推測 / <60%=直覺,需驗證)\n⚖️ 反方論點:1 句話說「若我錯了,可能因為...」\n如果僅是聊天/閒談則不需附。";
+const EVIDENCE_RULE = "\n\n--- 全體規則(必遵守) ---\n回答策略性建議時,結尾必須附:\n📊 根據哪些數據:[具體列出 2-3 個數據來源,如 Shopline 訂單/門市報告/Meta 廣告/即時搜尋結果]\n🎯 信心度:X%(80-100%=有把握 / 60-79%=合理推測 / <60%=直覺,需驗證)\n⚖️ 反方論點:1 句話說「若我錯了,可能因為...」\n如果僅是聊天/閒談則不需附。\n\n--- 即時搜尋能力 ---\n你有 web_search 工具可即時搜網路。當被問到:最新事件、近期趨勢、競品動態、知識截止後的資訊、需查證的具體事實時,主動使用。不要用於通用知識題。";
 
 function wrapWithEvidence(systemPrompt) {
   if (!systemPrompt) return EVIDENCE_RULE;
   return systemPrompt + EVIDENCE_RULE;
+}
+
+// ---- #2 免費網路搜尋(改用 free-web-search 三層 fallback) ----
+const freeSearch = require('./free-web-search');
+async function webSearch(query) {
+  try {
+    const r = await freeSearch.webSearch(query, { limit: 8 });
+    if (r.count === 0) {
+      // 最後備援:若有 BRAVE_API_KEY 試 Brave
+      const key = process.env.BRAVE_API_KEY;
+      if (key) {
+        try {
+          const br = await fetch('https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(query) + '&count=10', { headers: { 'X-Subscription-Token': key, 'Accept': 'application/json' } });
+          const bd = await br.json();
+          const results = (bd.web?.results || []).slice(0, 8).map(x => ({ title: x.title, url: x.url, snippet: x.description }));
+          return { ok: true, source: 'brave', query, count: results.length, results };
+        } catch (e) { return { ok: false, error: 'free-search 0 results, brave err: ' + e.message, errors: r.errors }; }
+      }
+      return { ok: false, error: '所有來源均回 0 筆', errors: r.errors };
+    }
+    return { ok: true, source: r.source, query, count: r.count, results: r.results };
+  } catch (e) { return { ok: false, error: e.message }; }
 }
 
 // ---- #5 天氣 (Open-Meteo 免費 no key) ----
@@ -28,18 +51,6 @@ async function getWeather(city) {
     const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords[0]}&longitude=${coords[1]}&current=temperature_2m,precipitation,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Asia/Taipei&forecast_days=3`);
     const d = await r.json();
     return { ok: true, city, current: d.current, daily: d.daily };
-  } catch (e) { return { ok: false, error: e.message }; }
-}
-
-// ---- #2 Brave Web Search (需 BRAVE_API_KEY) ----
-async function webSearch(query) {
-  const key = process.env.BRAVE_API_KEY;
-  if (!key) return { ok: false, error: '未設定 BRAVE_API_KEY' };
-  try {
-    const r = await fetch('https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(query) + '&count=10', { headers: { 'X-Subscription-Token': key, 'Accept': 'application/json' } });
-    const d = await r.json();
-    const results = (d.web?.results || []).slice(0, 8).map(x => ({ title: x.title, url: x.url, desc: x.description }));
-    return { ok: true, query, results };
   } catch (e) { return { ok: false, error: e.message }; }
 }
 
@@ -54,15 +65,13 @@ async function googleReviews(placeId) {
   } catch (e) { return { ok: false, error: e.message }; }
 }
 
-// ---- #7 多模型協作 (OpenAI / Google AI fallback) ----
+// ---- #7 多模型協作 ----
 async function askMultiModel(prompt, scope) {
   const results = {};
-  // Claude (always available)
   try {
     const r = await anthropic.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] });
     results.claude = (r.content || []).map(c => c.text || '').join('');
   } catch (e) { results.claude = 'err: ' + e.message; }
-  // OpenAI
   if (process.env.OPENAI_API_KEY) {
     try {
       const r = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: prompt }], max_tokens: 1500 }) });
@@ -70,7 +79,6 @@ async function askMultiModel(prompt, scope) {
       results.gpt = d.choices?.[0]?.message?.content || JSON.stringify(d).slice(0,200);
     } catch (e) { results.gpt = 'err: ' + e.message; }
   } else results.gpt = '未設定 OPENAI_API_KEY';
-  // Google Gemini
   if (process.env.GOOGLE_AI_API_KEY) {
     try {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GOOGLE_AI_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
@@ -94,8 +102,7 @@ function loadFeedback(limit) {
   } catch { return []; }
 }
 
-// ---- #4 簡易向量記憶 (用 Claude 自帶 embedding-style + cosine sim) ----
-// 注意:Claude 沒原生 embedding API,此處用 OpenAI embeddings 若有 key,否則用 hash-based fallback
+// ---- #4 簡易向量記憶 ----
 function saveMemory(record) {
   const entry = { id: 'mem_' + Math.random().toString(36).slice(2, 12), ts: new Date().toISOString(), ...record };
   fs.appendFileSync(MEMORY_FILE, JSON.stringify(entry) + '\n');
@@ -105,7 +112,6 @@ async function recallMemory(query, topK) {
   try {
     if (!fs.existsSync(MEMORY_FILE)) return [];
     const all = fs.readFileSync(MEMORY_FILE, 'utf8').split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
-    // 簡易關鍵字相似(fallback)
     const qWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 1);
     const scored = all.map(m => {
       const text = (m.text || m.content || '').toLowerCase();
@@ -149,7 +155,6 @@ async function detectAnomalies() {
   if (findings.length > 0) {
     const entry = { ts: new Date().toISOString(), findings };
     fs.appendFileSync(ANOMALIES_FILE, JSON.stringify(entry) + '\n');
-    // Telegram alert
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
     if (token && chatId) {
@@ -160,10 +165,61 @@ async function detectAnomalies() {
   return { ok: true, findings };
 }
 
+// ==========================================================
+// enhancedCreate — 自動套用 EVIDENCE_RULE + web_search tool + tool_use 循環
+// 給所有 13 員工的 anthropic.messages.create 用
+// ==========================================================
+async function enhancedCreate(origCreate, opts) {
+  // 安全跳脫:JSON 任務、太短的 system、stream 任務
+  const sys = typeof opts.system === 'string' ? opts.system : '';
+  const skipEnhance = !sys || sys.length < 200
+    || /純 JSON|回傳純 JSON|不要 markdown|只回傳/.test(sys)
+    || opts.stream === true;
+
+  if (skipEnhance) {
+    return origCreate(opts);
+  }
+
+  // 加 EVIDENCE_RULE
+  const enhancedOpts = { ...opts, system: sys + EVIDENCE_RULE };
+
+  // 加 web_search tool
+  const existingTools = enhancedOpts.tools || [];
+  const hasWebSearch = existingTools.some(t => t.name === 'web_search');
+  if (!hasWebSearch) {
+    enhancedOpts.tools = existingTools.concat([freeSearch.CLAUDE_TOOL_DEF]);
+  }
+
+  // 跑第一次
+  let messages = Array.isArray(enhancedOpts.messages) ? enhancedOpts.messages.slice() : [];
+  let response = await origCreate({ ...enhancedOpts, messages });
+
+  // 處理 tool_use 循環(最多 3 輪避免無限)
+  let safety = 0;
+  while (response.stop_reason === 'tool_use' && safety < 3) {
+    safety++;
+    const toolUses = (response.content || []).filter(b => b.type === 'tool_use');
+    const toolResults = [];
+    for (const tu of toolUses) {
+      const r = await freeSearch.handleToolUse(tu);
+      if (r) toolResults.push(r);
+      else toolResults.push({ type: 'tool_result', tool_use_id: tu.id, content: 'tool not supported: ' + tu.name, is_error: true });
+    }
+    messages = messages.concat([
+      { role: 'assistant', content: response.content },
+      { role: 'user', content: toolResults }
+    ]);
+    response = await origCreate({ ...enhancedOpts, messages });
+  }
+
+  return response;
+}
+
 // ---- Express endpoints ----
 function register(app, cron) {
   app.get('/api/enhance/weather', async (req, res) => res.json(await getWeather(req.query.city || '台南')));
   app.post('/api/enhance/web-search', async (req, res) => res.json(await webSearch(req.body?.q || req.query.q || '')));
+  app.get('/api/enhance/web-search', async (req, res) => res.json(await webSearch(req.query.q || '')));
   app.get('/api/enhance/google-reviews', async (req, res) => res.json(await googleReviews(req.query.place_id || '')));
   app.post('/api/enhance/multi-model', async (req, res) => res.json(await askMultiModel(req.body?.prompt || '', req.body?.scope)));
   app.post('/api/enhance/feedback', (req, res) => { try { res.json({ ok: true, saved: saveFeedback(req.body || {}) }); } catch (e) { res.status(500).json({ ok: false, error: e.message }); } });
@@ -171,15 +227,14 @@ function register(app, cron) {
   app.post('/api/enhance/memory', (req, res) => { try { res.json({ ok: true, saved: saveMemory(req.body || {}) }); } catch (e) { res.status(500).json({ ok: false, error: e.message }); } });
   app.get('/api/enhance/memory/recall', async (req, res) => res.json({ ok: true, items: await recallMemory(req.query.q || '', Number(req.query.k) || 5) }));
   app.post('/api/enhance/detect-anomalies', async (req, res) => res.json(await detectAnomalies()));
-  app.get('/api/enhance/status', (req, res) => res.json({ ok: true, model: 'claude-sonnet-4-6 + opus-4-6 + haiku-4-5', features: { evidence_wrapper: 'on', weather: 'on (Open-Meteo, no key)', web_search: process.env.BRAVE_API_KEY ? 'on' : 'need BRAVE_API_KEY', google_reviews: process.env.GOOGLE_PLACES_API_KEY ? 'on' : 'need GOOGLE_PLACES_API_KEY', multi_model: { claude: 'on', gpt: process.env.OPENAI_API_KEY ? 'on' : 'need OPENAI_API_KEY', gemini: process.env.GOOGLE_AI_API_KEY ? 'on' : 'need GOOGLE_AI_API_KEY' }, feedback: 'on', memory: 'on (keyword fallback)', anomaly_detection: 'on (8am daily cron)' } }));
+  app.get('/api/enhance/status', (req, res) => res.json({ ok: true, model: 'claude-sonnet-4-6 + opus-4-6 + haiku-4-5', features: { evidence_wrapper: 'on', weather: 'on (Open-Meteo, no key)', web_search: 'on (free: DDG + GoogleNews + SearXNG' + (process.env.BRAVE_API_KEY ? ' + Brave' : '') + ')', google_reviews: process.env.GOOGLE_PLACES_API_KEY ? 'on' : 'need GOOGLE_PLACES_API_KEY', multi_model: { claude: 'on', gpt: process.env.OPENAI_API_KEY ? 'on' : 'need OPENAI_API_KEY', gemini: process.env.GOOGLE_AI_API_KEY ? 'on' : 'need GOOGLE_AI_API_KEY' }, feedback: 'on', memory: 'on (keyword fallback)', anomaly_detection: 'on (8am daily cron)', web_search_tool: 'on (auto-injected to all 13 employees)' } }));
 
-  // 8am cron — daily anomaly detection
   if (cron) {
     cron.schedule('0 8 * * *', async () => { try { const r = await detectAnomalies(); console.log('[ai-enhancements] anomaly detection:', r.findings.length, 'findings'); } catch (e) { console.error('[ai-enhancements] anomaly err:', e.message); } }, { timezone: 'Asia/Taipei' });
     console.log('[ai-enhancements] cron registered: 0 8 * * * Asia/Taipei (anomaly detection)');
   }
 
-  console.log('[ai-enhancements] registered: weather, web-search, google-reviews, multi-model, feedback, memory, anomaly-detection');
+  console.log('[ai-enhancements] registered: weather, web-search, google-reviews, multi-model, feedback, memory, anomaly-detection, enhancedCreate');
 }
 
-module.exports = { register, wrapWithEvidence, getWeather, webSearch, googleReviews, askMultiModel, saveFeedback, loadFeedback, saveMemory, recallMemory, detectAnomalies, EVIDENCE_RULE };
+module.exports = { register, wrapWithEvidence, getWeather, webSearch, googleReviews, askMultiModel, saveFeedback, loadFeedback, saveMemory, recallMemory, detectAnomalies, EVIDENCE_RULE, enhancedCreate };
