@@ -72,6 +72,7 @@
     <a href="#files">📁 文件生成 (NEW)</a>
     <a href="#customers">👥 客人畫像 (NEW)</a>
     <a href="#shopline">🛒 Shopline (NEW)</a>    <a href="#cron">⏰ 自動排程</a>
+    <a href="#api">📡 API 速查 (NEW)</a>
     <a href="#tips">💡 用得好的小技巧</a>
     <a href="#faq">❓ FAQ</a>
   </div>
@@ -89,10 +90,10 @@
   <section id="abilities">
     <h2>🧠 8 大新能力 — 為什麼這次他們比之前聰明很多</h2>
     <div class="grid">
-      <div class="card"><div class="icon">🌐</div><h4>全員能上網查當下情報</h4><p>web_search 工具加在 12 位員工身上。問「2026 母親節甜點趨勢」他們會去 Google，不是憑訓練記憶亂掰。</p></div>
+      <div class="card"><div class="icon">🌐</div><h4>全員自動上網查當下情報(免費)<span class="new-badge">UPGRADED</span></h4><p>web_search 工具自動加到 <b>13 位員工</b>身上,三層 fallback:DuckDuckGo → Google News → SearXNG,<b>完全免費無 key</b>。問「最近台南有什麼新店」他們會去搜真實網頁,不是憑訓練記憶亂掰。</p></div>
       <div class="card"><div class="icon">🧠</div><h4>主控台多輪記憶</h4><p>同一 session 內，員工會記得你前面說過什麼。連問三次「再短一點」他不會忘了主題。</p></div>
       <div class="card"><div class="icon">📩</div><h4>HANA 讀真實 DM + 抓真名<span class="new-badge">NEW</span></h4><p>HANA 看板直接讀 SaleSmartly 全管道 (FB DM + IG DM + LINE)，<span class="new">顯示真實 FB/IG 名字</span>（Zhen Yi Su、季涵兒、유수연…），不是「客人 xxxxxx」。</p></div>
-      <div class="card"><div class="icon">✅</div><h4>產出後自我把關</h4><p>每位員工在 prompt 結尾都有 SELF_CHECK 協議：產出後自評紅/黃/綠燈，違反品牌鐵則自動重寫。</p></div>
+      <div class="card"><div class="icon">✅</div><h4>產出後自我把關 + 強制附證據<span class="new-badge">UPGRADED</span></h4><p>每位員工在 prompt 結尾都有 SELF_CHECK 協議:產出後自評紅/黃/綠燈,違反品牌鐵則自動重寫。<b>策略性建議自動附 📊 數據來源 + 🎯 信心度 X% + ⚖️ 反方論點</b>,您一眼判斷能不能信。</p></div>
       <div class="card"><div class="icon">🤝</div><h4>彼此 delegate 像團隊</h4><p>JUNE 排專案要寫文案時自動 call CAMILLE；RINA 拍 Reels 要寫 caption 時也 delegate 給 CAMILLE。</p></div>
       <div class="card"><div class="icon">📊</div><h4>看自家舊貼文學成功公式</h4><p>get_meta_posts 工具讓 CAMILLE/RINA 拉自家 IG/FB 最近 5 篇貼文，從互動數據反推「冠軍公式」再寫新文案。</p></div>
       <div class="card"><div class="icon">📁</div><h4>FILES 文件生成<span class="new-badge">NEW</span></h4><p>第 13 個員工 <b>FILES</b>，4 格式生成：<span class="new">Word/Excel/PPT/PDF</span>。PDF 含中文字型 (NotoSansTC) 完全正常。每筆歷史紀錄也都有一鍵下載按鈕。</p></div>
@@ -251,7 +252,26 @@
     </div>
   </section>
 
-  <section id="shopline">    <h2>🛒 Shopline 整合<span class="new-badge">NEW</span></h2>    <p>溫點電商平台串接,主控台「🛒 Shopline」按鈕進入專區。</p>    <div class="grid">      <div class="card"><div class="icon">📊</div><h4>DEX 訂單分析<span class="new-badge">NEW</span></h4><p>Open API 直連,每天 09:00 早報送 Telegram (訂單/營收/AOV/熱賣)。</p></div>      <div class="card"><div class="icon">👥</div><h4>客人 LTV + RFM<span class="new-badge">NEW</span></h4><p>按消費總額分 VIP/活躍/新客/流失四群。/customers.html 下方有 Shopline LTV 區。</p></div>      <div class="card"><div class="icon">🛍️</div><h4>商品 + 庫存<span class="new-badge">NEW</span></h4><p>RINA/CAMILLE 寫文案時自動帶真實商品名/價/庫存,不瞎掰。/shopline-hub.html 看全部。</p></div>      <div class="card"><div class="icon">⏰</div><h4>HANA 棄單 polling<span class="new-badge">NEW</span></h4><p>每 15 分鐘掃 pending 超過 30 分鐘的訂單,寫進 hana-queue 給 HANA agent 跟客。</p></div>      <div class="card"><div class="icon">🎨</div><h4>GIA 雙發 FB+Shopline<span class="new-badge">NEW</span></h4><p>09:00 + 15:00 自動發 GEO 長文到 FB,同步嘗試發 Shopline 部落格 (blog API 未開放會 graceful 略過)。</p></div>      <div class="card"><div class="icon">📡</div><h4>Webhook 待 partner</h4><p>realtime webhook 需 Shopline partner app,目前 polling 已可接收 95% 用例。</p></div>    </div>  </section>  <section id="tips">
+  <section id="shopline">    <h2>🛒 Shopline 整合<span class="new-badge">NEW</span></h2>    <p>溫點電商平台串接,主控台「🛒 Shopline」按鈕進入專區。</p>    <div class="grid">      <div class="card"><div class="icon">📊</div><h4>DEX 訂單分析<span class="new-badge">NEW</span></h4><p>Open API 直連,每天 09:00 早報送 Telegram (訂單/營收/AOV/熱賣)。</p></div>      <div class="card"><div class="icon">👥</div><h4>客人 LTV + RFM<span class="new-badge">NEW</span></h4><p>按消費總額分 VIP/活躍/新客/流失四群。/customers.html 下方有 Shopline LTV 區。</p></div>      <div class="card"><div class="icon">🛍️</div><h4>商品 + 庫存<span class="new-badge">NEW</span></h4><p>RINA/CAMILLE 寫文案時自動帶真實商品名/價/庫存,不瞎掰。/shopline-hub.html 看全部。</p></div>      <div class="card"><div class="icon">⏰</div><h4>HANA 棄單 polling<span class="new-badge">NEW</span></h4><p>每 15 分鐘掃 pending 超過 30 分鐘的訂單,寫進 hana-queue 給 HANA agent 跟客。</p></div>      <div class="card"><div class="icon">🎨</div><h4>GIA 雙發 FB+Shopline<span class="new-badge">NEW</span></h4><p>09:00 + 15:00 自動發 GEO 長文到 FB,同步嘗試發 Shopline 部落格 (blog API 未開放會 graceful 略過)。</p></div>      <div class="card"><div class="icon">📡</div><h4>Webhook 待 partner</h4><p>realtime webhook 需 Shopline partner app,目前 polling 已可接收 95% 用例。</p></div>    </div>  </section>  <section id="api">
+    <h2>📡 開發者 API 速查(直接打 endpoint)<span class="new-badge">NEW</span></h2>
+    <p>所有 AI 升級包功能都有 HTTP endpoint,可從外部工具/腳本/Apps Script 直接呼叫。</p>
+    <h3>🌐 即時網路搜尋(免費)</h3>
+    <div class="tip"><b>GET /api/enhance/web-search?q=台南馬卡龍</b><br>→ 回 JSON:{ ok, source, query, count, results:[{title, url, snippet, date}] }<br>三層 fallback:DDG → Google News → SearXNG。</div>
+    <h3>🌡️ 天氣(免費,Open-Meteo)</h3>
+    <div class="tip"><b>GET /api/enhance/weather?city=台南</b><br>→ 回 current 溫度/雨量 + daily 3 日預報。支援:台南/台北/台中/高雄。</div>
+    <h3>🚨 異常偵測 + Telegram 告警</h3>
+    <div class="tip"><b>POST /api/enhance/detect-anomalies</b><br>→ 立刻掃描營收/單店異常並 Telegram 告警(若有設 TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID)。每天 08:00 自動跑。</div>
+    <h3>💾 長期記憶 + 喚回</h3>
+    <div class="tip"><b>POST /api/enhance/memory</b> body: { text: "粽粽胖卡龍 6 月主推", tag: "marketing" }<br><b>GET /api/enhance/memory/recall?q=粽粽&k=5</b> → 關鍵字命中最相關 5 筆</div>
+    <h3>👍 反饋學習</h3>
+    <div class="tip"><b>POST /api/enhance/feedback</b> body: { employee: "hana", message_id: "...", rating: "up", note: "..." }<br>累積後可用來調整員工 prompt。</div>
+    <h3>🤖 多模型對比(需 key)</h3>
+    <div class="tip"><b>POST /api/enhance/multi-model</b> body: { prompt: "...", scope: "..." }<br>同時問 Claude(已啟用) + GPT-4o(需 OPENAI_API_KEY) + Gemini(需 GOOGLE_AI_API_KEY)。</div>
+    <h3>📋 健康檢查</h3>
+    <div class="tip"><b>GET /api/enhance/status</b> → 列出所有功能啟用狀態</div>
+  </section>
+
+  <section id="tips">
     <h2>🧠 AI 升級包<span class="new-badge">NEW</span></h2><p>本次大升級讓所有 AI 員工更聰明、更主動、更可信。網址狀態頁:<a href="/api/enhance/status" target="_blank">/api/enhance/status</a></p><div class="grid"><div class="card"><div class="icon">🚀</div><h4>Claude Sonnet 4.6 + Opus 4.6<span class="new-badge">NEW</span></h4><p>13 員工大腦全升 Claude 4.6,重要決策(深度分析/早報)用 Opus,日常用 Sonnet,即時回覆用 Haiku 4.5。比之前推理強 30%</p></div><div class="card"><div class="icon">🎯</div><h4>強制證據+信心度<span class="new-badge">NEW</span></h4><p>所有員工策略性建議自動附:📊 根據哪些數據 + 🎯 信心度 X% + ⚖️ 反方論點。您一眼判斷能不能信</p></div><div class="card"><div class="icon">🚨</div><h4>異常自動偵測 + Telegram 告警<span class="new-badge">NEW</span></h4><p>每天 08:00 自動掃描:昨日營收劇變超 20%、單店月份下滑超 25% → 自動發 Telegram</p></div><div class="card"><div class="icon">🌡️</div><h4>天氣資料(免費)<span class="new-badge">NEW</span></h4><p>Open-Meteo 接好了,員工知道台南/台北/台中/高雄當下氣溫+3 日預報,可以預測客流影響</p></div><div class="card"><div class="icon">🧠</div><h4>反饋學習系統<span class="new-badge">NEW</span></h4><p>POST /api/enhance/feedback 記錄您對每個建議的 👍/👎。累積後 AI 會學習您的偏好</p></div><div class="card"><div class="icon">💾</div><h4>簡易向量記憶<span class="new-badge">NEW</span></h4><p>POST 存入長期記憶,GET 用關鍵字喚回。3 個月前的對話/客人/提案都找得到</p></div><div class="card"><div class="icon">🤝</div><h4>多模型框架(待 key)<span class="new-badge">NEW</span></h4><p>同一問題可同時問 Claude + GPT-4o + Gemini 對比。需設 OPENAI_API_KEY 或 GOOGLE_AI_API_KEY 才啟用</p></div><div class="card"><div class="icon">🔍</div><h4>免費即時網路搜尋(已上線)<span class="new-badge">NEW</span></h4><p>三層 fallback:DuckDuckGo → Google News → SearXNG,完全免費無 key。13 員工自動取得 <code>web_search</code> 工具,被問到最新事件/競品/趨勢時自動上網查。端點:<code>/api/free-search?q=關鍵字</code></p></div><div class="card"><div class="icon">⭐</div><h4>Google 商家評論(待 key)<span class="new-badge">NEW</span></h4><p>需設 GOOGLE_PLACES_API_KEY 後,HANA 可即時看到客人在 Google 留什麼,自動分析評論</p></div></div><h2>📋 線下報告中心<span class="new-badge">NEW</span></h2><p>把門市/部門的線下報告(PDF/照片/Excel/Word/TXT)拖進去,AI 自動讀取結構化,依門市/月/日 4 層分析給建議。網址:<a href="/offline-reports.html">/offline-reports.html</a></p><div class="grid"><div class="card"><div class="icon">📤</div><h4>檔案上傳<span class="new-badge">NEW</span></h4><p>拖檔案進去 → Claude Sonnet 4.5 萃取營收/問題/檢討/行動 → 存入資料庫。支援 PDF / 照片 / Excel / Word / CSV / TXT</p></div><div class="card"><div class="icon">🔄</div><h4>展開每日<span class="new-badge">NEW</span></h4><p>含每日營收的 Excel(例如半年明細)按「🔄 展開每日」可拆成 150+ 筆每日紀錄,儀表板正確分月份顯示</p></div><div class="card"><div class="icon">🌐</div><h4>全體月份總和<span class="new-badge">NEW</span></h4><p>頂部「各月 × 各門市」矩陣,一眼看出哪家領先哪家拖累。可一鍵「全體跨店 AI 分析」</p></div><div class="card"><div class="icon">🎯</div><h4>月目標設定<span class="new-badge">NEW</span></h4><p>每月可輸入目標金額,系統自動算「達成率 / 客單價 / 月增減」,進度條 100% 綠 / 80%+ 橘 / 不及 80% 紅</p></div><div class="card"><div class="icon">🤖</div><h4>4 層 AI 分析<span class="new-badge">NEW</span></h4><p>🌐 全店跨店 / 🏪 單店 / 📅 月份 / 📆 單日 — 每層 Claude 都給:摘要 + 核心問題 + 改善建議 + 立刻可做 + 風險注意</p></div><div class="card"><div class="icon">📁</div><h4>檔案管理 + 重新分析<span class="new-badge">NEW</span></h4><p>已上傳檔案列表可批次刪除(連同展開的所有紀錄)。「🔄 重新分析所有報告」一鍵把所有 Excel 重跑展開</p></div></div><h2>💡 用得好的小技巧</h2>
     <div class="tip"><b>1. 不知道派誰，就問 VICTOR</b><br>「這事該誰做？」VICTOR 會分析後派給對的人，或自己接手。</div>
     <div class="tip"><b>2. 加「請呼叫 XXX 工具」會強制觸發</b><br>例如「請呼叫 get_meta_posts 看我家 IG 最近 5 篇」確保用工具不是憑記憶亂掰。</div>
@@ -265,8 +285,12 @@
   <section id="faq" class="faq">
     <h2>❓ FAQ</h2>
     <dl>
-      <dt>為什麼有時員工回得慢？</dt>
-      <dd>web_search 上網調查每次 30-90 秒。自評也會花時間。整個流程約 1-2 分鐘是正常的。</dd>
+      <dt>為什麼有時員工回得慢?</dt>
+      <dd>web_search 上網調查每次 30-90 秒。自評也會花時間。整個流程約 1-2 分鐘是正常的。<br><span class="new">新:Render 機房對 DuckDuckGo 連線可能被擋,系統會自動 fallback 到 Google News(永遠可用)。</span></dd>
+      <dt>web_search 真的免費嗎?會被擋嗎?</dt>
+      <dd>真的完全免費,不用任何 API key。三層 fallback 保證可用:① DuckDuckGo HTML(主力)② Google News RSS(永遠通)③ SearXNG 公開實例(最後手段)。實測 Render 機房雖然連不到 DDG,但自動切換 Google News 抓得到。</dd>
+      <dt>異常偵測什麼時候會發通知?</dt>
+      <dd>每天早上 8:00 自動跑,偵測到:① 昨日營收變動超過 ±20% ② 單店月份下滑超過 -25%,會立刻 Telegram 通知。手動觸發:POST /api/enhance/detect-anomalies。</dd>
       <dt>會自動發文嗎？</dt>
       <dd>不會。所有產出目前都是「草稿模式」— 你看完按複製貼到平台。HANA 雖然有半自動/全自動模式，但實際發送功能仍未開通。</dd>
       <dt>員工記得多久？</dt>
