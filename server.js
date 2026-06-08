@@ -204,7 +204,7 @@ app.post("/api/line/upload", (req, res) => {
 
 let anthropic = null;
 if (process.env.ANTHROPIC_API_KEY) {
-  anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); try { const _enh = require("./ai-enhancements"); const _orig = anthropic.messages.create.bind(anthropic.messages); anthropic.messages.create = function(o) { try { if (o && typeof o.system === "string" && o.system.length > 200 && !o.system.includes("只回傳純 JSON") && !o.system.includes("不要 markdown") && !o.system.includes("回傳純 JSON")) { o.system = o.system + _enh.EVIDENCE_RULE; } } catch (e) {} return _orig(o); }; console.log("[ai-enhancements] evidence wrapper auto-injected to all Claude calls"); } catch (e) { console.error("[ai-enhancements] wrapper inject failed:", e.message); }
+try { const _enh = require("./ai-enhancements"); const _orig = anthropic.messages.create.bind(anthropic.messages); anthropic.messages.create = function(o) { try { return _enh.enhancedCreate(_orig, o); } catch (e) { console.error("[ai-enhancements] enhancedCreate err:", e.message); return _orig(o); } }; console.log("[ai-enhancements] enhancedCreate auto-injected: EVIDENCE_RULE + web_search tool + tool_use loop"); } catch (e) { console.error("[ai-enhancements] wrapper inject failed:", e.message); }
   console.log("[OK] Anthropic client initialized | worker:", MODEL, "| director:", DIRECTOR_MODEL);
 } else {
   console.warn("[WARN] ANTHROPIC_API_KEY not set");
