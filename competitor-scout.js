@@ -148,7 +148,7 @@ async function analyzeWithAI() {
   ).join('\n\n');
   
   const resp = await client.messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-4-6',
     max_tokens: 1500,
     system: '你是 溫點 WarmPlace 的 AI 廣告投手 LEON。分析以下競品廣告（含法朋、亞尼克、Paul、Ladurée、Pierre Hermé 等韓系甜點 / 禮盒品牌），找出共同模式：(1) 熱門訴求點 (2) 價格與禮盒策略 (3) CTA 模式 (4) 字數/語氣 (5) 我們可以偷學的 3 個技巧。輸出繁中、條列、簡潔。',
     messages: [{ role: 'user', content: '請分析以下台灣韓系甜點 / 馬卡龍 / 高端禮盒業界正在跑的廣告：\n\n' + adsText }]
