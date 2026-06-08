@@ -32,7 +32,7 @@ function uploadKeyOf(r) { return r.upload_id || cleanFileName(r.source_file); }
 const EXTRACT_SYS = "你是溫點 WarmPlace 烘焙坊的營運分析師。從上傳的報告/單據/照片中萃取結構化資料。只回傳純 JSON,絕對不要前綴後綴或 markdown。欄位:{\"date\":\"YYYY-MM-DD\",\"branch\":\"門市名\",\"author\":\"填寫人\",\"revenue\":數字,\"orders\":數字,\"problems\":\"問題點\\n問題點\",\"review\":\"檢討觀察\",\"action_items\":\"待辦\\n待辦\",\"notes\":\"備註\",\"type\":\"daily|weekly|event|problem|other\",\"summary\":\"一句摘要15字內\"}";
 
 async function extractWithClaude(messages) {
-  const result = await anthropic.messages.create({ model: 'claude-sonnet-4-5', max_tokens: 2048, system: EXTRACT_SYS, messages });
+  const result = await anthropic.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 2048, system: EXTRACT_SYS, messages });
   const respText = (result.content || []).map(c => c.text || '').join('');
   let extracted = {};
   try { const m = respText.match(/\{[\s\S]*\}/); if (m) extracted = JSON.parse(m[0]); } catch (e) { extracted = { _err: e.message }; }
@@ -88,7 +88,7 @@ async function reanalyzeOne(origReport) {
   if (ext === '.xlsx' || ext === '.xls') { const wb = new ExcelJS.Workbook(); await wb.xlsx.readFile(fpath); const rows = []; wb.eachSheet(s => { rows.push('=== ' + s.name + ' ==='); s.eachRow(row => { rows.push((row.values || []).slice(1).map(v => (v === null || v === undefined) ? '' : String(v)).join('\t')); }); }); content = rows.join('\n').slice(0, 30000); }
   else if (ext === '.csv' || ext === '.txt' || ext === '.md') { content = fs.readFileSync(fpath, 'utf8').slice(0, 30000); }
   else return { skipped: true, reason: '不支援展開' };
-  const result = await anthropic.messages.create({ model: 'claude-sonnet-4-5', max_tokens: 8192, system: REANALYZE_SYS, messages: [{ role: 'user', content: '門市: ' + (origReport.branch || '') + '\n原始檔: ' + (origReport.source_file || '') + '\n\n內容:\n' + content }] });
+  const result = await anthropic.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 8192, system: REANALYZE_SYS, messages: [{ role: 'user', content: '門市: ' + (origReport.branch || '') + '\n原始檔: ' + (origReport.source_file || '') + '\n\n內容:\n' + content }] });
   const respText = (result.content || []).map(c => c.text || '').join('');
   let parsed = {};
   try { const m = respText.match(/\{[\s\S]*\}/); if (m) parsed = JSON.parse(m[0]); } catch (e) { return { error: '解析失敗' }; }
@@ -196,7 +196,7 @@ router.get('/summary', (req, res) => { try { res.json(buildSummaryForAI()); } ca
 const ANALYSIS_SYS = "你是溫點 WarmPlace 烘焙坊的資深營運顧問。針對指定範圍做深度分析。只回傳純 JSON,絕對不要 markdown 標記。欄位:{\"executive_summary\":\"3-5句執行摘要\",\"key_insights\":\"關鍵觀察150字內\",\"top_issues\":[{\"issue\":\"問題\",\"severity\":\"high|medium|low\",\"root_cause\":\"原因\"}],\"recommendations\":[{\"priority\":\"P1|P2|P3\",\"title\":\"標題\",\"detail\":\"做法\",\"expected_impact\":\"效益\"}],\"quick_wins\":[\"立刻可做\"],\"watch_outs\":[\"風險\"]}";
 
 async function runAnalysis(sysExtra, ctx) {
-  const result = await anthropic.messages.create({ model: 'claude-sonnet-4-5', max_tokens: 3000, system: ANALYSIS_SYS + (sysExtra || ''), messages: [{ role: 'user', content: ctx }] });
+  const result = await anthropic.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 3000, system: ANALYSIS_SYS + (sysExtra || ''), messages: [{ role: 'user', content: ctx }] });
   const respText = (result.content || []).map(c => c.text || '').join('');
   let analysis = {};
   try { const m = respText.match(/\{[\s\S]*\}/); if (m) analysis = JSON.parse(m[0]); } catch (e) {}
