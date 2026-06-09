@@ -305,7 +305,8 @@ function buildSummaryForAI() {
       // 月目標 — 從 targets file(若有設)
       const tkey = b.branch + '|' + m.month;
       m.target = (targetsAll[tkey] && typeof targetsAll[tkey].target === 'number') ? targetsAll[tkey].target : null;
-      m.achievement = m.target ? Math.round((m.revenue / m.target) * 1000) / 10 : null;
+      m.achievement_pct = m.target ? Math.round((m.revenue / m.target) * 1000) / 10 : null;
+      m.achievement = m.achievement_pct;  // alias for backward compat
       // 月增減 vs 上月(monthsArr 是新到舊)
       const prev = monthsArr[i + 1];
       if (prev && prev.revenue > 0) {
