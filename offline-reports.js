@@ -307,12 +307,14 @@ function buildSummaryForAI() {
   const all_months = [...monthsSet].sort((a, b) => b.localeCompare(a));
   const all_branches = by_branch.map(b => b.branch);
   const by_month_all_stores = all_months.map(month => {
-    const row = { month, total: 0 };
+    const row = { month, by_branch: {}, total_revenue: 0, total_orders: 0 };
     all_branches.forEach(b => {
       const m = (branchMap[b].by_month || []).find(x => x.month === month);
       const rev = m ? m.revenue : 0;
-      row[b] = rev;
-      row.total += rev;
+      const ord = m ? m.orders : 0;
+      row.by_branch[b] = { revenue: rev, orders: ord, count: m ? m.count : 0 };
+      row.total_revenue += rev;
+      row.total_orders += ord;
     });
     return row;
   });
