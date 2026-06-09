@@ -300,7 +300,36 @@ function buildSummaryForAI() {
   });
   const by_branch = Object.values(branchMap).sort((a, b) => b.revenue - a.revenue);
   const recent_reports_brief = all.slice(-5).reverse().map(r => ({ date: r.report_date, branch: r.branch, summary: r.summary || (r.review || '').slice(0, 80), revenue: r.revenue }));
-  return { ok: true, generated_at: new Date().toISOString(), total_reports: all.length, recent_30: d30.length, recent_7: d7.length, revenue_30, revenue_7, problem_count: recent_problems.length, recent_problems: recent_problems.slice(0, 15), action_items, revenue_trend: trend, by_branch, recent_reports_brief };
+
+  // 加 by_month_all_stores: 全部月份 x 全部門市的 matrix (前端「全體月份總和」用)
+  const monthsSet = new Set();
+  all.forEach(r => { const ym = (r.report_date || '').slice(0, 7); if (ym) monthsSet.add(ym); });
+  const all_months = [...monthsSet].sort((a, b) => b.localeCompare(a));
+  const all_branches = by_branch.map(b => b.branch);
+  const by_month_all_stores = all_months.map(month => {
+    const row = { month, total: 0 };
+    all_branches.forEach(b => {
+      const m = (branchMap[b].by_month || []).find(x => x.month === month);
+      const rev = m ? m.revenue : 0;
+      row[b] = rev;
+      row.total += rev;
+    });
+    return row;
+  });
+  // uploads — list raw files in UPLOADS_DIR
+  let uploads = [];
+  try {
+    if (fs.existsSync(UPLOADS_DIR)) {
+      uploads = fs.readdirSync(UPLOADS_DIR).map(name => {
+        try { const st = fs.statSync(path.join(UPLOADS_DIR, name)); return { name, size: st.size, mtime: st.mtime.toISOString() }; } catch { return null; }
+      }).filter(Boolean).sort((a, b) => (b.mtime || '').localeCompare(a.mtime || ''));
+    }
+  } catch {}
+  // expanded / skipped (前端原本用於 Excel 展開狀態,先填空)
+  const expanded = [];
+  const skipped = [];
+
+  return { ok: true, generated_at: new Date().toISOString(), total_reports: all.length, recent_30: d30.length, recent_7: d7.length, revenue_30, revenue_7, problem_count: recent_problems.length, recent_problems: recent_problems.slice(0, 15), action_items, revenue_trend: trend, by_branch, recent_reports_brief, all_branches, all_months, by_month_all_stores, uploads, expanded, skipped };
 }
 
 router.get('/summary', (req, res) => {
