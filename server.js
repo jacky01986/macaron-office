@@ -3303,7 +3303,7 @@ app.get('/api/scout/intelligence', (req, res) => {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
   try { res.json(scout.getMarketIntelligence() || { ok: false, reason: 'not yet distilled' }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
-async const _distillJobs = new Map();
+const _distillJobs = new Map();
 function _distillHandler(req, res) {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
   const pollId = req.params && req.params.jobId;
