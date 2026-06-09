@@ -309,6 +309,117 @@ async function tg(token, chatId, text) {
 
 router.get('/send-digest', async (req, res) => { res.json(await sendDailyDigestToTelegram()); });
 
+// ============ AI 分析 endpoints — 4 層 ============
+const ANALYSIS_SYS = `你是溫點 WarmPlace 烘焙坊的營運分析師。根據提供的營運報告數據,給出結構化分析。只回傳純 JSON,絕對不要前綴後綴或 markdown。欄位:
+{"summary":"一句話摘要(30字內)","key_findings":["發現1","發現2","發現3"],"problems":["問題1","問題2"],"recommendations":["建議1","建議2","建議3"],"immediate_actions":["立刻可做1","立刻可做2"],"risks":["風險注意1","風險注意2"]}
+若資料太少,relevant 欄位填 ["資料不足,需更多報告"]。`;
+
+async function callAnalysisClaude(prompt) {
+  try {
+    const result = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2500,
+      system: ANALYSIS_SYS,
+      messages: [{ role: 'user', content: prompt }]
+    });
+    const respText = (result.content || []).map(c => c.text || '').join('');
+    let parsed = {};
+    try { const m = respText.match(/\{[\s\S]*\}/); if (m) parsed = JSON.parse(m[0]); }
+    catch (e) { parsed = { _raw: respText.slice(0, 500), _parse_error: e.message }; }
+    return parsed;
+  } catch (e) {
+    return { error: e.message, summary: '分析失敗:' + e.message, key_findings: [], problems: [], recommendations: [], immediate_actions: [], risks: [] };
+  }
+}
+
+function statsFromRecords(records) {
+  const totalRev = records.reduce((s, r) => s + (Number(r.revenue) || 0), 0);
+  const totalOrders = records.reduce((s, r) => s + (Number(r.orders) || 0), 0);
+  const branches = {};
+  records.forEach(r => {
+    const b = r.branch || '(無門市)';
+    if (!branches[b]) branches[b] = { count: 0, revenue: 0, orders: 0 };
+    branches[b].count++;
+    branches[b].revenue += Number(r.revenue) || 0;
+    branches[b].orders += Number(r.orders) || 0;
+  });
+  const problems = records.filter(r => r.problems).slice(-20).map(r => ({ date: r.report_date, branch: r.branch, problems: r.problems }));
+  return { count: records.length, totalRev, totalOrders, branches, recentProblems: problems };
+}
+
+// 1. 全店分析
+router.get('/analysis/all-stores', async (req, res) => {
+  try {
+    const all = loadAll();
+    if (all.length === 0) return res.json({ ok: true, analysis: { summary: '尚無報告資料', key_findings: [], problems: [], recommendations: [], immediate_actions: [], risks: [] } });
+    const stats = statsFromRecords(all);
+    const prompt = `請分析溫點全體門市營運(共 ${all.length} 份報告):\n總營收 NT$${stats.totalRev.toLocaleString()}\n總訂單 ${stats.totalOrders}\n門市分布: ${JSON.stringify(stats.branches)}\n近期問題點: ${JSON.stringify(stats.recentProblems)}\n\n請給跨店比較、贏家/落後門市、共通問題、優先行動。`;
+    const analysis = await callAnalysisClaude(prompt);
+    res.json({ ok: true, scope: 'all-stores', stats: { total: all.length, revenue: stats.totalRev, branches: Object.keys(stats.branches).length }, analysis });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// 2. 單店分析
+router.get('/analysis/branch/:branch', async (req, res) => {
+  try {
+    const branch = decodeURIComponent(req.params.branch);
+    const records = loadAll().filter(r => r.branch === branch);
+    if (records.length === 0) return res.json({ ok: true, analysis: { summary: branch + ' 尚無報告', key_findings: [], problems: [], recommendations: [], immediate_actions: [], risks: [] } });
+    const stats = statsFromRecords(records);
+    // monthly breakdown
+    const byMonth = {};
+    records.forEach(r => {
+      const m = (r.report_date || '').slice(0, 7);
+      if (!byMonth[m]) byMonth[m] = { count: 0, revenue: 0 };
+      byMonth[m].count++;
+      byMonth[m].revenue += Number(r.revenue) || 0;
+    });
+    const prompt = `請分析「${branch}」單店營運(${records.length} 份報告):\n累計營收 NT$${stats.totalRev.toLocaleString()}\n月份分布: ${JSON.stringify(byMonth)}\n近期問題: ${JSON.stringify(stats.recentProblems.slice(-10))}\n\n請給此店的趨勢、月份變化、最大問題、改善建議。`;
+    const analysis = await callAnalysisClaude(prompt);
+    res.json({ ok: true, scope: 'branch', branch, stats: { total: records.length, revenue: stats.totalRev, months: Object.keys(byMonth).length }, byMonth, analysis });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// 3. 月份分析
+router.get('/analysis/month/:branch/:month', async (req, res) => {
+  try {
+    const branch = decodeURIComponent(req.params.branch);
+    const month = req.params.month;
+    const records = loadAll().filter(r => r.branch === branch && (r.report_date || '').startsWith(month));
+    if (records.length === 0) return res.json({ ok: true, analysis: { summary: branch + ' ' + month + ' 尚無報告', key_findings: [], problems: [], recommendations: [], immediate_actions: [], risks: [] } });
+    const stats = statsFromRecords(records);
+    // Day-by-day list
+    const byDay = records.map(r => ({ date: r.report_date, revenue: r.revenue, orders: r.orders, problems: r.problems, summary: r.summary }));
+    const prompt = `請分析「${branch}」${month} 月份營運(${records.length} 份報告):\n月營收 NT$${stats.totalRev.toLocaleString()}\n日別: ${JSON.stringify(byDay.slice(0, 35))}\n\n請給月份最高/最低日、波動原因、月內趨勢、下月建議。`;
+    const analysis = await callAnalysisClaude(prompt);
+    res.json({ ok: true, scope: 'month', branch, month, stats: { total: records.length, revenue: stats.totalRev }, byDay, analysis });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// 4. 單日分析
+router.get('/analysis/day/:branch/:date', async (req, res) => {
+  try {
+    const branch = decodeURIComponent(req.params.branch);
+    const date = req.params.date;
+    const records = loadAll().filter(r => r.branch === branch && r.report_date === date);
+    if (records.length === 0) return res.json({ ok: true, analysis: { summary: branch + ' ' + date + ' 無紀錄', key_findings: [], problems: [], recommendations: [], immediate_actions: [], risks: [] } });
+    const r0 = records[0];
+    const prompt = `請分析「${branch}」${date} 單日營運:\n營收 NT$${(r0.revenue||0).toLocaleString()}, 訂單 ${r0.orders || 0}\n摘要: ${r0.summary || ''}\n問題: ${r0.problems || ''}\n檢討: ${r0.review || ''}\n待辦: ${r0.action_items || ''}\n備註: ${r0.notes || ''}\n\n請給當日重點、最該改善的事、明天可立刻做的事。`;
+    const analysis = await callAnalysisClaude(prompt);
+    res.json({ ok: true, scope: 'day', branch, date, record: r0, analysis });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// 補:依門市拿明細 records(讓前端「最近 20 筆」工作)
+router.get('/list-by-branch/:branch', (req, res) => {
+  try {
+    const branch = decodeURIComponent(req.params.branch);
+    const limit = Math.min(Number(req.query.limit) || 100, 500);
+    const records = loadAll().filter(r => r.branch === branch).sort((a, b) => (b.report_date || '').localeCompare(a.report_date || '')).slice(0, limit);
+    res.json({ ok: true, branch, count: records.length, records });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
 function registerCron(cron) {
   if (!cron) return;
   cron.schedule('0 8 * * *', async () => {
