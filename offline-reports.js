@@ -263,13 +263,40 @@ function buildSummaryForAI() {
     const rev = all.filter(r => r.report_date === d).reduce((s, r) => s + (Number(r.revenue) || 0), 0);
     trend.push({ date: d, revenue: rev });
   }
+  // 用「全部」資料算 by_branch (不限 30 天),讓前端門市卡能看完整歷史
   const branchMap = {};
-  d30.forEach(r => {
+  all.forEach(r => {
     const b = r.branch || '(無門市)';
-    if (!branchMap[b]) branchMap[b] = { branch: b, count: 0, revenue: 0, problems: 0 };
+    if (!branchMap[b]) branchMap[b] = { branch: b, count: 0, revenue: 0, problems: 0, reports: [], by_month: {} };
     branchMap[b].count++;
     branchMap[b].revenue += Number(r.revenue) || 0;
     if (r.problems) branchMap[b].problems++;
+    branchMap[b].reports.push({
+      id: r.id,
+      date: r.report_date,
+      revenue: Number(r.revenue) || 0,
+      orders: Number(r.orders) || 0,
+      summary: r.summary || '',
+      problems: r.problems || '',
+      review: r.review || '',
+      action_items: r.action_items || '',
+      notes: r.notes || '',
+      attachment_url: r.attachment_url || ''
+    });
+    // 月份統計
+    const ym = (r.report_date || '').slice(0, 7);
+    if (ym) {
+      if (!branchMap[b].by_month[ym]) branchMap[b].by_month[ym] = { month: ym, count: 0, revenue: 0, orders: 0 };
+      branchMap[b].by_month[ym].count++;
+      branchMap[b].by_month[ym].revenue += Number(r.revenue) || 0;
+      branchMap[b].by_month[ym].orders += Number(r.orders) || 0;
+    }
+  });
+  // 排序每店的 reports 由新到舊,限 100 筆,by_month 轉陣列
+  Object.values(branchMap).forEach(b => {
+    b.reports.sort((a, x) => (x.date || '').localeCompare(a.date || ''));
+    b.reports = b.reports.slice(0, 100);
+    b.by_month = Object.values(b.by_month).sort((a, x) => (x.month || '').localeCompare(a.month || ''));
   });
   const by_branch = Object.values(branchMap).sort((a, b) => b.revenue - a.revenue);
   const recent_reports_brief = all.slice(-5).reverse().map(r => ({ date: r.report_date, branch: r.branch, summary: r.summary || (r.review || '').slice(0, 80), revenue: r.revenue }));
@@ -310,9 +337,19 @@ async function tg(token, chatId, text) {
 router.get('/send-digest', async (req, res) => { res.json(await sendDailyDigestToTelegram()); });
 
 // ============ AI 分析 endpoints — 4 層 ============
-const ANALYSIS_SYS = `你是溫點 WarmPlace 烘焙坊的營運分析師。根據提供的營運報告數據,給出結構化分析。只回傳純 JSON,絕對不要前綴後綴或 markdown。欄位:
-{"summary":"一句話摘要(30字內)","key_findings":["發現1","發現2","發現3"],"problems":["問題1","問題2"],"recommendations":["建議1","建議2","建議3"],"immediate_actions":["立刻可做1","立刻可做2"],"risks":["風險注意1","風險注意2"]}
-若資料太少,relevant 欄位填 ["資料不足,需更多報告"]。`;
+const ANALYSIS_SYS = `你是溫點 WarmPlace 烘焙坊的營運分析師。根據提供的營運報告數據,給出結構化分析。只回傳純 JSON,絕對不要前綴後綴或 markdown。schema:
+{
+ "executive_summary": "執行摘要,1-2 句話直白點出最重要的事(30-60 字)",
+ "key_insights": "深度關鍵觀察,寫一段 80-150 字的洞察(數字 + 為什麼 + 含意)",
+ "top_issues": [
+   {"title":"問題標題(短)","detail":"具體狀況描述(20-50 字)","expected_impact":"如不處理會怎樣 / 處理後預期改善"}
+ ],
+ "recommendations": [
+   {"title":"建議標題","detail":"做法細節","expected_impact":"預期效果(營收/客數/效率改善)"}
+ ],
+ "quick_wins": ["明天就能做的事 1(動詞開頭)","明天就能做的事 2","明天就能做的事 3"]
+}
+top_issues 給 2-4 條,recommendations 給 2-4 條,quick_wins 給 3-5 條。資料太少時欄位填空陣列或對應字串說明。`;
 
 async function callAnalysisClaude(prompt) {
   try {
