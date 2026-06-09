@@ -230,6 +230,42 @@ function register(app, cron) {
     } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
   });
 
+  // Debug: list Drive files raw with mimeType
+  app.get('/api/offline-reports/gdrive/debug/files', async (req, res) => {
+    try {
+      const files = await listFolderFiles();
+      res.json({ ok: true, count: files.length, files });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message, stack: e.stack }); }
+  });
+
+  // Debug: try to download a specific file and report status
+  app.get('/api/offline-reports/gdrive/debug/download/:fileId', async (req, res) => {
+    try {
+      const files = await listFolderFiles();
+      const file = files.find(f => f.id === req.params.fileId);
+      if (!file) return res.status(404).json({ ok: false, error: 'file not in folder' });
+      const token = await getAccessToken();
+      const googleNative = {
+        'application/vnd.google-apps.document': 'application/pdf',
+        'application/vnd.google-apps.spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.google-apps.presentation': 'application/pdf'
+      };
+      let url, mode;
+      if (googleNative[file.mimeType]) {
+        mode = 'export';
+        url = `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=${encodeURIComponent(googleNative[file.mimeType])}`;
+      } else {
+        mode = 'alt=media';
+        url = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+      }
+      const dr = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+      const status = dr.status;
+      let body = '';
+      try { body = (await dr.text()).substring(0, 500); } catch {}
+      res.json({ ok: dr.ok, file, mode, url, downloadStatus: status, bodyPreview: body });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
   // Async job POST
   app.post('/api/offline-reports/gdrive/sync-now', (req, res) => {
     try {
