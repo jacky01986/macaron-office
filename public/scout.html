@@ -212,20 +212,41 @@ async function loadIntelligence() {
 async function runDistill() {
   const btn = document.getElementById('distillBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ 精煉中...';
+  btn.textContent = '⏳ 啟動中...';
+  let _origText = '🧠 精煉(distill)';
   try {
-    const r = await fetch('/api/scout/distill', { method: 'POST' }).then(r => r.json());
-    if (r.ok) {
-      alert('DISTILL 完成！情報已更新。');
-      await loadIntelligence();
-    } else {
-      alert('DISTILL 失敗：' + (r.reason || r.error || '未知錯誤'));
+    const r = await fetch('/api/scout/distill', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(r => r.json());
+    if (!r.ok || !r.jobId) {
+      alert('DISTILL 啟動失敗：' + (r.error || JSON.stringify(r)));
+      btn.disabled = false; btn.textContent = _origText; return;
     }
+    const jobId = r.jobId;
+    let elapsed = 0;
+    btn.textContent = '⏳ 精煉中 0s...';
+    const poll = setInterval(async () => {
+      elapsed += 3;
+      btn.textContent = '⏳ 精煉中 ' + elapsed + 's...';
+      try {
+        const j = await fetch('/api/scout/distill/' + jobId).then(r => r.json());
+        if (j.status === 'done') {
+          clearInterval(poll);
+          alert('DISTILL 完成！耗時 ' + elapsed + ' 秒。情報已更新。');
+          btn.disabled = false; btn.textContent = _origText;
+          await loadIntelligence();
+        } else if (j.status === 'error') {
+          clearInterval(poll);
+          alert('DISTILL 失敗：' + j.error);
+          btn.disabled = false; btn.textContent = _origText;
+        } else if (elapsed > 300) {
+          clearInterval(poll);
+          alert('DISTILL 超時 (>5 分鐘)，請查 Render 日誌');
+          btn.disabled = false; btn.textContent = _origText;
+        }
+      } catch (e) {}
+    }, 3000);
   } catch (e) {
-    alert('DISTILL 失敗：' + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '🔄 重新精煉';
+    alert('DISTILL 錯誤：' + e.message);
+    btn.disabled = false; btn.textContent = _origText;
   }
 }
 
