@@ -3303,18 +3303,35 @@ app.get('/api/scout/intelligence', (req, res) => {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
   try { res.json(scout.getMarketIntelligence() || { ok: false, reason: 'not yet distilled' }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
-async function _distillHandler(req, res) {
+async const _distillJobs = new Map();
+function _distillHandler(req, res) {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
-  try {
-    const r = await scout.distillIntelligence();
-    res.json({ ok: true, finished: true, result: r });
-  } catch (e) {
-    console.error('[distill]', e.message);
-    res.status(500).json({ ok: false, error: e.message });
+  const pollId = req.params && req.params.jobId;
+  if (pollId) {
+    const job = _distillJobs.get(pollId);
+    if (!job) return res.status(404).json({ error: 'job not found' });
+    return res.json({ ok: true, status: job.status, result: job.result, error: job.error, startedAt: job.startedAt, finishedAt: job.finishedAt });
   }
+  const jobId = 'dst_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  const job = { id: jobId, status: 'running', result: null, error: null, startedAt: new Date().toISOString(), finishedAt: null };
+  _distillJobs.set(jobId, job);
+  const _now = Date.now();
+  for (const [k, j] of _distillJobs.entries()) { if (j.finishedAt && (_now - new Date(j.finishedAt).getTime() > 3600000)) _distillJobs.delete(k); }
+  Promise.resolve().then(async () => {
+    try {
+      const r = await scout.distillIntelligence();
+      job.status = 'done'; job.result = r; job.finishedAt = new Date().toISOString();
+      console.log('[distill]', jobId, 'done in', Date.now() - _now, 'ms');
+    } catch (e) {
+      console.error('[distill]', jobId, e.message);
+      job.status = 'error'; job.error = e.message; job.finishedAt = new Date().toISOString();
+    }
+  });
+  res.json({ ok: true, status: 'started', jobId });
 }
 app.get('/api/scout/distill', _distillHandler);
 app.post('/api/scout/distill', _distillHandler);
+app.get('/api/scout/distill/:jobId', _distillHandler);
 app.get('/api/scout/report/:serviceId', (req, res) => {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
   try {
