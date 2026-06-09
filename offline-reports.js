@@ -143,6 +143,78 @@ router.post('/submit', (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
+// List uploaded raw files in UPLOADS_DIR (for offline-reports.html init)
+router.get('/uploads', (req, res) => {
+  try {
+    if (!fs.existsSync(UPLOADS_DIR)) return res.json({ ok: true, files: [] });
+    const files = fs.readdirSync(UPLOADS_DIR).map(name => {
+      try {
+        const stat = fs.statSync(path.join(UPLOADS_DIR, name));
+        return { name, size: stat.size, mtime: stat.mtime.toISOString(), url: '/api/offline-reports/file/' + name };
+      } catch { return null; }
+    }).filter(Boolean).sort((a, b) => (b.mtime || '').localeCompare(a.mtime || ''));
+    res.json({ ok: true, count: files.length, files });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// Monthly targets per branch (stored in /var/data/offline-targets.json)
+const TARGETS_FILE = path.join(DATA_DIR, 'offline-targets.json');
+function loadTargets() {
+  try {
+    if (!fs.existsSync(TARGETS_FILE)) return {};
+    return JSON.parse(fs.readFileSync(TARGETS_FILE, 'utf8'));
+  } catch { return {}; }
+}
+function saveTargets(t) {
+  try { fs.writeFileSync(TARGETS_FILE, JSON.stringify(t, null, 2)); } catch {}
+}
+router.get('/targets', (req, res) => {
+  res.json({ ok: true, targets: loadTargets() });
+});
+router.post('/targets', (req, res) => {
+  try {
+    const incoming = req.body || {};
+    const current = loadTargets();
+    const merged = { ...current, ...incoming };
+    saveTargets(merged);
+    res.json({ ok: true, targets: merged });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// Reanalyze a single uploaded file (re-extract via Claude)
+router.post('/reanalyze/:filename', async (req, res) => {
+  try {
+    const safe = path.basename(req.params.filename);
+    const fp = path.join(UPLOADS_DIR, safe);
+    if (!fs.existsSync(fp)) return res.status(404).json({ ok: false, error: 'file not found' });
+    const buf = fs.readFileSync(fp);
+    const ext = (path.extname(safe) || '').toLowerCase();
+    const mimeMap = { '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', '.csv': 'text/csv', '.txt': 'text/plain', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
+    const r = await processBuffer(buf, { originalName: safe, mimeType: mimeMap[ext] || '', source: 'reanalyze' });
+    res.json({ ok: true, record: r });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// Reanalyze all uploaded files
+router.post('/reanalyze-all', async (req, res) => {
+  try {
+    if (!fs.existsSync(UPLOADS_DIR)) return res.json({ ok: true, processed: 0 });
+    const files = fs.readdirSync(UPLOADS_DIR);
+    let processed = 0, errors = [];
+    for (const name of files) {
+      try {
+        const fp = path.join(UPLOADS_DIR, name);
+        const buf = fs.readFileSync(fp);
+        const ext = (path.extname(name) || '').toLowerCase();
+        const mimeMap = { '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', '.csv': 'text/csv', '.txt': 'text/plain', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
+        await processBuffer(buf, { originalName: name, mimeType: mimeMap[ext] || '', source: 'reanalyze-all' });
+        processed++;
+      } catch (e) { errors.push({ name, error: e.message }); }
+    }
+    res.json({ ok: true, processed, errors });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
 router.get('/list', (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 50, 200);
   const all = loadAll().slice(-limit).reverse();
