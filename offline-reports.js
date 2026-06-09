@@ -293,10 +293,32 @@ function buildSummaryForAI() {
     }
   });
   // 排序每店的 reports 由新到舊,限 100 筆,by_month 轉陣列
+  // 並補上前端 renderBranches 需要的欄位:aov / target / achievement / mom_change
+  const targetsAll = loadTargets();
   Object.values(branchMap).forEach(b => {
     b.reports.sort((a, x) => (x.date || '').localeCompare(a.date || ''));
     b.reports = b.reports.slice(0, 100);
-    b.by_month = Object.values(b.by_month).sort((a, x) => (x.month || '').localeCompare(a.month || ''));
+    const monthsArr = Object.values(b.by_month).sort((a, x) => (x.month || '').localeCompare(a.month || ''));
+    // 補欄位
+    monthsArr.forEach((m, i) => {
+      m.aov = m.orders > 0 ? Math.round(m.revenue / m.orders) : 0;
+      // 月目標 — 從 targets file(若有設)
+      const tkey = b.branch + '|' + m.month;
+      m.target = (targetsAll[tkey] && typeof targetsAll[tkey].target === 'number') ? targetsAll[tkey].target : null;
+      m.achievement = m.target ? Math.round((m.revenue / m.target) * 1000) / 10 : null;
+      // 月增減 vs 上月(monthsArr 是新到舊)
+      const prev = monthsArr[i + 1];
+      if (prev && prev.revenue > 0) {
+        m.mom_change = Math.round(((m.revenue - prev.revenue) / prev.revenue) * 1000) / 10;
+      } else {
+        m.mom_change = null;
+      }
+    });
+    b.by_month = monthsArr;
+    // 整店欄位
+    b.avg_revenue = b.count > 0 ? Math.round(b.revenue / b.count) : 0;
+    b.total_orders = b.reports.reduce((s, r) => s + (Number(r.orders) || 0), 0);
+    b.aov = b.total_orders > 0 ? Math.round(b.revenue / b.total_orders) : 0;
   });
   const by_branch = Object.values(branchMap).sort((a, b) => b.revenue - a.revenue);
   const recent_reports_brief = all.slice(-5).reverse().map(r => ({ date: r.report_date, branch: r.branch, summary: r.summary || (r.review || '').slice(0, 80), revenue: r.revenue }));
