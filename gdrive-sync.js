@@ -65,12 +65,43 @@ async function listFolderFiles() {
   const token = await getAccessToken();
   const folderId = getFolderId();
   const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
-  const fields = encodeURIComponent('files(id,name,mimeType,size,modifiedTime,createdTime,parents)');
+  const fields = encodeURIComponent('files(id,name,mimeType,size,modifiedTime,createdTime,parents,shortcutDetails)');
   const url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${fields}&pageSize=1000`;
   const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
   if (!res.ok) throw new Error('list failed: ' + res.status + ' ' + (await res.text()).slice(0, 200));
   const d = await res.json();
-  return d.files || [];
+  // Resolve shortcuts to their target metadata
+  const out = [];
+  for (const f of (d.files || [])) {
+    if (f.mimeType === 'application/vnd.google-apps.shortcut' && f.shortcutDetails && f.shortcutDetails.targetId) {
+      try {
+        const targetFields = encodeURIComponent('id,name,mimeType,size,modifiedTime,createdTime');
+        const targetUrl = `https://www.googleapis.com/drive/v3/files/${f.shortcutDetails.targetId}?fields=${targetFields}`;
+        const tr = await fetch(targetUrl, { headers: { Authorization: 'Bearer ' + token } });
+        if (tr.ok) {
+          const target = await tr.json();
+          // Use shortcut's display name + target's mimeType/id for download
+          out.push({
+            id: target.id,
+            name: f.name,  // shortcut filename (人類可讀)
+            mimeType: target.mimeType,  // target 的真實 mimeType
+            size: target.size,
+            modifiedTime: target.modifiedTime || f.modifiedTime,
+            createdTime: target.createdTime || f.createdTime,
+            _isShortcut: true,
+            _shortcutId: f.id
+          });
+        } else {
+          out.push({ ...f, _resolveError: 'target inaccessible: ' + tr.status });
+        }
+      } catch (e) {
+        out.push({ ...f, _resolveError: 'target fetch err: ' + e.message });
+      }
+    } else {
+      out.push(f);
+    }
+  }
+  return out;
 }
 
 async function downloadFile(fileId, mimeType) {
