@@ -170,40 +170,54 @@ function parseNumber(cellValue) {
 }
 
 async function extractExcelHybrid(buffer, hintFilename) {
-  const { schema, raw } = await inferExcelSchema(buffer, hintFilename);
-  if (!schema || !Array.isArray(schema.sheets) || schema.sheets.length === 0) {
-    return { ok: false, reason: 'no_schema', raw: (raw || '').slice(0, 500), schema };
-  }
+  // 🎯 規則式 parser — 寫死「溫點營業目標」Excel 模板的欄位 mapping
+  // 模板結構(用 Python openpyxl 驗證過,4 個檔 100% 一致):
+  //   Sheet 名:202601 ~ 202612 (12 個月)
+  //   Cell A1 = 門市名
+  //   Row 4 = 標題列
+  //   Row 5+ 資料:B 欄=日期, D 欄=實際營業額, E 欄=筆數
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buffer);
   const todayStr = new Date().toISOString().slice(0, 10);
-  const branch = String(schema.branch || '').slice(0, 100);
-  const dailyMap = new Map(); // 同日期合併
+  let branch = '';
+  const dailyMap = new Map();
+  const monthsFound = [];
 
-  for (const ss of schema.sheets) {
-    const sheet = wb.getWorksheet(ss.sheet_name);
-    if (!sheet) continue;
-    const dateCol = Number(ss.date_col);
-    const revCol = Number(ss.revenue_col);
-    const ordCol = Number(ss.orders_col);
-    const startRow = Number(ss.data_start_row || (ss.header_row + 1) || 2);
-    if (!dateCol || !revCol) continue;
-    for (let r = startRow; r <= sheet.rowCount; r++) {
+  wb.eachSheet(sheet => {
+    const sn = sheet.name;
+    // sheet 名必須是 6 位數字(202601 格式)
+    if (!/^\d{6}$/.test(sn)) return;
+    // 從 cell A1 取門市名(第一個有值的 sheet)
+    if (!branch) {
+      const a1 = sheet.getCell(1, 1).value;
+      if (a1) branch = String(typeof a1 === 'object' ? (a1.text || a1.result || '') : a1).trim().slice(0, 100);
+    }
+    let monthDays = 0;
+    for (let r = 5; r <= sheet.rowCount; r++) {
       const row = sheet.getRow(r);
-      const date = parseDate(row.getCell(dateCol).value);
+      const dVal = row.getCell(2).value; // B = 日期
+      const rVal = row.getCell(4).value; // D = 實際營業額
+      const oVal = row.getCell(5).value; // E = 筆數
+      const date = parseDate(dVal);
       if (!date) continue;
-      if (date > todayStr) continue; // 未來日期跳過
-      const rev = parseNumber(row.getCell(revCol).value);
-      const ord = ordCol > 0 ? parseNumber(row.getCell(ordCol).value) : 0;
-      if (rev <= 0 && ord <= 0) continue; // 空格跳過
+      if (date > todayStr) continue;
+      const rev = parseNumber(rVal);
+      const ord = parseNumber(oVal);
+      if (rev <= 0 && ord <= 0) continue;
       const cur = dailyMap.get(date) || { date, revenue: 0, orders: 0 };
       cur.revenue += rev;
       cur.orders += ord;
       dailyMap.set(date, cur);
+      monthDays++;
     }
-  }
+    if (monthDays > 0) monthsFound.push({ sheet: sn, days: monthDays });
+  });
+
   const daily = [...dailyMap.values()].sort((a, b) => a.date.localeCompare(b.date));
-  return { ok: true, branch, daily, schema };
+  if (!branch || daily.length === 0) {
+    return { ok: false, reason: 'no_template_match', branch, daily_count: 0, monthsFound };
+  }
+  return { ok: true, branch, daily, schema: { template: '溫點營業目標', monthsFound, total_days: daily.length, total_revenue: daily.reduce((s,d)=>s+d.revenue,0), total_orders: daily.reduce((s,d)=>s+d.orders,0) } };
 }
 
 // ============ Routes ============
