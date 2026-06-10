@@ -17,6 +17,7 @@ h1{font-size:26px;margin:0 0 6px;color:#fff}
 .section{margin-top:28px}
 .section-title{font-size:18px;color:#f4e8d4;margin:0 0 14px;display:flex;align-items:center;gap:10px;border-left:4px solid #B08D57;padding-left:10px;flex-wrap:wrap}
 .stat-card{text-align:center}.stat-card .label{color:#d9c4a3;font-size:12px;margin-bottom:6px}.stat-card .value{font-size:30px;font-weight:700;color:#fff}
+.stat-card .sub{color:#9c8973;font-size:10px;margin-top:4px}
 .pill{display:inline-block;background:rgba(176,141,87,.18);border:1px solid rgba(176,141,87,.35);color:#f4e8d4;border-radius:12px;padding:2px 8px;font-size:11px;margin-right:4px}
 .pill.high{background:rgba(255,107,107,.2);color:#ffb3b3}.pill.medium{background:rgba(255,184,107,.2);color:#ffd59b}.pill.low{background:rgba(61,220,132,.15);color:#9bcdb1}
 .pill.p1{background:rgba(255,107,107,.2);color:#ffb3b3}.pill.p2{background:rgba(255,184,107,.2);color:#ffd59b}.pill.p3{background:rgba(170,200,255,.15);color:#aac8ff}
@@ -101,10 +102,10 @@ h1{font-size:26px;margin:0 0 6px;color:#fff}
     <div class="process-banner" id="proc-banner"><div class="spinner"></div><div><b>AI 分析中…</b> <span id="proc-msg">讀取檔案</span></div></div>
   </div>
   <div class="section grid grid-4">
-    <div class="card stat-card"><div class="label">紀錄筆數</div><div class="value" id="kpi-count-30">—</div></div>
-    <div class="card stat-card"><div class="label">總營收</div><div class="value">NT$<span id="kpi-rev-30">—</span></div></div>
+    <div class="card stat-card"><div class="label">紀錄筆數</div><div class="value" id="kpi-count-30">—</div><div class="sub">每日資料,跨所有門市</div></div>
+    <div class="card stat-card"><div class="label">總營收</div><div class="value">NT$<span id="kpi-rev-total">—</span></div><div class="sub">所有門市 全部月份累計</div></div>
     <div class="card stat-card"><div class="label">門市數</div><div class="value" id="kpi-branches">—</div></div>
-    <div class="card stat-card"><div class="label">總問題數</div><div class="value" id="kpi-problems">—</div></div>
+    <div class="card stat-card"><div class="label">總訂單</div><div class="value" id="kpi-orders">—</div><div class="sub">全部月份累計</div></div>
   </div>
   <div class="section"><div class="card"><div class="section-title" style="margin-top:0">📁 已上傳檔案管理 <button class="btn-ai" style="background:linear-gradient(135deg,#d4a87e,#B08D57);color:#3a1521;margin-left:auto" onclick="reanalyzeAll()">🔄 重新分析所有報告 (每份 30-60 秒)</button></div><div id="uploads-list"></div></div></div>
   <div class="section"><div class="card"><div class="section-title" style="margin-top:0">🌐 全體月份總和(各月 × 各門市)<button class="btn-ai" onclick="getAnalysis('all',this,'all-stores')" style="margin-left:auto">🤖 全體跨店 AI 分析</button></div><div id="all-stores-matrix"></div><div class="ai-result" id="ai-all-stores"></div></div></div>
@@ -138,19 +139,34 @@ async function loadAll(){
   try{
     const [sum,ups]=await Promise.all([fetch('/api/offline-reports/summary').then(r=>r.json()),fetch('/api/offline-reports/uploads').then(r=>r.json())]);
     if(!sum.ok)throw new Error(sum.error);
-    renderUploads(ups.uploads||[]);
+    renderUploads(ups.uploads||ups.files||[]);
     renderSummary(sum);
     $('ts-stamp').textContent='最後更新: '+new Date().toLocaleString('zh-TW');
   }catch(e){toast('載入失敗: '+e.message,true);}
 }
 function renderUploads(ups){
-  if(ups.length===0){$('uploads-list').innerHTML='<div class="empty">尚無上傳檔案</div>';return;}
-  $('uploads-list').innerHTML=ups.map(u=>'<div class="upload-row"><div class="info"><div class="fname">📄 '+esc(u.source_file)+(u.has_expanded?' <span class="pill" style="background:rgba(66,133,244,.2);color:#aac8ff">已展開每日</span>':'')+'</div><div class="meta">'+(u.branch?esc(u.branch)+' · ':'')+u.count+' 筆 · NT$'+fmt(u.total_revenue)+'</div></div><div><button class="btn-mini danger" onclick="deleteUpload(\''+u.upload_id+'\','+u.count+')">🗑️ 刪除 '+u.count+' 筆</button></div></div>').join('');
+  if(!ups||ups.length===0){$('uploads-list').innerHTML='<div class="empty">尚無上傳檔案</div>';return;}
+  $('uploads-list').innerHTML=ups.map(u=>{
+    const name=u.source_file||u.name||'(未命名)';
+    const sizeKb=u.size?(Math.round(u.size/1024)+' KB'):'';
+    const branch=u.branch?(esc(u.branch)+' · '):'';
+    const count=u.count!=null?(u.count+' 筆 · '):'';
+    const rev=u.total_revenue!=null?('NT$'+fmt(u.total_revenue)):sizeKb;
+    const expanded=u.has_expanded?' <span class="pill" style="background:rgba(66,133,244,.2);color:#aac8ff">已展開每日</span>':'';
+    const delBtn=u.upload_id?'<button class="btn-mini danger" onclick="deleteUpload(\''+u.upload_id+'\','+(u.count||0)+')">🗑️ 刪除 '+(u.count||0)+' 筆</button>':(u.name?'<button class="btn-mini danger" onclick="deleteFile(\''+esc(u.name)+'\')">🗑️ 刪檔</button>':'');
+    return '<div class="upload-row"><div class="info"><div class="fname">📄 '+esc(name)+expanded+'</div><div class="meta">'+branch+count+rev+'</div></div><div>'+delBtn+'</div></div>';
+  }).join('');
 }
 async function deleteUpload(uploadId,count){
   if(!confirm('確定刪除此檔案及其 '+count+' 筆紀錄?無法復原'))return;
   try{const r=await fetch('/api/offline-reports/upload/'+uploadId,{method:'DELETE'});const d=await r.json();
     if(!d.ok)throw new Error(d.error);toast('✅ 已刪除 '+d.removed_count+' 筆');await loadAll();
+  }catch(e){toast('❌ '+e.message,true);}
+}
+async function deleteFile(name){
+  if(!confirm('確定刪除 '+name+'?'))return;
+  try{const r=await fetch('/api/offline-reports/file/'+encodeURIComponent(name),{method:'DELETE'});const d=await r.json();
+    if(!d.ok)throw new Error(d.error||'failed');toast('✅ 已刪');await loadAll();
   }catch(e){toast('❌ '+e.message,true);}
 }
 async function reanalyzeReport(id){
@@ -164,21 +180,24 @@ async function reanalyzeAll(){
   if(!confirm('AI 將重讀所有 Excel/CSV 並逐日展開,需 2-5 分鐘,確定?'))return;
   toast('🔄 全部分析中…',false,true);
   try{const r=await fetch('/api/offline-reports/reanalyze-all',{method:'POST'});const d=await r.json();
-    if(!d.ok)throw new Error(d.error);toast('✅ 展開 '+d.results.expanded+' 份 / 跳過 '+d.results.skipped+' 份');await loadAll();
+    if(!d.ok)throw new Error(d.error);toast('✅ 處理 '+(d.processed||0)+' 份');await loadAll();
   }catch(e){toast('❌ '+e.message,true);}
 }
 async function saveTarget(branch,month,value,el){
-  try{el.disabled=true;const r=await fetch('/api/offline-reports/targets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({branch,month,target:Number(value)||0})});const d=await r.json();
+  try{el.disabled=true;const r=await fetch('/api/offline-reports/targets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[branch+'|'+month]:{target:Number(value)||0}})});const d=await r.json();
     if(!d.ok)throw new Error(d.error);toast('✅ 目標已存');await loadAll();
   }catch(e){toast('❌ '+e.message,true);el.disabled=false;}
 }
 function pctClass(p){if(p===null)return '';if(p>=100)return 'good';if(p>=80)return '';return 'bad';}
 function renderSummary(s){
-  $('kpi-count-30').textContent=fmt(s.total_reports);$('kpi-rev-30').textContent=fmt(s.revenue_30);$('kpi-branches').textContent=(s.all_branches||[]).length;$('kpi-problems').textContent=fmt(s.problem_count);
+  $('kpi-count-30').textContent=fmt(s.total_reports);
+  $('kpi-rev-total').textContent=fmt(s.total_revenue||0);
+  $('kpi-branches').textContent=(s.all_branches||[]).length;
+  $('kpi-orders').textContent=fmt(s.total_orders||0);
   const trend=s.revenue_trend||[];const max=Math.max(...trend.map(t=>t.revenue),1);
   $('trend-bar').innerHTML=trend.length?trend.map(t=>'<div style="height:'+(t.revenue/max*100).toFixed(0)+'%" title="'+t.date+': NT$'+fmt(t.revenue)+'"><span class="lbl">'+t.date.slice(5)+'</span></div>').join(''):'';
   renderAllStoresMatrix(s.by_month_all_stores||[],s.all_branches||[]);
-  renderBranches(s.by_branch||[]);
+  renderBranches(s.by_branch||s.branches||[]);
 }
 function renderAllStoresMatrix(rows,branches){
   if(rows.length===0||branches.length===0){$('all-stores-matrix').innerHTML='<div class="empty">尚無月份資料</div>';return;}
@@ -191,7 +210,7 @@ function renderAllStoresMatrix(rows,branches){
     html+='<td class="num good">NT$'+fmt(r.total_revenue)+'</td></tr>';
   });
   const grandPerBranch={};branches.forEach(b=>grandPerBranch[b]=0);let grand=0;
-  rows.forEach(r=>{branches.forEach(b=>{grandPerBranch[b]+=(r.by_branch[b]?.revenue||0);});grand+=r.total_revenue;});
+  rows.forEach(r=>{branches.forEach(b=>{grandPerBranch[b]+=(r.by_branch[b]&&r.by_branch[b].revenue||0);});grand+=r.total_revenue;});
   html+='</tbody><tfoot><tr><td>累計</td>';
   branches.forEach(b=>{html+='<td class="num">NT$'+fmt(grandPerBranch[b])+'</td>';});
   html+='<td class="num">NT$'+fmt(grand)+'</td></tr></tfoot></table></div>';
@@ -204,12 +223,16 @@ function renderBranches(branches){
     const reports=(b.reports||[]).slice().sort((a,c)=>(c.date||'').localeCompare(a.date||''));
     const enc=encodeURIComponent(b.branch);
     const branchId='br_'+idx;
-    const monthsHtml=months.length===0?'':'<div class="bch-block"><h4>📅 月份明細 ('+months.length+' 個月)</h4><div style="overflow-x:auto"><table class="month-table"><thead><tr><th>月份</th><th class="num">目標</th><th class="num">營收</th><th>達成</th><th class="num">訂單</th><th class="num">客單</th><th class="num">紀錄</th><th class="num">問題</th><th>AI</th></tr></thead><tbody>'+months.map(m=>{
-      const pct=m.achievement_pct;
+    const monthsHtml=months.length===0?'':'<div class="bch-block"><h4>📅 月份明細 ('+months.length+' 個月)</h4><div style="overflow-x:auto"><table class="month-table"><thead><tr><th>月份</th><th class="num">目標</th><th class="num">營收</th><th>達成</th><th class="num">訂單</th><th class="num">客單</th><th class="num">紀錄</th><th class="num">月增減</th><th>AI</th></tr></thead><tbody>'+months.map(m=>{
+      const pct=(m.achievement_pct!=null)?m.achievement_pct:(m.achievement||null);
       const barCls=pct===null?'':(pct>=100?'':(pct>=80?'warn':'bad'));
       const barW=pct===null?0:Math.min(pct,100);
       const barTxt=pct===null?'未設':(pct.toFixed(1)+'%');
-      return '<tr><td><b>'+esc(m.month)+'</b></td><td class="num"><input type="number" class="target-input" value="'+(m.target||'')+'" data-branch="'+esc(b.branch)+'" data-month="'+m.month+'" data-orig="'+(m.target||'')+'" onkeydown="if(event.key===\'Enter\')saveTarget(this.dataset.branch,this.dataset.month,this.value,this)" onblur="if(this.value!=this.dataset.orig)saveTarget(this.dataset.branch,this.dataset.month,this.value,this)"></td><td class="num">NT$'+fmt(m.revenue)+'</td><td><div class="bar-cell"><div class="fill '+barCls+'" style="width:'+barW+'%"></div><div class="txt">'+barTxt+'</div></div></td><td class="num">'+fmt(m.orders)+'</td><td class="num">'+(m.avg_order_value?'NT$'+fmt(m.avg_order_value):'—')+'</td><td class="num">'+m.count+'</td><td class="num '+(m.problems_count>0?'warn':'')+'">'+m.problems_count+'</td><td><button class="btn-mini ai" onclick="getAnalysis(\'month\',this,\''+branchId+'_'+m.month+'\',\''+enc+'\',\''+m.month+'\')">📅</button></td></tr>';
+      const mom=(m.mom_change_pct!=null)?m.mom_change_pct:(m.mom_change!=null?m.mom_change:null);
+      const momTxt=(mom===null||mom===undefined)?'—':((mom>0?'+':'')+mom.toFixed(1)+'%');
+      const momCls=mom===null||mom===undefined?'':(mom>=0?'good':'warn');
+      const aov=m.aov||m.avg_order_value||0;
+      return '<tr><td><b>'+esc(m.month)+'</b></td><td class="num"><input type="number" class="target-input" value="'+(m.target||'')+'" data-branch="'+esc(b.branch)+'" data-month="'+m.month+'" data-orig="'+(m.target||'')+'" onkeydown="if(event.key===\'Enter\')saveTarget(this.dataset.branch,this.dataset.month,this.value,this)" onblur="if(this.value!=this.dataset.orig)saveTarget(this.dataset.branch,this.dataset.month,this.value,this)"></td><td class="num">NT$'+fmt(m.revenue)+'</td><td><div class="bar-cell"><div class="fill '+barCls+'" style="width:'+barW+'%"></div><div class="txt">'+barTxt+'</div></div></td><td class="num">'+fmt(m.orders)+'</td><td class="num">'+(aov?'NT$'+fmt(aov):'—')+'</td><td class="num">'+(m.count||0)+'</td><td class="num '+momCls+'">'+momTxt+'</td><td><button class="btn-mini ai" onclick="getAnalysis(\'month\',this,\''+branchId+'_'+m.month+'\',\''+enc+'\',\''+m.month+'\')">📅</button></td></tr>';
     }).join('')+'</tbody></table></div><div class="ai-result" id="ai-'+branchId+'_month"></div></div>';
     const uniqueDates=[...new Set(reports.map(r=>r.date))].sort().reverse();
     const dayHtml=uniqueDates.length===0?'':'<div class="bch-block"><h4>📆 單日分析</h4><div class="day-select-row"><select id="daysel_'+branchId+'">'+uniqueDates.map(d=>'<option>'+d+'</option>').join('')+'</select><button class="btn-mini ai" onclick="getDayAnalysis(\''+enc+'\',\''+branchId+'\')">📆 取得單日分析</button></div><div class="ai-result" id="ai-'+branchId+'_day"></div></div>';
@@ -218,7 +241,8 @@ function renderBranches(branches){
       const expandBtn=(r.attachment_url&&!r.expanded_from)?'<button class="btn-mini expand" onclick="reanalyzeReport(\''+r.id+'\')">🔄 展開每日</button>':'';
       return '<div style="padding:6px 0;border-bottom:1px dashed rgba(176,141,87,.15);font-size:12px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><div>'+esc(r.date)+' · NT$'+fmt(r.revenue)+(r.orders?' / '+r.orders+' 單':'')+(r.summary?' · '+esc(r.summary).slice(0,40):'')+'</div><div>'+att+expandBtn+'</div></div>';
     }).join('');
-    return '<details class="branch-card"'+(idx<2?' open':'')+'><summary><div><div class="bch-name">🏪 '+esc(b.branch)+'</div><div class="bch-meta">'+b.count+' 筆'+(b.total_orders?' · '+fmt(b.total_orders)+' 單':'')+(months.length?' · '+months.length+' 月':'')+(b.avg_order_value?' · 客單 NT$'+fmt(b.avg_order_value):'')+'</div></div><div class="bch-stat"><div class="v">NT$'+fmt(b.revenue)+'</div><div class="l">累計營收</div></div></summary><div class="body">'+monthsHtml+dayHtml+'<div class="bch-block"><h4>🏪 整家店 AI 分析 <button class="btn-ai" onclick="getAnalysis(\'branch\',this,\''+branchId+'_store\',\''+enc+'\')">🤖 取得</button></h4><div class="ai-result" id="ai-'+branchId+'_store"></div></div><div class="bch-block"><h4>📑 最近 20 筆 (共 '+reports.length+')</h4>'+reportsHtml+'</div></div></details>';
+    const totalRev=b.total_revenue!=null?b.total_revenue:(b.revenue||0);
+    return '<details class="branch-card"'+(idx<2?' open':'')+'><summary><div><div class="bch-name">🏪 '+esc(b.branch)+'</div><div class="bch-meta">'+(b.count||0)+' 筆'+(b.total_orders?' · '+fmt(b.total_orders)+' 單':'')+(months.length?' · '+months.length+' 月':'')+(b.aov?' · 客單 NT$'+fmt(b.aov):'')+'</div></div><div class="bch-stat"><div class="v">NT$'+fmt(totalRev)+'</div><div class="l">累計營收</div></div></summary><div class="body">'+monthsHtml+dayHtml+'<div class="bch-block"><h4>🏪 整家店 AI 分析 <button class="btn-ai" onclick="getAnalysis(\'branch\',this,\''+branchId+'_store\',\''+enc+'\')">🤖 取得</button></h4><div class="ai-result" id="ai-'+branchId+'_store"></div></div><div class="bch-block"><h4>📑 最近 20 筆 (共 '+reports.length+')</h4>'+reportsHtml+'</div></div></details>';
   }).join('');
 }
 async function getDayAnalysis(branchEnc,branchId){
@@ -239,8 +263,8 @@ async function getAnalysis(scope,btn,targetSlot,branchEnc,extra){
     const a=d.analysis||{};let html='';
     if(a.executive_summary)html+='<h5>📌 執行摘要</h5><p>'+esc(a.executive_summary)+'</p>';
     if(a.key_insights)html+='<h5>🔍 關鍵觀察</h5><p>'+esc(a.key_insights)+'</p>';
-    if(Array.isArray(a.top_issues)&&a.top_issues.length){html+='<h5>🚨 核心問題</h5>';a.top_issues.forEach(i=>{html+='<div class="ai-item"><div class="ttl">'+esc(i.issue||'')+' <span class="pill '+(i.severity||'medium').toLowerCase()+'">'+esc(i.severity||'')+'</span></div>'+(i.root_cause?'<div class="det">'+esc(i.root_cause)+'</div>':'')+'</div>';});}
-    if(Array.isArray(a.recommendations)&&a.recommendations.length){html+='<h5>💡 改善建議</h5>';a.recommendations.forEach(r=>{html+='<div class="ai-item"><div class="ttl"><span class="pill '+(r.priority||'p2').toLowerCase()+'">'+esc(r.priority||'')+'</span>'+esc(r.title||'')+'</div>'+(r.detail?'<div class="det">'+esc(r.detail)+'</div>':'')+(r.expected_impact?'<div class="imp">↑ '+esc(r.expected_impact)+'</div>':'')+'</div>';});}
+    if(Array.isArray(a.top_issues)&&a.top_issues.length){html+='<h5>🚨 核心問題</h5>';a.top_issues.forEach(i=>{html+='<div class="ai-item"><div class="ttl">'+esc(i.title||i.issue||'')+'</div>'+(i.detail||i.root_cause?'<div class="det">'+esc(i.detail||i.root_cause)+'</div>':'')+(i.expected_impact?'<div class="imp">↑ '+esc(i.expected_impact)+'</div>':'')+'</div>';});}
+    if(Array.isArray(a.recommendations)&&a.recommendations.length){html+='<h5>💡 改善建議</h5>';a.recommendations.forEach(r=>{html+='<div class="ai-item"><div class="ttl">'+esc(r.title||'')+'</div>'+(r.detail?'<div class="det">'+esc(r.detail)+'</div>':'')+(r.expected_impact?'<div class="imp">↑ '+esc(r.expected_impact)+'</div>':'')+'</div>';});}
     if(Array.isArray(a.quick_wins)&&a.quick_wins.length)html+='<h5>⚡ 立刻可做</h5><ul class="ai-list">'+a.quick_wins.map(q=>'<li>'+esc(q)+'</li>').join('')+'</ul>';
     if(Array.isArray(a.watch_outs)&&a.watch_outs.length)html+='<h5>⚠️ 風險注意</h5><ul class="ai-list">'+a.watch_outs.map(q=>'<li>'+esc(q)+'</li>').join('')+'</ul>';
     if(!html)html='<p style="color:#9c8973">無內容</p>';
