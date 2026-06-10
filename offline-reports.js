@@ -1,7 +1,9 @@
 // offline-reports.js — 線下報告中心 (檔案上傳 + Claude 自動萃取 + AI 員工餵食)
+// v2: sha256 去重 + daily[] 展開 + 過濾未來空格 + admin/reset + branches alias
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const multer = require('multer');
 const Anthropic = require('@anthropic-ai/sdk');
 const ExcelJS = require('exceljs');
@@ -30,14 +32,35 @@ function loadAll() {
 function appendReport(r) { fs.appendFileSync(REPORTS_FILE, JSON.stringify(r) + '\n'); return r; }
 function genId() { return 'rpt_' + Math.random().toString(36).slice(2, 16); }
 
-const EXTRACT_SYS = `你是溫點 WarmPlace 烘焙坊的營運分析師。從上傳的報告/單據/照片中萃取結構化資料。只回傳純 JSON,絕對不要前綴後綴或 markdown。欄位:
-{"date":"YYYY-MM-DD","branch":"門市名","author":"填寫人","revenue":數字,"orders":數字,"problems":"問題點\\n問題點","review":"檢討觀察","action_items":"待辦\\n待辦","notes":"備註","type":"daily|weekly|event|problem|other","summary":"一句話摘要15字內"}
-判斷不出來的欄位,字串填"",數字填0。日期一定YYYY-MM-DD格式。`;
+const EXTRACT_SYS = `你是溫點 WarmPlace 烘焙坊的營運分析師。從上傳的報告/單據/照片中萃取結構化資料。只回傳純 JSON,絕對不要前綴後綴或 markdown。
+回傳格式:
+{
+  "date": "YYYY-MM-DD",
+  "branch": "門市名",
+  "author": "填寫人",
+  "revenue": 整月或單日總營收(整數,新台幣),
+  "orders": 整月或單日總訂單筆數(整數),
+  "problems": "問題點(\\n 分行)",
+  "review": "檢討觀察",
+  "action_items": "待辦(\\n 分行)",
+  "notes": "備註",
+  "type": "daily|weekly|monthly|event|problem|other",
+  "summary": "一句話摘要15字內",
+  "daily": [{"date":"YYYY-MM-DD","revenue":整數,"orders":整數}, ...]
+}
+
+⚠️ 萃取規則(請嚴格遵守,否則數據就會亂):
+1. revenue / orders 必須抓「實際營收/訂單」欄,絕對不要抓「目標」「預算」「去年同期」欄。如果分不清,就填 0,寧可空也不要錯。
+2. **daily 陣列**:如果報表有「每日資料」(即「日期 + 當日營收 + 當日訂單」),把每一天當一個物件放進 daily[]。沒有實際值的「未來空格」不要放(revenue 跟 orders 都 0 的列就忽略)。
+3. **訂單欄通常叫**:訂單數、客數、單數、客流、來客數、人次、PCS、Orders。請仔細看欄位標題。
+4. **type**:單一日 daily;一週 weekly;整月彙整 monthly;一次性活動 event;只記問題 problem;其他 other。
+5. **date**:這份報告涵蓋的「最早日期」(整月彙整就填當月 1 日)。
+6. 判斷不出來的欄位:字串填"",數字填 0,daily 填 []。日期一律 YYYY-MM-DD。`;
 
 async function extractWithClaude(messages) {
   const result = await anthropic.messages.create({
     model: 'claude-sonnet-4-5',
-    max_tokens: 2048,
+    max_tokens: 4096,
     system: EXTRACT_SYS,
     messages
   });
@@ -53,67 +76,14 @@ router.post('/upload-file', upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ ok: false, error: '沒有檔案' });
     const filePath = req.file.path;
     const origName = req.file.originalname;
+    const buf = fs.readFileSync(filePath);
     const ext = (path.extname(origName) || '').toLowerCase();
     const mime = (req.file.mimetype || '').toLowerCase();
-    let messages, preview = '';
-
-    if (ext === '.pdf' || mime === 'application/pdf') {
-      const b64 = fs.readFileSync(filePath).toString('base64');
-      messages = [{ role: 'user', content: [{ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } }, { type: 'text', text: '請萃取此 PDF 報告為結構化 JSON' }] }];
-    } else if (mime.startsWith('image/') || ['.png', '.jpg', '.jpeg', '.gif', '.webp'].includes(ext)) {
-      const b64 = fs.readFileSync(filePath).toString('base64');
-      let mt = mime && mime.startsWith('image/') ? mime : (ext === '.png' ? 'image/png' : ext === '.gif' ? 'image/gif' : ext === '.webp' ? 'image/webp' : 'image/jpeg');
-      messages = [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mt, data: b64 } }, { type: 'text', text: '請萃取此照片中的報告內容為結構化 JSON' }] }];
-    } else if (ext === '.xlsx' || ext === '.xls') {
-      const wb = new ExcelJS.Workbook();
-      await wb.xlsx.readFile(filePath);
-      const rows = [];
-      wb.eachSheet(sheet => {
-        rows.push('=== ' + sheet.name + ' ===');
-        sheet.eachRow(row => { rows.push((row.values || []).slice(1).map(v => (v === null || v === undefined) ? '' : String(v)).join('\t')); });
-      });
-      preview = rows.join('\n').slice(0, 30000);
-      messages = [{ role: 'user', content: '以下是 Excel 報告內容,請萃取為結構化 JSON:\n\n' + preview }];
-    } else if (ext === '.csv') {
-      preview = fs.readFileSync(filePath, 'utf8').slice(0, 30000);
-      messages = [{ role: 'user', content: '以下是 CSV 報告,請萃取為結構化 JSON:\n\n' + preview }];
-    } else if (ext === '.txt' || ext === '.md') {
-      preview = fs.readFileSync(filePath, 'utf8').slice(0, 30000);
-      messages = [{ role: 'user', content: '以下是報告文字,請萃取為結構化 JSON:\n\n' + preview }];
-    } else if (ext === '.docx') {
-      try {
-        const raw = fs.readFileSync(filePath).toString('binary');
-        const textMatches = raw.match(/<w:t[^>]*>([^<]+)<\/w:t>/g) || [];
-        preview = textMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ').slice(0, 30000);
-        if (!preview) preview = '(docx 內容無法解析,建議另存為 PDF 後上傳)';
-        messages = [{ role: 'user', content: '以下是 Word 報告內容,請萃取為結構化 JSON:\n\n' + preview }];
-      } catch (e) { return res.status(400).json({ ok: false, error: 'docx 讀取失敗: ' + e.message }); }
-    } else {
-      return res.status(400).json({ ok: false, error: '不支援的檔案類型: ' + (ext || mime) + '。支援 PDF/圖片/Excel/CSV/TXT/DOCX' });
-    }
-
-    const { extracted } = await extractWithClaude(messages);
-    const record = {
-      id: genId(),
-      ts: new Date().toISOString(),
-      report_date: (extracted.date && /^\d{4}-\d{2}-\d{2}$/.test(extracted.date)) ? extracted.date : new Date().toISOString().slice(0, 10),
-      type: ['daily', 'weekly', 'event', 'problem', 'other'].includes(extracted.type) ? extracted.type : 'other',
-      branch: String(extracted.branch || req.body.branch || '').slice(0, 100),
-      author: String(extracted.author || req.body.author || '').slice(0, 50),
-      revenue: Number(extracted.revenue) || 0,
-      orders: Number(extracted.orders) || 0,
-      problems: String(extracted.problems || '').slice(0, 5000),
-      review: String(extracted.review || '').slice(0, 5000),
-      action_items: String(extracted.action_items || '').slice(0, 5000),
-      notes: String(extracted.notes || req.body.notes || '').slice(0, 5000),
-      summary: String(extracted.summary || '').slice(0, 200),
-      source_file: origName,
-      source_size: req.file.size,
-      source_mime: mime,
-      attachment_url: '/api/offline-reports/file/' + path.basename(filePath)
-    };
-    appendReport(record);
-    res.json({ ok: true, id: record.id, record, extracted });
+    const mimeMap = { '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', '.csv': 'text/csv', '.txt': 'text/plain', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
+    const r = await processBuffer(buf, { originalName: origName, mimeType: mime || mimeMap[ext] || '', source: 'manual-upload' });
+    // multer 寫到 tmp 目錄,清掉避免重複
+    try { fs.unlinkSync(filePath); } catch {}
+    res.json({ ok: true, result: r });
   } catch (e) {
     console.error('[offline-reports] upload error', e);
     res.status(500).json({ ok: false, error: e.message });
@@ -143,7 +113,6 @@ router.post('/submit', (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// List uploaded raw files in UPLOADS_DIR (for offline-reports.html init)
 router.get('/uploads', (req, res) => {
   try {
     if (!fs.existsSync(UPLOADS_DIR)) return res.json({ ok: true, files: [] });
@@ -157,7 +126,6 @@ router.get('/uploads', (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// Monthly targets per branch (stored in /var/data/offline-targets.json)
 const TARGETS_FILE = path.join(DATA_DIR, 'offline-targets.json');
 function loadTargets() {
   try {
@@ -181,7 +149,6 @@ router.post('/targets', (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// Reanalyze a single uploaded file (re-extract via Claude)
 router.post('/reanalyze/:filename', async (req, res) => {
   try {
     const safe = path.basename(req.params.filename);
@@ -190,12 +157,11 @@ router.post('/reanalyze/:filename', async (req, res) => {
     const buf = fs.readFileSync(fp);
     const ext = (path.extname(safe) || '').toLowerCase();
     const mimeMap = { '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', '.csv': 'text/csv', '.txt': 'text/plain', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
-    const r = await processBuffer(buf, { originalName: safe, mimeType: mimeMap[ext] || '', source: 'reanalyze' });
+    const r = await processBuffer(buf, { originalName: safe, mimeType: mimeMap[ext] || '', source: 'reanalyze', force: true });
     res.json({ ok: true, record: r });
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// Reanalyze all uploaded files
 router.post('/reanalyze-all', async (req, res) => {
   try {
     if (!fs.existsSync(UPLOADS_DIR)) return res.json({ ok: true, processed: 0 });
@@ -207,7 +173,7 @@ router.post('/reanalyze-all', async (req, res) => {
         const buf = fs.readFileSync(fp);
         const ext = (path.extname(name) || '').toLowerCase();
         const mimeMap = { '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', '.csv': 'text/csv', '.txt': 'text/plain', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
-        await processBuffer(buf, { originalName: name, mimeType: mimeMap[ext] || '', source: 'reanalyze-all' });
+        await processBuffer(buf, { originalName: name, mimeType: mimeMap[ext] || '', source: 'reanalyze-all', force: true });
         processed++;
       } catch (e) { errors.push({ name, error: e.message }); }
     }
@@ -216,7 +182,7 @@ router.post('/reanalyze-all', async (req, res) => {
 });
 
 router.get('/list', (req, res) => {
-  const limit = Math.min(Number(req.query.limit) || 50, 200);
+  const limit = Math.min(Number(req.query.limit) || 50, 500);
   const all = loadAll().slice(-limit).reverse();
   res.json({ ok: true, count: all.length, reports: all });
 });
@@ -242,8 +208,52 @@ router.delete('/report/:id', (req, res) => {
   res.json({ ok: true, removed: req.params.id });
 });
 
-function buildSummaryForAI() {
+// ============ ADMIN RESET (清空 reports + uploads + gdrive cache) ============
+router.post('/admin/reset', (req, res) => {
+  if (req.query.confirm !== '1') return res.status(400).json({ ok: false, error: '必須帶 ?confirm=1 才會真的清空' });
+  const removed = { reports: 0, uploads: 0, gdrive_processed: 0, errors: [] };
+  try {
+    if (fs.existsSync(REPORTS_FILE)) {
+      removed.reports = loadAll().length;
+      fs.writeFileSync(REPORTS_FILE, '');
+    }
+  } catch (e) { removed.errors.push('reports: ' + e.message); }
+  try {
+    if (fs.existsSync(UPLOADS_DIR)) {
+      const files = fs.readdirSync(UPLOADS_DIR);
+      for (const f of files) {
+        try { fs.unlinkSync(path.join(UPLOADS_DIR, f)); removed.uploads++; } catch (e) { removed.errors.push('upload ' + f + ': ' + e.message); }
+      }
+    }
+  } catch (e) { removed.errors.push('uploads: ' + e.message); }
+  try {
+    const PROCESSED = path.join(DATA_DIR, 'gdrive-processed.jsonl');
+    if (fs.existsSync(PROCESSED)) {
+      removed.gdrive_processed = fs.readFileSync(PROCESSED, 'utf8').split('\n').filter(Boolean).length;
+      fs.unlinkSync(PROCESSED);
+    }
+    const STATE = path.join(DATA_DIR, 'gdrive-state.json');
+    if (fs.existsSync(STATE)) fs.unlinkSync(STATE);
+  } catch (e) { removed.errors.push('gdrive cache: ' + e.message); }
+  res.json({ ok: true, removed });
+});
+
+router.get('/admin/health', (req, res) => {
   const all = loadAll();
+  let uploadCount = 0;
+  try { if (fs.existsSync(UPLOADS_DIR)) uploadCount = fs.readdirSync(UPLOADS_DIR).length; } catch {}
+  res.json({
+    ok: true,
+    reports_count: all.length,
+    uploads_count: uploadCount,
+    data_dir: DATA_DIR,
+    has_anthropic_key: !!process.env.ANTHROPIC_API_KEY
+  });
+});
+
+function buildSummaryForAI() {
+  // 過濾空殼 record(revenue=0 且 orders=0)避免污染 AOV/count
+  const all = loadAll().filter(r => (Number(r.revenue) || 0) > 0 || (Number(r.orders) || 0) > 0);
   const now = Date.now();
   const day = 86400000;
   const d30 = all.filter(r => (now - new Date(r.report_date).getTime()) <= 30 * day);
@@ -263,7 +273,6 @@ function buildSummaryForAI() {
     const rev = all.filter(r => r.report_date === d).reduce((s, r) => s + (Number(r.revenue) || 0), 0);
     trend.push({ date: d, revenue: rev });
   }
-  // 用「全部」資料算 by_branch (不限 30 天),讓前端門市卡能看完整歷史
   const branchMap = {};
   all.forEach(r => {
     const b = r.branch || '(無門市)';
@@ -283,7 +292,6 @@ function buildSummaryForAI() {
       notes: r.notes || '',
       attachment_url: r.attachment_url || ''
     });
-    // 月份統計
     const ym = (r.report_date || '').slice(0, 7);
     if (ym) {
       if (!branchMap[b].by_month[ym]) branchMap[b].by_month[ym] = { month: ym, count: 0, revenue: 0, orders: 0 };
@@ -292,39 +300,35 @@ function buildSummaryForAI() {
       branchMap[b].by_month[ym].orders += Number(r.orders) || 0;
     }
   });
-  // 排序每店的 reports 由新到舊,限 100 筆,by_month 轉陣列
-  // 並補上前端 renderBranches 需要的欄位:aov / target / achievement / mom_change
   const targetsAll = loadTargets();
   Object.values(branchMap).forEach(b => {
     b.reports.sort((a, x) => (x.date || '').localeCompare(a.date || ''));
     b.reports = b.reports.slice(0, 100);
     const monthsArr = Object.values(b.by_month).sort((a, x) => (x.month || '').localeCompare(a.month || ''));
-    // 補欄位
     monthsArr.forEach((m, i) => {
       m.aov = m.orders > 0 ? Math.round(m.revenue / m.orders) : 0;
-      // 月目標 — 從 targets file(若有設)
       const tkey = b.branch + '|' + m.month;
       m.target = (targetsAll[tkey] && typeof targetsAll[tkey].target === 'number') ? targetsAll[tkey].target : null;
       m.achievement_pct = m.target ? Math.round((m.revenue / m.target) * 1000) / 10 : null;
-      m.achievement = m.achievement_pct;  // alias for backward compat
-      // 月增減 vs 上月(monthsArr 是新到舊)
+      m.achievement = m.achievement_pct;
       const prev = monthsArr[i + 1];
       if (prev && prev.revenue > 0) {
         m.mom_change = Math.round(((m.revenue - prev.revenue) / prev.revenue) * 1000) / 10;
       } else {
         m.mom_change = null;
       }
+      m.mom_change_pct = m.mom_change;
+      m.mom_pct = m.mom_change;
     });
     b.by_month = monthsArr;
-    // 整店欄位
     b.avg_revenue = b.count > 0 ? Math.round(b.revenue / b.count) : 0;
+    b.total_revenue = b.revenue;
     b.total_orders = b.reports.reduce((s, r) => s + (Number(r.orders) || 0), 0);
     b.aov = b.total_orders > 0 ? Math.round(b.revenue / b.total_orders) : 0;
   });
   const by_branch = Object.values(branchMap).sort((a, b) => b.revenue - a.revenue);
   const recent_reports_brief = all.slice(-5).reverse().map(r => ({ date: r.report_date, branch: r.branch, summary: r.summary || (r.review || '').slice(0, 80), revenue: r.revenue }));
 
-  // 加 by_month_all_stores: 全部月份 x 全部門市的 matrix (前端「全體月份總和」用)
   const monthsSet = new Set();
   all.forEach(r => { const ym = (r.report_date || '').slice(0, 7); if (ym) monthsSet.add(ym); });
   const all_months = [...monthsSet].sort((a, b) => b.localeCompare(a));
@@ -341,7 +345,6 @@ function buildSummaryForAI() {
     });
     return row;
   });
-  // uploads — list raw files in UPLOADS_DIR
   let uploads = [];
   try {
     if (fs.existsSync(UPLOADS_DIR)) {
@@ -350,11 +353,36 @@ function buildSummaryForAI() {
       }).filter(Boolean).sort((a, b) => (b.mtime || '').localeCompare(a.mtime || ''));
     }
   } catch {}
-  // expanded / skipped (前端原本用於 Excel 展開狀態,先填空)
   const expanded = [];
   const skipped = [];
 
-  return { ok: true, generated_at: new Date().toISOString(), total_reports: all.length, recent_30: d30.length, recent_7: d7.length, revenue_30, revenue_7, problem_count: recent_problems.length, recent_problems: recent_problems.slice(0, 15), action_items, revenue_trend: trend, by_branch, recent_reports_brief, all_branches, all_months, by_month_all_stores, uploads, expanded, skipped };
+  const total_revenue = by_branch.reduce((s, b) => s + (Number(b.revenue) || 0), 0);
+  const total_orders = by_branch.reduce((s, b) => s + (Number(b.total_orders) || 0), 0);
+
+  return {
+    ok: true,
+    generated_at: new Date().toISOString(),
+    total_reports: all.length,
+    total_revenue,
+    total_orders,
+    recent_30: d30.length,
+    recent_7: d7.length,
+    revenue_30,
+    revenue_7,
+    problem_count: recent_problems.length,
+    recent_problems: recent_problems.slice(0, 15),
+    action_items,
+    revenue_trend: trend,
+    by_branch,
+    branches: by_branch,
+    recent_reports_brief,
+    all_branches,
+    all_months,
+    by_month_all_stores,
+    uploads,
+    expanded,
+    skipped
+  };
 }
 
 router.get('/summary', (req, res) => {
@@ -390,7 +418,6 @@ async function tg(token, chatId, text) {
 
 router.get('/send-digest', async (req, res) => { res.json(await sendDailyDigestToTelegram()); });
 
-// ============ AI 分析 endpoints — 4 層 ============
 const ANALYSIS_SYS = `你是溫點 WarmPlace 烘焙坊的營運分析師。根據提供的營運報告數據,給出結構化分析。只回傳純 JSON,絕對不要前綴後綴或 markdown。schema:
 {
  "executive_summary": "執行摘要,1-2 句話直白點出最重要的事(30-60 字)",
@@ -419,7 +446,7 @@ async function callAnalysisClaude(prompt) {
     catch (e) { parsed = { _raw: respText.slice(0, 500), _parse_error: e.message }; }
     return parsed;
   } catch (e) {
-    return { error: e.message, summary: '分析失敗:' + e.message, key_findings: [], problems: [], recommendations: [], immediate_actions: [], risks: [] };
+    return { error: e.message, executive_summary: '分析失敗:' + e.message, key_insights: '', top_issues: [], recommendations: [], quick_wins: [] };
   }
 }
 
@@ -438,11 +465,10 @@ function statsFromRecords(records) {
   return { count: records.length, totalRev, totalOrders, branches, recentProblems: problems };
 }
 
-// 1. 全店分析
 router.get('/analysis/all-stores', async (req, res) => {
   try {
-    const all = loadAll();
-    if (all.length === 0) return res.json({ ok: true, analysis: { summary: '尚無報告資料', key_findings: [], problems: [], recommendations: [], immediate_actions: [], risks: [] } });
+    const all = loadAll().filter(r => (Number(r.revenue) || 0) > 0 || (Number(r.orders) || 0) > 0);
+    if (all.length === 0) return res.json({ ok: true, analysis: { executive_summary: '尚無報告資料', key_insights: '', top_issues: [], recommendations: [], quick_wins: [] } });
     const stats = statsFromRecords(all);
     const prompt = `請分析溫點全體門市營運(共 ${all.length} 份報告):\n總營收 NT$${stats.totalRev.toLocaleString()}\n總訂單 ${stats.totalOrders}\n門市分布: ${JSON.stringify(stats.branches)}\n近期問題點: ${JSON.stringify(stats.recentProblems)}\n\n請給跨店比較、贏家/落後門市、共通問題、優先行動。`;
     const analysis = await callAnalysisClaude(prompt);
@@ -450,20 +476,19 @@ router.get('/analysis/all-stores', async (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// 2. 單店分析
 router.get('/analysis/branch/:branch', async (req, res) => {
   try {
     const branch = decodeURIComponent(req.params.branch);
-    const records = loadAll().filter(r => r.branch === branch);
-    if (records.length === 0) return res.json({ ok: true, analysis: { summary: branch + ' 尚無報告', key_findings: [], problems: [], recommendations: [], immediate_actions: [], risks: [] } });
+    const records = loadAll().filter(r => r.branch === branch && ((Number(r.revenue) || 0) > 0 || (Number(r.orders) || 0) > 0));
+    if (records.length === 0) return res.json({ ok: true, analysis: { executive_summary: branch + ' 尚無報告', key_insights: '', top_issues: [], recommendations: [], quick_wins: [] } });
     const stats = statsFromRecords(records);
-    // monthly breakdown
     const byMonth = {};
     records.forEach(r => {
       const m = (r.report_date || '').slice(0, 7);
-      if (!byMonth[m]) byMonth[m] = { count: 0, revenue: 0 };
+      if (!byMonth[m]) byMonth[m] = { count: 0, revenue: 0, orders: 0 };
       byMonth[m].count++;
       byMonth[m].revenue += Number(r.revenue) || 0;
+      byMonth[m].orders += Number(r.orders) || 0;
     });
     const prompt = `請分析「${branch}」單店營運(${records.length} 份報告):\n累計營收 NT$${stats.totalRev.toLocaleString()}\n月份分布: ${JSON.stringify(byMonth)}\n近期問題: ${JSON.stringify(stats.recentProblems.slice(-10))}\n\n請給此店的趨勢、月份變化、最大問題、改善建議。`;
     const analysis = await callAnalysisClaude(prompt);
@@ -471,15 +496,13 @@ router.get('/analysis/branch/:branch', async (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// 3. 月份分析
 router.get('/analysis/month/:branch/:month', async (req, res) => {
   try {
     const branch = decodeURIComponent(req.params.branch);
     const month = req.params.month;
-    const records = loadAll().filter(r => r.branch === branch && (r.report_date || '').startsWith(month));
-    if (records.length === 0) return res.json({ ok: true, analysis: { summary: branch + ' ' + month + ' 尚無報告', key_findings: [], problems: [], recommendations: [], immediate_actions: [], risks: [] } });
+    const records = loadAll().filter(r => r.branch === branch && (r.report_date || '').startsWith(month) && ((Number(r.revenue) || 0) > 0 || (Number(r.orders) || 0) > 0));
+    if (records.length === 0) return res.json({ ok: true, analysis: { executive_summary: branch + ' ' + month + ' 尚無報告', key_insights: '', top_issues: [], recommendations: [], quick_wins: [] } });
     const stats = statsFromRecords(records);
-    // Day-by-day list
     const byDay = records.map(r => ({ date: r.report_date, revenue: r.revenue, orders: r.orders, problems: r.problems, summary: r.summary }));
     const prompt = `請分析「${branch}」${month} 月份營運(${records.length} 份報告):\n月營收 NT$${stats.totalRev.toLocaleString()}\n日別: ${JSON.stringify(byDay.slice(0, 35))}\n\n請給月份最高/最低日、波動原因、月內趨勢、下月建議。`;
     const analysis = await callAnalysisClaude(prompt);
@@ -487,13 +510,12 @@ router.get('/analysis/month/:branch/:month', async (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// 4. 單日分析
 router.get('/analysis/day/:branch/:date', async (req, res) => {
   try {
     const branch = decodeURIComponent(req.params.branch);
     const date = req.params.date;
     const records = loadAll().filter(r => r.branch === branch && r.report_date === date);
-    if (records.length === 0) return res.json({ ok: true, analysis: { summary: branch + ' ' + date + ' 無紀錄', key_findings: [], problems: [], recommendations: [], immediate_actions: [], risks: [] } });
+    if (records.length === 0) return res.json({ ok: true, analysis: { executive_summary: branch + ' ' + date + ' 無紀錄', key_insights: '', top_issues: [], recommendations: [], quick_wins: [] } });
     const r0 = records[0];
     const prompt = `請分析「${branch}」${date} 單日營運:\n營收 NT$${(r0.revenue||0).toLocaleString()}, 訂單 ${r0.orders || 0}\n摘要: ${r0.summary || ''}\n問題: ${r0.problems || ''}\n檢討: ${r0.review || ''}\n待辦: ${r0.action_items || ''}\n備註: ${r0.notes || ''}\n\n請給當日重點、最該改善的事、明天可立刻做的事。`;
     const analysis = await callAnalysisClaude(prompt);
@@ -501,7 +523,6 @@ router.get('/analysis/day/:branch/:date', async (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// 補:依門市拿明細 records(讓前端「最近 20 筆」工作)
 router.get('/list-by-branch/:branch', (req, res) => {
   try {
     const branch = decodeURIComponent(req.params.branch);
@@ -525,10 +546,27 @@ async function processBuffer(buffer, opts = {}) {
   const origName = opts.originalName || ('gdrive-' + Date.now());
   const ext = (path.extname(origName) || '').toLowerCase();
   const mime = (opts.mimeType || '').toLowerCase();
-  // Write to UPLOADS_DIR so download links work
-  const safeFilename = 'gdrive-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + (ext || '');
+
+  // 內容 sha256 去重 — 同內容檔已處理過就跳過(避免 redeploy 後重複)
+  const sha = crypto.createHash('sha256').update(buffer).digest('hex');
+  const all = loadAll();
+  const existing = all.find(r => r.source_sha256 === sha);
+  if (existing && !opts.force) {
+    return { ok: true, skipped: true, reason: 'duplicate content (sha256)', existing_id: existing.id, existing_branch: existing.branch, existing_date: existing.report_date };
+  }
+
+  // 用 sha 當檔名一部分,同檔不會在 uploads/ 累積
+  const safeFilename = 'gdrive-' + sha.slice(0, 12) + (ext || '');
   const filePath = path.join(UPLOADS_DIR, safeFilename);
-  try { fs.writeFileSync(filePath, buffer); } catch (e) { /* keep going even if write fails */ }
+  try { if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, buffer); } catch {}
+
+  // 若 force=true(reanalyze),先把舊 record 移除
+  if (opts.force && existing) {
+    try {
+      const filtered = loadAll().filter(r => r.source_sha256 !== sha);
+      fs.writeFileSync(REPORTS_FILE, filtered.map(r => JSON.stringify(r)).join('\n') + (filtered.length ? '\n' : ''));
+    } catch {}
+  }
 
   let messages, preview = '';
   if (ext === '.pdf' || mime === 'application/pdf') {
@@ -547,11 +585,11 @@ async function processBuffer(buffer, opts = {}) {
       sheet.eachRow(row => { rows.push((row.values || []).slice(1).map(v => (v === null || v === undefined) ? '' : String(v)).join('\t')); });
     });
     preview = rows.join('\n').slice(0, 30000);
-    messages = [{ role: 'user', content: '以下是 Excel 報告內容,請萃取為結構化 JSON:\n\n' + preview }];
+    messages = [{ role: 'user', content: '以下是 Excel 報告內容,請萃取為結構化 JSON,務必填入 daily[] 每日明細:\n\n' + preview }];
   } else if (ext === '.csv' || mime === 'text/csv') {
     preview = buffer.toString('utf8').slice(0, 30000);
     messages = [{ role: 'user', content: '以下是 CSV 報告,請萃取為結構化 JSON:\n\n' + preview }];
-  } else if (ext === '.txt' || ext === '.md' || mime.startsWith('text/')) {
+  } else if (ext === '.txt' || ext === '.md' || (mime && mime.startsWith('text/'))) {
     preview = buffer.toString('utf8').slice(0, 30000);
     messages = [{ role: 'user', content: '以下是報告文字,請萃取為結構化 JSON:\n\n' + preview }];
   } else if (ext === '.docx') {
@@ -565,12 +603,66 @@ async function processBuffer(buffer, opts = {}) {
   }
 
   const { extracted } = await extractWithClaude(messages);
+  const branch = String(extracted.branch || opts.branchHint || '').slice(0, 100);
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // 展開 daily[]:過濾未來日期 + 過濾空格(revenue=0 且 orders=0)
+  const dailyArr = Array.isArray(extracted.daily) ? extracted.daily.filter(d => {
+    if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d.date || '')) return false;
+    if (d.date > todayStr) return false;
+    const rev = Number(d.revenue) || 0;
+    const ord = Number(d.orders) || 0;
+    return rev > 0 || ord > 0;
+  }) : [];
+
+  if (dailyArr.length > 0) {
+    // 拆每日 record,不再加總月彙整(避免重複計算)
+    const createdRecords = [];
+    for (const d of dailyArr) {
+      const rec = {
+        id: genId(),
+        ts: new Date().toISOString(),
+        report_date: d.date,
+        type: 'daily',
+        branch,
+        author: String(extracted.author || '').slice(0, 50),
+        revenue: Number(d.revenue) || 0,
+        orders: Number(d.orders) || 0,
+        problems: '',
+        review: '',
+        action_items: '',
+        notes: '',
+        summary: '',
+        source_file: origName,
+        source_size: buffer.length,
+        source_mime: mime,
+        source: opts.source || 'manual',
+        source_sha256: sha,
+        gdrive_file_id: opts.gdriveFileId,
+        gdrive_modified_time: opts.modifiedTime,
+        attachment_url: '/api/offline-reports/file/' + safeFilename
+      };
+      appendReport(rec);
+      createdRecords.push(rec);
+    }
+    return {
+      ok: true,
+      mode: 'daily-expanded',
+      count: createdRecords.length,
+      branch,
+      total_revenue: createdRecords.reduce((s, r) => s + r.revenue, 0),
+      total_orders: createdRecords.reduce((s, r) => s + r.orders, 0)
+    };
+  }
+
+  // fallback:無 daily 陣列,以整月/單張彙整 record
+  const baseDate = (extracted.date && /^\d{4}-\d{2}-\d{2}$/.test(extracted.date)) ? extracted.date : todayStr;
   const record = {
     id: genId(),
     ts: new Date().toISOString(),
-    report_date: (extracted.date && /^\d{4}-\d{2}-\d{2}$/.test(extracted.date)) ? extracted.date : new Date().toISOString().slice(0, 10),
-    type: ['daily', 'weekly', 'event', 'problem', 'other'].includes(extracted.type) ? extracted.type : 'other',
-    branch: String(extracted.branch || opts.branchHint || '').slice(0, 100),
+    report_date: baseDate,
+    type: ['daily', 'weekly', 'monthly', 'event', 'problem', 'other'].includes(extracted.type) ? extracted.type : 'other',
+    branch,
     author: String(extracted.author || '').slice(0, 50),
     revenue: Number(extracted.revenue) || 0,
     orders: Number(extracted.orders) || 0,
@@ -583,6 +675,7 @@ async function processBuffer(buffer, opts = {}) {
     source_size: buffer.length,
     source_mime: mime,
     source: opts.source || 'manual',
+    source_sha256: sha,
     gdrive_file_id: opts.gdriveFileId,
     gdrive_modified_time: opts.modifiedTime,
     attachment_url: '/api/offline-reports/file/' + safeFilename
