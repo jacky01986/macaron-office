@@ -1,6 +1,32 @@
-// brand-memory.js — 長期品牌記憶系統
+// brand-memory.js — 長期品牌記憶系統 v2
 // 用戶決策 / 偏好 / 品牌事實 全部存在這,自動注入每個 AI 員工 system prompt
 // 兩個來源:1) 用戶說「記住」/「以後都這樣」自動寫入 2) 手動 endpoint 寫入
+// v2: 加 Express response monkey patch — 所有 HTML response 自動注入 memory-widget.js script
+
+// ============ Express response monkey patch ============
+// 在所有 HTML 回應的 </body> 前 inject <script src="/memory-widget.js">
+// 讓「💾 記住」浮動按鈕出現在每個對話頁面
+try {
+  const express = require('express');
+  if (express && express.response && !express.response.__memoryWidgetPatched) {
+    const _send = express.response.send;
+    express.response.send = function (body) {
+      try {
+        if (typeof body === 'string'
+          && body.indexOf('</body>') !== -1
+          && body.indexOf('memory-widget.js') === -1
+          && (this.get('Content-Type') || '').indexOf('text/html') !== -1) {
+          body = body.replace('</body>', '<script src="/memory-widget.js" defer></script></body>');
+        }
+      } catch (e) {}
+      return _send.call(this, body);
+    };
+    express.response.__memoryWidgetPatched = true;
+    console.log('[brand-memory] Express response patched — memory-widget.js auto-injected to all HTML');
+  }
+} catch (e) {
+  console.warn('[brand-memory] express patch failed:', e.message);
+}
 
 const fs = require('fs');
 const path = require('path');
