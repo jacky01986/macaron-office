@@ -173,32 +173,67 @@
 
   function beautifyElement(el) {
     const raw = el.innerText || '';
-    // 太短的訊息(<30 字)直接跳過
-    if (raw.length < 30) { el.dataset.memBeautified = '1'; return; }
-    // 已經有 HTML structure 就跳過(避免重複處理)
-    if (el.querySelector('h4, .mem-bf, .mem-proposal')) { el.dataset.memBeautified = '1'; return; }
+    // 太短的訊息(<30 字)— 可能還在 stream,不標記,下輪 interval 會再試
+    if (raw.length < 30) return;
+    // 已經有 mem-bf 包裝(我們處理過)就跳過
+    if (el.querySelector('.mem-bf, .mem-proposal')) { el.dataset.memBeautified = '1'; return; }
+    // 內容仍在 stream(沒結尾標誌)— 不標記,下輪再試
+    const looksComplete = /Proposal ID:|確認執行|。\s*$|"imageUrl"\s*:|<\/h4>|<\/p>/.test(raw);
+    if (!looksComplete && raw.length < 200) return;
 
     let content = raw;
     let proposal = null;
 
-    // 1. 抓 propose_* JSON proposal
+    // 1. 抓 propose_* JSON proposal(caption + imageUrl)
     const jsonMatch = content.match(/\{\s*"caption"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"imageUrl"\s*:\s*"([^"]+)"\s*\}/);
     if (jsonMatch) {
       const caption = unescapeJson(jsonMatch[1]);
       const imageUrl = jsonMatch[2];
       const idMatch = content.match(/Proposal ID:\s*`?(p_[A-Za-z0-9_]+)`?/);
       proposal = { caption, imageUrl, id: idMatch ? idMatch[1] : null };
-      // 把整段 proposal 區塊從正文移除
-      content = content.replace(/⚠️[^\n]*想執行[\s\S]*?確認執行。?/g, '').trim();
-      content = content.replace(/```json[\s\S]*?```/g, '').trim();
-      content = content.replace(/Proposal ID:[\s\S]*?確認執行。?/g, '').trim();
-      content = content.replace(/半自動模式[\s\S]*?確認執行。?/g, '').trim();
     }
 
-    // 2. 處理「字面上 \n」(那種 raw 字串內含 backslash-n)
-    content = content.replace(/\\n/g, '\n');
-    // 3. 處理多個連續空行 → 變段落
-    content = content.replace(/\n{3,}/g, '\n\n');
+    // 2. 激進清理 — 把所有「技術殘留」全部移除(用戶不該看到)
+    // 順序很重要:先抓大區塊,再清細節
+    content = content
+      // 2a. 各種 markdown code block
+      .replace(/```[a-z]*\s*[\s\S]*?```/gi, '')
+      .replace(/~~~[a-z]*\s*[\s\S]*?~~~/gi, '')
+      // 2b. proposal 樣板(整段)
+      .replace(/⚠️[^\n]*想執行[\s\S]*?確認執行。?/g, '')
+      .replace(/想執行[::]\s*提案[\s\S]*?確認執行。?/g, '')
+      .replace(/Proposal ID[::]\s*`?p_[A-Za-z0-9_]+`?[\s\S]*?確認執行。?/g, '')
+      .replace(/半自動模式[::]?[\s\S]*?確認執行。?/g, '')
+      .replace(/請檢查上方提案[\s\S]*?確認執行。?/g, '')
+      .replace(/POST\s+\/api\/proposals\/p_[A-Za-z0-9_]+\/execute[\s\S]*?確認執行。?/g, '')
+      // 2c. JSON 殘留(沒被 proposal 抓到的)
+      .replace(/"caption"\s*:\s*"[^"]*"/g, '')
+      .replace(/"imageUrl"\s*:\s*"[^"]*"/g, '')
+      .replace(/^\s*[{\[][\s\S]*?[}\]]\s*$/gm, '')
+      // 2d. tool use 樣板
+      .replace(/\[tool_use\][\s\S]*?\[\/tool_use\]/gi, '')
+      .replace(/<tool_use>[\s\S]*?<\/tool_use>/gi, '')
+      .replace(/\[tool_result\][\s\S]*?\[\/tool_result\]/gi, '')
+      // 2e. 連續多空行 → 一空行
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '')
+      .replace(/\\t/g, ' ')
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\')
+      // 2f. 連續多空白 → 單空格
+      .replace(/[ \t]{2,}/g, ' ')
+      // 2g. 連續超過 2 空行壓回 2 空行
+      .replace(/\n{3,}/g, '\n\n')
+      // 2h. 行首尾 trim
+      .split('\n').map(l => l.replace(/^[ \t]+|[ \t]+$/g, '')).join('\n')
+      // 2i. 全文 trim
+      .trim();
+
+    // 3. 把單獨剩的孤立 backtick / 雙星號清掉
+    content = content
+      .replace(/^`+\s*$/gm, '')
+      .replace(/^\*+\s*$/gm, '')
+      .replace(/^[*_]+([^*_\n]+)[*_]+$/gm, '$1');
 
     // 4. 內容已經是 HTML(含 <h4>/<p>/<ul>) 用 innerHTML;否則 plain text 包 <p>
     const hasHtmlTag = /<\/?(?:h[1-6]|p|ul|ol|li|strong|em|code|table|tr|td|th|blockquote|div)\b/i.test(raw);
