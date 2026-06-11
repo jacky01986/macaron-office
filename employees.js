@@ -589,7 +589,7 @@ const EMPLOYEES_WITH_DYNAMIC = new Proxy(_origEmployees, {
       get(t, k) {
         if (k === 'systemPrompt' && typeof t[k] === 'string') {
           const memoryHead = getBrandMemoryHead();
-          const memorySection = memoryHead ? memormemoryHead + '\n\n' : '';
+          const memorySection = memoryHead ? memoryHead + '\n\n' : '';
           const liveStats = _liveStatsFn();
           const statsSection = liveStats ? liveStats + '\n' : '';
           return memorySection + statsSection + t[k] + getMarketIntelTail();
