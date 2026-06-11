@@ -305,4 +305,118 @@
   // 每 1.5 秒掃新訊息
   setInterval(beautify, 1500);
   setTimeout(beautify, 500);
+
+
+  // ============================================================
+  // v5: 自動學偏好(後置 hook)
+  // ============================================================
+  (function setupAutoLearn() {
+    if (window.__autoLearnInstalled) return;
+    window.__autoLearnInstalled = true;
+    const _fetch = window.fetch.bind(window);
+    window.fetch = async function (input, init) {
+      const url = (typeof input === 'string') ? input : (input && input.url) || '';
+      const isChat = /\/api\/chat(\?|$|\/)/.test(url);
+      let userMsg = '';
+      if (isChat && init && init.body) {
+        try {
+          const body = (typeof init.body === 'string') ? JSON.parse(init.body) : init.body;
+          if (body && Array.isArray(body.messages) && body.messages.length) {
+            const last = body.messages[body.messages.length - 1];
+            userMsg = (last && last.content) || '';
+          }
+        } catch (e) {}
+      }
+      const resp = await _fetch(input, init);
+      if (isChat && userMsg && resp && resp.clone) {
+        const cloned = resp.clone();
+        cloned.text().then(text => {
+          let aiText = '';
+          (text || '').split('\n').forEach(line => {
+            if (!line.startsWith('data:')) return;
+            try {
+              const d = JSON.parse(line.slice(5).trim());
+              if (d.text) aiText += d.text;
+              if (d.delta) aiText += d.delta;
+              if (d.caption) aiText += d.caption + '\n';
+              if (d.description) aiText += d.description + '\n';
+              if (d.message) aiText += d.message + '\n';
+            } catch (e) {}
+          });
+          if (aiText && aiText.length > 20) {
+            _fetch('/api/memory/extract', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userMessage: userMsg.slice(0, 2000), aiResponse: aiText.slice(0, 3000) })
+            }).then(r => r.json()).then(d => {
+              if (d && d.extracted_count > 0) {
+                console.log('[auto-learn] +' + d.extracted_count + ' memory');
+              }
+            }).catch(function(){});
+          }
+        }).catch(function(){});
+      }
+      return resp;
+    };
+    console.log('[auto-learn] fetch hook installed');
+  })();
+
+  // ============================================================
+  // v5: VICTOR 中心化 UI 切換鈕
+  // ============================================================
+  (function setupVictorOnlyMode() {
+    if (window.__victorOnlyInstalled) return;
+    window.__victorOnlyInstalled = true;
+    if (!/macaron-office|onrender/.test(location.host)) return;
+    if (location.pathname !== '/' && location.pathname !== '/index.html') return;
+
+    const style = document.createElement('style');
+    style.textContent = '.victor-mode-toggle{position:fixed;top:18px;right:22px;background:linear-gradient(135deg,#4A1D2E,#6D2E46);color:#FCF6F5;border:1px solid rgba(176,141,87,.5);padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;z-index:9997;box-shadow:0 4px 16px rgba(0,0,0,.4);font-family:Noto Sans TC,sans-serif}.victor-mode-toggle:hover{transform:translateY(-1px)}.victor-mode-toggle.active{background:linear-gradient(135deg,#B08D57,#d4a87e);color:#3a1521}body.victor-only aside,body.victor-only [data-employee]:not([data-employee="victor"]){display:none!important}body.victor-only .victor-center-banner{display:block!important}.victor-center-banner{display:none;background:linear-gradient(135deg,#3a1521,#6D2E46);color:#FCF6F5;padding:16px 20px;border-radius:14px;margin:14px 22px 8px;border:1px solid rgba(176,141,87,.35);font-family:Noto Sans TC,sans-serif}.victor-center-banner .ttl{font-size:14px;font-weight:700;color:#d4a87e;margin-bottom:6px}.victor-center-banner .sub{font-size:12px;color:#c9b89e;line-height:1.5}.victor-center-banner .quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.victor-center-banner .quick button{background:rgba(176,141,87,.18);color:#FCF6F5;border:1px solid rgba(176,141,87,.3);padding:6px 12px;border-radius:14px;font-size:11px;cursor:pointer;font-family:inherit}.victor-center-banner .quick button:hover{background:rgba(176,141,87,.35)}';
+    document.head.appendChild(style);
+
+    const btn = document.createElement('button');
+    btn.className = 'victor-mode-toggle';
+    btn.title = '一鍵切換 VICTOR 中心化模式';
+    function updateBtn() {
+      const on = document.body.classList.contains('victor-only');
+      btn.textContent = on ? '✓ 簡化模式' : '🎯 簡化模式';
+      btn.classList.toggle('active', on);
+    }
+    btn.addEventListener('click', function() {
+      const on = document.body.classList.toggle('victor-only');
+      try { localStorage.setItem('victorOnlyMode', on ? '1' : '0'); } catch (e) {}
+      updateBtn();
+    });
+    try {
+      if (localStorage.getItem('victorOnlyMode') === '1') document.body.classList.add('victor-only');
+    } catch (e) {}
+
+    const banner = document.createElement('div');
+    banner.className = 'victor-center-banner';
+    banner.innerHTML = '<div class="ttl">👑 VICTOR 總監已就位 — 不用挑員工，直接給任務</div><div class="sub">VICTOR 會自動分派給 NOVA 寫文案、DEX 算數字、LEON 排廣告。或點下面快捷:</div><div class="quick"><button data-q="幫我寫今天最後三盒杜拜胖卡龍的 IG 文案，80 字內">📝 寫文案</button><button data-q="看我本週各門市表現，直白告訴我哪家有問題">📊 看數據</button><button data-q="幫我排這週 Meta 廣告策略，預算 NT$5000">🎯 排廣告</button><button data-q="檢查我手上的客服訊息，有沒有要回的">💬 客服</button></div>';
+    banner.querySelectorAll('.quick button').forEach(function(b) {
+      b.addEventListener('click', function() {
+        const q = b.getAttribute('data-q') || '';
+        const ta = document.querySelector('textarea[placeholder*="VICTOR"]') || document.querySelector('textarea[placeholder*="交付"]') || document.querySelector('textarea');
+        if (ta) {
+          ta.value = q;
+          ta.dispatchEvent(new Event('input', { bubbles: true }));
+          ta.focus();
+          const submit = Array.from(document.querySelectorAll('button')).find(function(x){ return /交付|送出/.test(x.textContent || ''); });
+          if (submit) setTimeout(function(){ submit.click(); }, 200);
+        }
+      });
+    });
+
+    function placeUI() {
+      if (!document.body.contains(btn)) document.body.appendChild(btn);
+      if (!document.querySelector('.victor-center-banner')) {
+        const main = document.querySelector('main') || document.body;
+        main.insertBefore(banner, main.firstChild);
+      }
+      updateBtn();
+    }
+    if (document.body) placeUI();
+    else document.addEventListener('DOMContentLoaded', placeUI);
+    console.log('[victor-only] toggle installed');
+  })();
 })();
