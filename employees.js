@@ -16,6 +16,16 @@ try {
   };
 } catch {}
 
+// ---- Live stats injector (v3.1 — 即時營運數字注入) ----
+let _liveStatsFn = () => '';
+try {
+  const up = require('./ai-team-upgrades');
+  _liveStatsFn = () => {
+    try { return up.getLiveStatsHead() || ''; }
+    catch { return ''; }
+  };
+} catch {}
+
 // Market intel auto-injector
 let _marketIntelCache = '';
 try {
@@ -579,8 +589,10 @@ const EMPLOYEES_WITH_DYNAMIC = new Proxy(_origEmployees, {
       get(t, k) {
         if (k === 'systemPrompt' && typeof t[k] === 'string') {
           const memoryHead = getBrandMemoryHead();
-          const memorySection = memoryHead ? memoryHead + '\n\n' : '';
-          return memorySection + t[k] + getMarketIntelTail();
+          const memorySection = memoryHead ? memormemoryHead + '\n\n' : '';
+          const liveStats = _liveStatsFn();
+          const statsSection = liveStats ? liveStats + '\n' : '';
+          return memorySection + statsSection + t[k] + getMarketIntelTail();
         }
         return t[k];
       },

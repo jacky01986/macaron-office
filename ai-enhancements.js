@@ -157,6 +157,15 @@ function register(app, cron) {
     console.warn('[ai-enhancements] brand-memory register failed:', e.message);
   }
 
+  // ★ v2.1:註冊 ai-team-upgrades(自動學偏好 + 真實數字 + 每日三件事)
+  try {
+    const up = require('./ai-team-upgrades');
+    up.register(app, cron);
+    console.log('[ai-enhancements] ai-team-upgrades registered');
+  } catch (e) {
+    console.warn('[ai-enhancements] ai-team-upgrades register failed:', e.message);
+  }
+
   app.get('/api/enhance/weather', async (req, res) => res.json(await getWeather(req.query.city || '台南')));
   app.post('/api/enhance/web-search', async (req, res) => res.json(await webSearch(req.body?.q || req.query.q || '')));
   app.get('/api/enhance/google-reviews', async (req, res) => res.json(await googleReviews(req.query.place_id || '')));
@@ -166,14 +175,14 @@ function register(app, cron) {
   app.post('/api/enhance/memory', (req, res) => { try { res.json({ ok: true, saved: saveMemory(req.body || {}) }); } catch (e) { res.status(500).json({ ok: false, error: e.message }); } });
   app.get('/api/enhance/memory/recall', async (req, res) => res.json({ ok: true, items: await recallMemory(req.query.q || '', Number(req.query.k) || 5) }));
   app.post('/api/enhance/detect-anomalies', async (req, res) => res.json(await detectAnomalies()));
-  app.get('/api/enhance/status', (req, res) => res.json({ ok: true, model: 'claude-sonnet-4-6 + opus-4-6 + haiku-4-5', features: { evidence_wrapper: 'on', weather: 'on (Open-Meteo, no key)', web_search: process.env.BRAVE_API_KEY ? 'on' : 'need BRAVE_API_KEY', google_reviews: process.env.GOOGLE_PLACES_API_KEY ? 'on' : 'need GOOGLE_PLACES_API_KEY', multi_model: { claude: 'on', gpt: process.env.OPENAI_API_KEY ? 'on' : 'need OPENAI_API_KEY', gemini: process.env.GOOGLE_AI_API_KEY ? 'on' : 'need GOOGLE_AI_API_KEY' }, feedback: 'on', memory: 'on (keyword fallback)', anomaly_detection: 'on (8am daily cron)', brand_memory: 'on (human voice + long-term)' } }));
+  app.get('/api/enhance/status', (req, res) => res.json({ ok: true, model: 'claude-sonnet-4-6 + opus-4-6 + haiku-4-5', features: { evidence_wrapper: 'on', weather: 'on (Open-Meteo, no key)', web_search: process.env.BRAVE_API_KEY ? 'on (Brave Search)' : 'on (free: DuckDuckGo + Google News + SearXNG fallback)', google_reviews: process.env.GOOGLE_PLACES_API_KEY ? 'on' : 'need GOOGLE_PLACES_API_KEY', multi_model: { claude: 'on', gpt: process.env.OPENAI_API_KEY ? 'on' : 'need OPENAI_API_KEY', gemini: process.env.GOOGLE_AI_API_KEY ? 'on' : 'need GOOGLE_AI_API_KEY' }, feedback: 'on', memory: 'on (keyword fallback)', anomaly_detection: 'on (8am daily cron)', brand_memory: 'on (human voice + long-term)', ai_team_upgrades: 'on (auto-learn + live-stats + daily-brief 06:30)' } }));
 
   if (cron) {
     cron.schedule('0 8 * * *', async () => { try { const r = await detectAnomalies(); console.log('[ai-enhancements] anomaly detection:', r.findings.length, 'findings'); } catch (e) { console.error('[ai-enhancements] anomaly err:', e.message); } }, { timezone: 'Asia/Taipei' });
     console.log('[ai-enhancements] cron registered: 0 8 * * * Asia/Taipei (anomaly detection)');
   }
 
-  console.log('[ai-enhancements] registered: weather, web-search, google-reviews, multi-model, feedback, memory, anomaly-detection, brand-memory');
+  console.log('[ai-enhancements] registered: weather, web-search, google-reviews, multi-model, feedback, memory, anomaly-detection, brand-memory, ai-team-upgrades');
 }
 
 module.exports = { register, wrapWithEvidence, getWeather, webSearch, googleReviews, askMultiModel, saveFeedback, loadFeedback, saveMemory, recallMemory, detectAnomalies, EVIDENCE_RULE };
