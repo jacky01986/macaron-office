@@ -363,7 +363,7 @@
   // ============================================================
   // v5: VICTOR 中心化 UI 切換鈕
   // ============================================================
-  (function setupVictorOnlyMode() {
+  (function setupVictorOnlyMode() { return; // 簡化模式按鈕已停用
     if (window.__victorOnlyInstalled) return;
     window.__victorOnlyInstalled = true;
     if (!/macaron-office|onrender/.test(location.host)) return;
