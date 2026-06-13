@@ -109,7 +109,7 @@ async function maybeAugmentSystemPrompt(emp) {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MODEL = process.env.CLAUDE_MODEL || "claude-fable-5";
+const MODEL = process.env.CLAUDE_MODEL || "claude-opus-4-8";
 const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || MODEL;
 const DATA_DIR = path.join(__dirname, "data");
 const REPORTS_FILE = path.join(DATA_DIR, "reports.json");
@@ -2172,7 +2172,7 @@ app.get('/api/voc/mine', async (req, res) => {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const prompt = '以下是 溫點 WarmPlace 過去 ' + days + ' 天，SaleSmartly / Messenger 的對話紀錄（' + allMsgs.length + ' 則訊息）。每則前面標記 [CUSTOMER] 或 [UNKNOWN]。請當「顧客之聲」分析師，著重看 [CUSTOMER] 訊息（也可參考 [UNKNOWN] 推論），歸納：\n\n1. **Top 10 最常被問的問題**（用客戶原話風格）\n2. **Top 5 客戶顧慮 / 反對意見**\n3. **客戶常用的詞彙 / 說法**\n4. **意圖分類百分比**（價格 / 預約 / 客戶教育 / 售後 / 其他）\n5. **3 個立即可執行的行銷動作**\n\n用條列輸出，給 溫點 WarmPlace 行銷團隊用，直接結論不要客套。\n\n--- 訊息 ---\n' + allMsgs.map((m, i) => (i+1) + '. ' + (m.from_customer ? '[CUSTOMER]' : '[UNKNOWN]') + ' ' + m.text).join('\n');
     const resp = await client.messages.create({
-      model: 'claude-fable-5',
+      model: 'claude-opus-4-8',
       max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }]
     });

@@ -54,7 +54,7 @@ async function googleReviews(placeId) {
 async function askMultiModel(prompt, scope) {
   const results = {};
   try {
-    const r = await anthropic.messages.create({ model: 'claude-fable-5', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] });
+    const r = await anthropic.messages.create({ model: 'claude-opus-4-8', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] });
     results.claude = (r.content || []).map(c => c.text || '').join('');
   } catch (e) { results.claude = 'err: ' + e.message; }
   if (process.env.OPENAI_API_KEY) {
@@ -175,7 +175,7 @@ function register(app, cron) {
   app.post('/api/enhance/memory', (req, res) => { try { res.json({ ok: true, saved: saveMemory(req.body || {}) }); } catch (e) { res.status(500).json({ ok: false, error: e.message }); } });
   app.get('/api/enhance/memory/recall', async (req, res) => res.json({ ok: true, items: await recallMemory(req.query.q || '', Number(req.query.k) || 5) }));
   app.post('/api/enhance/detect-anomalies', async (req, res) => res.json(await detectAnomalies()));
-  app.get('/api/enhance/status', (req, res) => res.json({ ok: true, model: 'claude-fable-5 + opus-4-6 + haiku-4-5', features: { evidence_wrapper: 'on', weather: 'on (Open-Meteo, no key)', web_search: process.env.BRAVE_API_KEY ? 'on (Brave Search)' : 'on (free: DuckDuckGo + Google News + SearXNG fallback)', google_reviews: process.env.GOOGLE_PLACES_API_KEY ? 'on' : 'need GOOGLE_PLACES_API_KEY', multi_model: { claude: 'on', gpt: process.env.OPENAI_API_KEY ? 'on' : 'need OPENAI_API_KEY', gemini: process.env.GOOGLE_AI_API_KEY ? 'on' : 'need GOOGLE_AI_API_KEY' }, feedback: 'on', memory: 'on (keyword fallback)', anomaly_detection: 'on (8am daily cron)', brand_memory: 'on (human voice + long-term)', ai_team_upgrades: 'on (auto-learn + live-stats + daily-brief 06:30)' } }));
+  app.get('/api/enhance/status', (req, res) => res.json({ ok: true, model: 'claude-opus-4-8 + opus-4-6 + haiku-4-5', features: { evidence_wrapper: 'on', weather: 'on (Open-Meteo, no key)', web_search: process.env.BRAVE_API_KEY ? 'on (Brave Search)' : 'on (free: DuckDuckGo + Google News + SearXNG fallback)', google_reviews: process.env.GOOGLE_PLACES_API_KEY ? 'on' : 'need GOOGLE_PLACES_API_KEY', multi_model: { claude: 'on', gpt: process.env.OPENAI_API_KEY ? 'on' : 'need OPENAI_API_KEY', gemini: process.env.GOOGLE_AI_API_KEY ? 'on' : 'need GOOGLE_AI_API_KEY' }, feedback: 'on', memory: 'on (keyword fallback)', anomaly_detection: 'on (8am daily cron)', brand_memory: 'on (human voice + long-term)', ai_team_upgrades: 'on (auto-learn + live-stats + daily-brief 06:30)' } }));
 
   if (cron) {
     cron.schedule('0 8 * * *', async () => { try { const r = await detectAnomalies(); console.log('[ai-enhancements] anomaly detection:', r.findings.length, 'findings'); } catch (e) { console.error('[ai-enhancements] anomaly err:', e.message); } }, { timezone: 'Asia/Taipei' });

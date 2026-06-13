@@ -10,7 +10,7 @@ let Anthropic = null;
 try { Anthropic = require('@anthropic-ai/sdk'); } catch {}
 const scout = (() => { try { return require('./scout'); } catch { return null; } })();
 
-const MODEL = process.env.CLAUDE_MODEL || 'claude-fable-5';
+const MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-8';
 
 let client = null;
 function getClient() {

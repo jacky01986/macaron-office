@@ -16,7 +16,7 @@ const scout = (() => { try { return require('./scout'); } catch { return null; }
 
 const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 const BOARD_FILE = path.join(DATA_DIR, 'june-board.json');
-const MODEL = process.env.CLAUDE_MODEL || 'claude-fable-5';
+const MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-8';
 
 const TEAM = 'VICTOR(總監/決策)、LEON(廣告投放)、CAMILLE(文案/SEO)、ARIA(視覺)、DEX(數據)、NOVA(社群/公關)、MILO(KOL)、RINA(短影音)、HANA(私訊成交)、MIRA(門市教育)、Sam(老闆/拍板)、店長(門市執行)';
 

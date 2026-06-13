@@ -15,7 +15,7 @@ try { Anthropic = require('@anthropic-ai/sdk'); } catch {}
 
 const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 const MEM_FILE = path.join(DATA_DIR, 'team-memory.json');
-const MODEL = process.env.CLAUDE_MODEL || 'claude-fable-5';
+const MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-8';
 
 let client = null;
 function getClient() {

@@ -76,7 +76,7 @@ async function tgSendText(text) {
   } catch { return false; }
 }
 
-const MODEL = process.env.CLAUDE_MODEL || 'claude-fable-5';
+const MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-8';
 
 function ensureDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });

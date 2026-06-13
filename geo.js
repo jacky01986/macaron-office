@@ -13,7 +13,7 @@ const VISIBILITY_LOG = path.join(GEO_DIR, 'visibility_audits.jsonl');
 const CONTENT_LOG = path.join(GEO_DIR, 'generated_content.jsonl');
 const COMPETITOR_LOG = path.join(GEO_DIR, 'competitor_comparisons.jsonl');
 
-const SONNET_MODEL = 'claude-fable-5';
+const SONNET_MODEL = 'claude-opus-4-8';
 
 let anthropic = null;
 function getClient() {

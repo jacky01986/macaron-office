@@ -354,7 +354,7 @@ function getMarketIntelContext({ compact = true } = {}) {
 }
 
 // 對「溫點 vs 對手」做比對(由 AI 解讀)— 用 Claude
-async function compareWithWarmplace({ anthropic, model = 'claude-fable-5' } = {}) {
+async function compareWithWarmplace({ anthropic, model = 'claude-opus-4-8' } = {}) {
   if (!anthropic) return { ok: false, error: 'no anthropic client' };
   const intel = loadLatestIntel();
   if (!intel) return { ok: false, error: 'no intel data' };
