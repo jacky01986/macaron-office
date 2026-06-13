@@ -28,7 +28,7 @@ function scoutTail() {
 const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 const SETTINGS_FILE = path.join(DATA_DIR, 'closer-settings.json');
 const PLAYBOOK_FILE = path.join(DATA_DIR, 'closer-playbook.json');
-const MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-6';
+const MODEL = process.env.CLAUDE_MODEL || 'claude-fable-5';
 
 let client = null;
 function getClient() {

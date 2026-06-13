@@ -109,7 +109,7 @@ async function maybeAugmentSystemPrompt(emp) {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5-20250929";
+const MODEL = process.env.CLAUDE_MODEL || "claude-fable-5";
 const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || MODEL;
 const DATA_DIR = path.join(__dirname, "data");
 const REPORTS_FILE = path.join(DATA_DIR, "reports.json");
@@ -204,7 +204,7 @@ app.post("/api/line/upload", (req, res) => {
 
 let anthropic = null;
 if (process.env.ANTHROPIC_API_KEY) {
-  anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); try { const _enh = require("./ai-enhancements"); const _orig = anthropic.messages.create.bind(anthropic.messages); anthropic.messages.create = function(o) { try { return _enh.enhancedCreate(_orig, o); } catch (e) { console.error("[ai-enhancements] enhancedCreate err:", e.message); return _orig(o); } }; console.log("[ai-enhancements] enhancedCreate auto-injected: EVIDENCE_RULE + web_search tool + tool_use loop"); } catch (e) { console.error("[ai-enhancements] wrapper inject failed:", e.message); }
+  anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   console.log("[OK] Anthropic client initialized | worker:", MODEL, "| director:", DIRECTOR_MODEL);
 } else {
   console.warn("[WARN] ANTHROPIC_API_KEY not set");
@@ -905,7 +905,7 @@ async function executeReadTool(name, input) {
         return top5.map(c => ({ userId: c.userId, userName: c.userName, lastMessages: (c.messages||[]).slice(0,5).map(m=>({ text:m.text, ts:m.timestamp, intent:m.intent, replied:m.replied, replyText:m.replyText })) }));
       } catch(e) { return { error: e.message }; }
     }
-    case "get_offline_reports": { try { const o = require("./offline-reports"); return o.buildSummaryForAI(); } catch (e) { return { error: e.message }; } } case "get_shopline_brief": { try { const sp = require("./shopline-polling"); return await sp.buildTeamBrief(); } catch (e) { return { error: e.message }; } } case "get_meta_posts": {
+    case "get_meta_posts": {
       try {
         const lim = input.limit || 10;
         const plat = input.platform || 'both';
@@ -2169,9 +2169,10 @@ app.get('/api/voc/mine', async (req, res) => {
     }
     if (!allMsgs.length) return res.json({ ok: true, total_sessions: list.length, customer_messages: 0, sample_keys: firstSampleKeys, message: 'Sessions found but no message content extracted' });
     const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const prompt = '以下是 溫點 WarmPlace 過去 ' + days + ' 天，SaleSmartly / Messenger 的對話紀錄（' + allMsgs.length + ' 則訊息）。每則前面標記 [CUSTOMER] 或 [UNKNOWN]。請當「顧客之聲」分析師，著重看 [CUSTOMER] 訊息（也可參考 [UNKNOWN] 推論），歸納：\n\n1. **Top 10 最常被問的問題**（用客戶原話風格）\n2. **Top 5 客戶顧慮 / 反對意見**\n3. **客戶常用的詞彙 / 說法**\n4. **意圖分類百分比**（價格 / 預約 / 客戶教育 / 售後 / 其他）\n5. **3 個立即可執行的行銷動作**\n\n用條列輸出，給 溫點 WarmPlace 行銷團隊用，直接結論不要客套。\n\n--- 訊息 ---\n' + allMsgs.map((m, i) => (i+1) + '. ' + (m.from_customer ? '[CUSTOMER]' : '[UNKNOWN]') + ' ' + m.text).join('\n');
     const resp = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-fable-5',
       max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -3303,35 +3304,18 @@ app.get('/api/scout/intelligence', (req, res) => {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
   try { res.json(scout.getMarketIntelligence() || { ok: false, reason: 'not yet distilled' }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
-const _distillJobs = new Map();
-function _distillHandler(req, res) {
+async function _distillHandler(req, res) {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
-  const pollId = req.params && req.params.jobId;
-  if (pollId) {
-    const job = _distillJobs.get(pollId);
-    if (!job) return res.status(404).json({ error: 'job not found' });
-    return res.json({ ok: true, status: job.status, result: job.result, error: job.error, startedAt: job.startedAt, finishedAt: job.finishedAt });
+  try {
+    const r = await scout.distillIntelligence();
+    res.json({ ok: true, finished: true, result: r });
+  } catch (e) {
+    console.error('[distill]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
   }
-  const jobId = 'dst_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-  const job = { id: jobId, status: 'running', result: null, error: null, startedAt: new Date().toISOString(), finishedAt: null };
-  _distillJobs.set(jobId, job);
-  const _now = Date.now();
-  for (const [k, j] of _distillJobs.entries()) { if (j.finishedAt && (_now - new Date(j.finishedAt).getTime() > 3600000)) _distillJobs.delete(k); }
-  Promise.resolve().then(async () => {
-    try {
-      const r = await scout.distillIntelligence();
-      job.status = 'done'; job.result = r; job.finishedAt = new Date().toISOString();
-      console.log('[distill]', jobId, 'done in', Date.now() - _now, 'ms');
-    } catch (e) {
-      console.error('[distill]', jobId, e.message);
-      job.status = 'error'; job.error = e.message; job.finishedAt = new Date().toISOString();
-    }
-  });
-  res.json({ ok: true, status: 'started', jobId });
 }
 app.get('/api/scout/distill', _distillHandler);
 app.post('/api/scout/distill', _distillHandler);
-app.get('/api/scout/distill/:jobId', _distillHandler);
 app.get('/api/scout/report/:serviceId', (req, res) => {
   if (!scout) return res.status(500).json({ error: 'scout not loaded' });
   try {
@@ -4818,9 +4802,6 @@ catch (e) { console.error('[memory] mount failed:', e.message); }
 // === DIRECTOR 拍攝指導路由 ===
 try { app.use('/api/shot-director', require('./shot-director')); console.log('[shot-director] DIRECTOR route mounted at /api/shot-director'); }
 catch (e) { console.error('[shot-director] mount failed:', e.message); }
-try { app.use('/api/meta-admin', require('./meta-admin')); console.log('[meta-admin] route mounted at /api/meta-admin'); } catch (e) { console.error('[meta-admin] mount failed:', e.message); }
-try { app.use('/api/shopline', require('./shopline')); console.log('[shopline] route mounted at /api/shopline'); } catch (e) { console.error('[shopline] mount failed:', e.message); }
-try { require('./shopline').registerCron(cron); } catch (e) { console.error('[shopline] cron failed:', e.message); }try { app.use('/api/shopline-polling', require('./shopline-polling')); console.log('[shopline-polling] mounted'); } catch (e) { console.error('[shopline-polling] mount failed:', e.message); }try { require('./shopline-polling').registerCron(cron); } catch (e) { console.error('[shopline-polling] cron failed:', e.message); } try { app.use('/api/offline-reports', require('./offline-reports')); console.log('[offline-reports] route mounted'); } catch (e) { console.error('[offline-reports] mount failed:', e.message); } try { const _offlr = require('./offline-reports'); if (_offlr.registerCron) _offlr.registerCron(cron); require('./gdrive-sync').register(app, cron); } catch (e) { console.error('[gdrive-sync] mount failed:', e.message); } try { require('./ai-enhancements').register(app, cron); } catch (e) { console.error('[ai-enhancements] mount failed:', e.message); } try { require('./offline-reports').registerCron(cron); } catch (e) { console.error('[offline-reports] cron failed:', e.message); }
 
 app.listen(PORT, () => {
   console.log('🥐 溫點 WarmPlace · Virtual Office v2');

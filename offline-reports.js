@@ -42,7 +42,7 @@ const EXTRACT_SYS = `你是溫點 WarmPlace 烘焙坊的營運分析師。從上
 
 async function extractWithClaude(messages, opts = {}) {
   const result = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-fable-5',
     max_tokens: opts.maxTokens || 2048,
     system: opts.system || EXTRACT_SYS,
     messages
@@ -541,7 +541,7 @@ const ANALYSIS_SYS = `你是溫點 WarmPlace 烘焙坊的營運分析師。根�
 top_issues 給 2-4 條,recommendations 給 2-4 條,quick_wins 給 3-5 條。`;
 async function callAnalysisClaude(prompt) {
   try {
-    const result = await anthropic.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 2500, system: ANALYSIS_SYS, messages: [{ role: 'user', content: prompt }] });
+    const result = await anthropic.messages.create({ model: 'claude-fable-5', max_tokens: 2500, system: ANALYSIS_SYS, messages: [{ role: 'user', content: prompt }] });
     const respText = (result.content || []).map(c => c.text || '').join('');
     let parsed = {};
     try { const m = respText.match(/\{[\s\S]*\}/); if (m) parsed = JSON.parse(m[0]); }
