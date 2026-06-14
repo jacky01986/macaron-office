@@ -99,7 +99,7 @@ input:focus, textarea:focus, select:focus {
 
 /* macaron-topnav — 用品牌色 */
 .macaron-topnav {
-  background: linear-gradient(135deg, var(--burgundy-dark), var(--burgundy)) !important;
+  background: linear-gradient(135deg, #c97e62 0%, #d9a378 100%) !important;
   padding: 8px 16px;
   display: flex;
   gap: 8px;
@@ -109,7 +109,7 @@ input:focus, textarea:focus, select:focus {
   flex-shrink: 0;
   box-shadow: var(--shadow-soft);
 }
-.macaron-topnav strong { color: var(--gold-bright) !important; font-size: 14px; margin-right: 8px; flex-shrink: 0; }
+.macaron-topnav strong { color: #ffffff !important; font-size: 14px; margin-right: 8px; flex-shrink: 0; }
 .macaron-topnav a {
   padding: 6px 12px;
   border-radius: 6px;
@@ -117,13 +117,13 @@ input:focus, textarea:focus, select:focus {
   font-size: 13px;
   font-weight: 600;
   flex-shrink: 0;
-  background: var(--dark-2) !important;
-  color: var(--ivory) !important;
-  border: 1px solid var(--burgundy-light);
+  background: #ffffff !important;
+  color: #6b4d3a !important;
+  border: 1px solid #e0d6c8;
   transition: all 0.15s;
 }
-.macaron-topnav a:hover { background: var(--burgundy) !important; color: var(--gold-bright) !important; }
-.macaron-topnav a.active { background: var(--gold) !important; color: var(--dark) !important; border-color: var(--gold-bright); }
+.macaron-topnav a:hover { background: #f3eadd !important; color: #c97e62 !important; border-color: #c97e62 !important; }
+.macaron-topnav a.active { background: linear-gradient(135deg, #c97e62, #d9a378) !important; color: #ffffff !important; border-color: #c97e62 !important; }
 .macaron-topnav.in-iframe { display: none !important; }
 
 /* Badge / pill */
