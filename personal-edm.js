@@ -139,7 +139,12 @@ async function generateDraft(customer, seg, conversationHistory) {
 '8. 根據分群調整語氣:\n' +
 '   - 🔥 hot/objection:直接、解答疑問\n' +
 '   - 🌀 stalled/fading:輕推,給選項不施壓\n' +
-'   - 新客:溫和歡迎,介紹一個小亮點\n\n' +
+'   - 新客:溫和歡迎,介紹一個小亮點\n' +
+'9. ★ 段落分段(絕對重要):\n' +
+'   - 每段最多 2-3 行,段落間用空行(\\n\\n)分隔\n' +
+'   - 開場 → 內容(可拆 1-2 段)→ 限制/真實感 → 結尾留白問句\n' +
+'   - 不可全部擠成一大段,讓客人在手機讀起來呼吸不過來\n' +
+'   - 列點時用 emoji bullet(🏪 📦 等)或編號\n\n' +
 '只回訊息正文,不要前綴後綴、不要解釋。';
 
   const histPart = conversationHistory ? '\n\n=== 過去對話歷史 ===\n' + conversationHistory.slice(0, 2000) : '';
@@ -470,7 +475,7 @@ function register(app, cron) {
     console.log('[personal-edm] cron registered: 0 7 * * * + 0 23 * * 0 + */30 * * * * (poll replies)');
   }
 
-  console.log('[personal-edm v3] registered: SaleSmartly source + closer.js send + auto-poll replies');
+  console.log('[personal-edm v4] registered: SaleSmartly source + closer.js send + auto-poll replies + paragraph rule');
 }
 
 module.exports = {

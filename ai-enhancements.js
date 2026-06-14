@@ -15,9 +15,11 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const EVIDENCE_RULE = "\n\n--- 全體規則(必遵守) ---\n回答策略性建議時,結尾必須附:\n📊 根據哪些數據:[具體列出 2-3 個數據來源,如 Shopline 訂單/門市報告/Meta 廣告]\n🎯 信心度:X%(80-100%=有把握 / 60-79%=合理推測 / <60%=直覺,需驗證)\n⚖️ 反方論點:1 句話說「若我錯了,可能因為...」\n如果僅是聊天/閒談則不需附。";
 
+const PARAGRAPH_RULE = "\n\n--- 文章格式規則(必遵守) ---\n寫超過 80 字的內容時:\n• 每段最多 3 行,段落間用空行(\\n\\n)分隔\n• 同主題放同段(產品介紹/限制/CTA 分段)\n• 不要把多個資訊全塞同段,讓人讀起來呼吸不過來\n• 列點時用 emoji bullet 或編號\n• 結尾留問句或留白,不堆 CTA";
+
 function wrapWithEvidence(systemPrompt) {
-  if (!systemPrompt) return EVIDENCE_RULE;
-  return systemPrompt + EVIDENCE_RULE;
+  if (!systemPrompt) return EVIDENCE_RULE + PARAGRAPH_RULE;
+  return systemPrompt + EVIDENCE_RULE + PARAGRAPH_RULE;
 }
 
 async function getWeather(city) {
