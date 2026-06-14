@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💌 個人化觸及 · 溫點 WarmPlace</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; background: #faf7f2; color: #2d2825; padding: 20px; min-height: 100vh; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .header { background: linear-gradient(135deg, #c97e62 0%, #d9a378 100%); color: white; padding: 22px 28px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(201,126,98,0.18); }
+  .header h1 { font-size: 22px; margin-bottom: 6px; }
+  .header .sub { opacity: 0.92; font-size: 14px; }
+  .nav { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .nav a, .nav button { padding: 8px 14px; background: white; border: 1px solid #e0d6c8; border-radius: 999px; text-decoration: none; color: #6b4d3a; font-size: 13px; cursor: pointer; transition: all .15s; }
+  .nav a:hover, .nav button:hover { background: #f3eadd; border-color: #c97e62; color: #c97e62; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: white; padding: 16px; border-radius: 12px; border: 1px solid #ecdfd0; }
+  .stat-label { font-size: 12px; color: #8a7866; margin-bottom: 6px; }
+  .stat-value { font-size: 22px; font-weight: 600; color: #2d2825; }
+  .stat-sub { font-size: 11px; color: #b09b85; margin-top: 4px; }
+  .actions-bar { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
+  .btn { padding: 9px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; }
+  .btn-primary { background: #c97e62; color: white; }
+  .btn-primary:hover { background: #b56849; }
+  .btn-ghost { background: white; color: #6b4d3a; border: 1px solid #e0d6c8; }
+  .btn-ghost:hover { background: #f3eadd; }
+  .btn-success { background: #5a8f5e; color: white; }
+  .btn-success:hover { background: #467249; }
+  .btn-warn { background: #d9a378; color: white; }
+  .btn-warn:hover { background: #b8814f; }
+  .btn-skip { background: #e8e0d4; color: #6b4d3a; }
+  .btn-skip:hover { background: #d4c4af; }
+  .btn-edit { background: #f0e4d2; color: #6b4d3a; }
+  .btn-edit:hover { background: #e0d0b4; }
+  .priority-section { margin-bottom: 28px; }
+  .priority-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 15px; font-weight: 600; color: #6b4d3a; }
+  .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 12px; border-left: 4px solid #c97e62; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+  .card.high { border-left-color: #c97e62; }
+  .card.medium { border-left-color: #d9a378; }
+  .card.low { border-left-color: #b09b85; }
+  .card.sent { opacity: 0.55; }
+  .card.skipped { opacity: 0.4; background: #f5f1ea; }
+  .card-head { display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+  .card-name { font-size: 16px; font-weight: 600; color: #2d2825; }
+  .card-meta { font-size: 12px; color: #8a7866; margin-top: 3px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; margin-left: 6px; }
+  .badge-high { background: #fce8e0; color: #b56849; }
+  .badge-medium { background: #faecd6; color: #b8814f; }
+  .badge-low { background: #ebe6dd; color: #8a7866; }
+  .draft-box { background: #faf7f2; border: 1px solid #ecdfd0; padding: 12px; border-radius: 8px; font-size: 14px; line-height: 1.65; color: #3d3530; margin: 10px 0; white-space: pre-wrap; }
+  .draft-box.editing { background: #fffef9; border-color: #c97e62; }
+  .draft-textarea { width: 100%; min-height: 110px; padding: 12px; border: 1px solid #c97e62; border-radius: 8px; font-family: inherit; font-size: 14px; line-height: 1.65; color: #3d3530; resize: vertical; background: #fffef9; }
+  .card-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .empty { background: white; padding: 40px; border-radius: 12px; text-align: center; color: #8a7866; }
+  .empty h3 { color: #6b4d3a; margin-bottom: 8px; }
+  .loading { text-align: center; padding: 30px; color: #8a7866; }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: #2d2825; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; }
+  .toast.success { background: #5a8f5e; }
+  .toast.error { background: #c54f4f; }
+  .stats-tabs { display: flex; gap: 8px; margin: 20px 0 12px; }
+  .stats-tabs button { padding: 7px 14px; border: 1px solid #e0d6c8; background: white; border-radius: 999px; cursor: pointer; font-size: 12px; color: #6b4d3a; }
+  .stats-tabs button.active { background: #c97e62; color: white; border-color: #c97e62; }
+  .roi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  @media (max-width: 720px) {
+    .stats, .roi-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>💌 個人化觸及</h1>
+  <div class="sub">DEX 挑該回頭的客人,NOVA 寫個人化訊息,你審核發送 — 全程不亂寄</div>
+</div>
+
+<div class="nav">
+  <a href="/">← 回主控台</a>
+  <a href="/offline-reports.html">📋 線下報告</a>
+  <a href="/shopline-dashboard.html">🛒 Shopline</a>
+  <a href="/customers.html">👥 客戶</a>
+</div>
+
+<!-- 今日候選統計 -->
+<div class="stats" id="stats">
+  <div class="stat-card">
+    <div class="stat-label">今日候選</div>
+    <div class="stat-value" id="stat-total">—</div>
+    <div class="stat-sub">最多 25 筆</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">🌟 高優先 VIP</div>
+    <div class="stat-value" id="stat-high">—</div>
+    <div class="stat-sub">LTV ≥ NT$10k</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">💛 中優先舊客</div>
+    <div class="stat-value" id="stat-medium">—</div>
+    <div class="stat-sub">60-90 天沒回頭</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">🆕 新客追蹤</div>
+    <div class="stat-value" id="stat-low">—</div>
+    <div class="stat-sub">第一單後 7-14 天</div>
+  </div>
+</div>
+
+<div class="actions-bar">
+  <button class="btn btn-primary" onclick="refresh()">🔄 重新生成候選</button>
+  <button class="btn btn-ghost" onclick="load()">⟳ 載入最新</button>
+  <button class="btn btn-ghost" onclick="toggleStats()">📊 ROI 成效</button>
+  <span id="generated-at" style="margin-left:auto;font-size:12px;color:#8a7866;"></span>
+</div>
+
+<!-- ROI 區(預設隱藏) -->
+<div id="roi-panel" style="display:none;background:white;padding:20px;border-radius:12px;margin-bottom:24px;border:1px solid #ecdfd0;">
+  <div style="font-size:15px;font-weight:600;color:#6b4d3a;margin-bottom:12px;">📊 觸及成效</div>
+  <div class="stats-tabs">
+    <button class="active" data-range="7">過去 7 天</button>
+    <button data-range="14">過去 14 天</button>
+    <button data-range="30">過去 30 天</button>
+  </div>
+  <div class="roi-grid" id="roi-numbers"></div>
+</div>
+
+<!-- 候選名單 -->
+<div id="candidates">
+  <div class="loading">載入中...</div>
+</div>
+
+</div>
+
+<script>
+let currentItems = [];
+let currentStats = null;
+
+async function load() {
+  try {
+    const r = await fetch('/api/personal-edm/candidates');
+    const d = await r.json();
+    currentItems = d.items || [];
+    document.getElementById('stat-total').textContent = currentItems.length;
+    document.getElementById('stat-high').textContent = currentItems.filter(i => i.priority === 'high').length;
+    document.getElementById('stat-medium').textContent = currentItems.filter(i => i.priority === 'medium').length;
+    document.getElementById('stat-low').textContent = currentItems.filter(i => i.priority === 'low').length;
+    if (d.generated_at) {
+      const dt = new Date(d.generated_at);
+      document.getElementById('generated-at').textContent = '生成於 ' + dt.toLocaleString('zh-TW');
+    } else {
+      document.getElementById('generated-at').textContent = d.note || '';
+    }
+    render();
+  } catch (e) {
+    document.getElementById('candidates').innerHTML = '<div class="empty"><h3>讀取失敗</h3><div>' + e.message + '</div></div>';
+  }
+}
+
+function render() {
+  const wrap = document.getElementById('candidates');
+  if (currentItems.length === 0) {
+    wrap.innerHTML = '<div class="empty"><h3>今天沒有候選</h3><div>可能 Shopline 還沒累積到夠多客人,或大家最近都剛回購過。<br>按上方「重新生成候選」可手動觸發 DEX 重算。</div></div>';
+    return;
+  }
+  const groups = { high: [], medium: [], low: [] };
+  currentItems.forEach(i => groups[i.priority].push(i));
+  const titles = {
+    high: { icon: '🌟', label: '高優先 — VIP 接近回購週期' },
+    medium: { icon: '💛', label: '中優先 — 舊客快流失' },
+    low: { icon: '🆕', label: '新客追蹤' }
+  };
+  let html = '';
+  ['high', 'medium', 'low'].forEach(p => {
+    if (!groups[p].length) return;
+    html += '<div class="priority-section">';
+    html += '<div class="priority-header">' + titles[p].icon + ' ' + titles[p].label + ' · ' + groups[p].length + ' 位</div>';
+    groups[p].forEach(item => { html += renderCard(item); });
+    html += '</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+function renderCard(item) {
+  const sentClass = item.status === 'sent' ? ' sent' : (item.status === 'skipped' ? ' skipped' : '');
+  const editingId = 'edit-' + item.id;
+  const draftId = 'draft-' + item.id;
+  const sentInfo = item.status === 'sent' ? '<div style="font-size:12px;color:#5a8f5e;margin-top:8px;">✓ 已發送於 ' + new Date(item.sent_at).toLocaleString('zh-TW') + '</div>' : '';
+  const skippedInfo = item.status === 'skipped' ? '<div style="font-size:12px;color:#8a7866;margin-top:8px;">已略過</div>' : '';
+  const priBadge = item.priority === 'high' ? 'badge-high' : (item.priority === 'medium' ? 'badge-medium' : 'badge-low');
+  const safeDraft = (item.draft || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return '<div class="card ' + item.priority + sentClass + '">' +
+    '<div class="card-head">' +
+      '<div>' +
+        '<span class="card-name">' + (item.customer_name || '(無名)') + '</span>' +
+        '<span class="badge ' + priBadge + '">' + item.reason + '</span>' +
+        '<div class="card-meta">LTV NT$' + (item.ltv || 0).toLocaleString() + ' · ' + item.order_count + ' 單 · ' + item.recency_days + ' 天沒回</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="draft-box" id="' + draftId + '">' + safeDraft + '</div>' +
+    '<div id="' + editingId + '" style="display:none;"><textarea class="draft-textarea" id="ta-' + item.id + '">' + (item.draft || '') + '</textarea></div>' +
+    '<div class="card-actions">' +
+      (item.status === 'sent' || item.status === 'skipped' ? '' :
+        '<button class="btn btn-success" onclick="sendItem(\'' + item.id + '\')">✓ 發送</button>' +
+        '<button class="btn btn-edit" onclick="toggleEdit(\'' + item.id + '\')">✏️ 編輯</button>' +
+        '<button class="btn btn-skip" onclick="skipItem(\'' + item.id + '\')">略過</button>'
+      ) +
+    '</div>' +
+    sentInfo + skippedInfo +
+  '</div>';
+}
+
+function toggleEdit(id) {
+  const editBox = document.getElementById('edit-' + id);
+  const draftBox = document.getElementById('draft-' + id);
+  if (editBox.style.display === 'none') {
+    editBox.style.display = 'block';
+    draftBox.style.display = 'none';
+    // 加 save button
+    if (!document.getElementById('save-' + id)) {
+      const btn = document.createElement('button');
+      btn.id = 'save-' + id;
+      btn.className = 'btn btn-warn';
+      btn.textContent = '💾 存草稿';
+      btn.onclick = () => saveDraft(id);
+      editBox.appendChild(btn);
+    }
+  } else {
+    editBox.style.display = 'none';
+    draftBox.style.display = 'block';
+  }
+}
+
+async function saveDraft(id) {
+  const newDraft = document.getElementById('ta-' + id).value.trim();
+  if (!newDraft) { toast('草稿不能空白', 'error'); return; }
+  try {
+    const r = await fetch('/api/personal-edm/draft/' + id, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ draft: newDraft })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toast('草稿已存', 'success');
+      await load();
+    } else { toast('存失敗: ' + (d.error || ''), 'error'); }
+  } catch (e) { toast('存失敗: ' + e.message, 'error'); }
+}
+
+async function sendItem(id) {
+  if (!confirm('確定要發送這封?(SaleSmartly DM 目前 dryrun 模式,Phase C 才真實串接)')) return;
+  try {
+    const r = await fetch('/api/personal-edm/send/' + id, { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) { toast('✓ 已發送', 'success'); await load(); }
+    else { toast('發送失敗: ' + (d.error || ''), 'error'); }
+  } catch (e) { toast('失敗: ' + e.message, 'error'); }
+}
+
+async function skipItem(id) {
+  if (!confirm('略過這位客人?(不會永久壓制,只是今天不發)')) return;
+  try {
+    const r = await fetch('/api/personal-edm/skip/' + id, { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) { toast('已略過', 'success'); await load(); }
+    else { toast('失敗', 'error'); }
+  } catch (e) { toast('失敗: ' + e.message, 'error'); }
+}
+
+async function refresh() {
+  if (!confirm('重新生成候選會問 Shopline 拿客人 + 讓 NOVA 為每位寫草稿,約需 30-60 秒。繼續?')) return;
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '⟳ 生成中...';
+  try {
+    const r = await fetch('/api/personal-edm/refresh', { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) {
+      toast('生成 ' + d.count + ' 個候選', 'success');
+      await load();
+    } else { toast('生成失敗: ' + (d.error || ''), 'error'); }
+  } catch (e) { toast('失敗: ' + e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = '🔄 重新生成候選'; }
+}
+
+async function toggleStats() {
+  const panel = document.getElementById('roi-panel');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    await loadStats();
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+async function loadStats() {
+  try {
+    const r = await fetch('/api/personal-edm/stats');
+    const d = await r.json();
+    currentStats = d;
+    renderStats(7);
+  } catch {}
+}
+
+function renderStats(range) {
+  if (!currentStats) return;
+  const data = currentStats['last_' + range + 'd'] || {};
+  const grid = document.getElementById('roi-numbers');
+  grid.innerHTML =
+    '<div class="stat-card"><div class="stat-label">寄出</div><div class="stat-value">' + (data.sent || 0) + '</div><div class="stat-sub">封</div></div>' +
+    '<div class="stat-card"><div class="stat-label">回訊</div><div class="stat-value">' + (data.replied || 0) + '</div><div class="stat-sub">位</div></div>' +
+    '<div class="stat-card"><div class="stat-label">回流下單</div><div class="stat-value">' + (data.ordered || 0) + '</div><div class="stat-sub">筆</div></div>' +
+    '<div class="stat-card"><div class="stat-label">營收</div><div class="stat-value">NT$' + (data.revenue || 0).toLocaleString() + '</div><div class="stat-sub">含稅</div></div>' +
+    '<div class="stat-card"><div class="stat-label">轉換率</div><div class="stat-value">' + (data.conversion_pct || 0) + '%</div><div class="stat-sub">下單/寄出</div></div>';
+}
+
+document.querySelectorAll('.stats-tabs button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.stats-tabs button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    renderStats(b.dataset.range);
+  };
+});
+
+function toast(msg, type) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+load();
+</script>
+</body>
+</html>
