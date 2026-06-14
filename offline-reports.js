@@ -678,13 +678,34 @@ async function processBuffer(buffer, opts = {}) {
     try { result = await extractExcelHybrid(buffer, origName); }
     catch (e) { result = { ok: false, reason: 'exception: ' + e.message }; }
     if (result.ok && result.daily && result.daily.length > 0) {
+      // 🔹 tuple dedup: 同 (branch, report_date) 只保留 1 筆 — update 而非 append
+      const allRecs = loadAll();
+      const indexByKey = new Map();
+      allRecs.forEach((r, i) => {
+        const k = (r.branch || '') + '|' + (r.report_date || '');
+        indexByKey.set(k, i);
+      });
       const created = [];
+      let updated = 0, inserted = 0;
       for (const d of result.daily) {
-        const rec = Object.assign({ id: genId(), ts: new Date().toISOString(), report_date: d.date, type: 'daily', branch: result.branch, author: '', revenue: d.revenue, orders: d.orders, problems: '', review: '', action_items: '', notes: '', summary: '' }, baseRecord);
-        appendReport(rec);
-        created.push(rec);
+        const key = result.branch + '|' + d.date;
+        const idx = indexByKey.get(key);
+        if (idx !== undefined) {
+          // 更新原 record (保留 id 跟 ts)
+          const old = allRecs[idx];
+          allRecs[idx] = Object.assign({}, old, baseRecord, { branch: result.branch, report_date: d.date, type: 'daily', revenue: d.revenue, orders: d.orders, ts_updated: new Date().toISOString() });
+          updated++;
+          created.push(allRecs[idx]);
+        } else {
+          const rec = Object.assign({ id: genId(), ts: new Date().toISOString(), report_date: d.date, type: 'daily', branch: result.branch, author: '', revenue: d.revenue, orders: d.orders, problems: '', review: '', action_items: '', notes: '', summary: '' }, baseRecord);
+          allRecs.push(rec);
+          indexByKey.set(key, allRecs.length - 1);
+          inserted++;
+          created.push(rec);
+        }
       }
-      return { ok: true, mode: 'excel-hybrid', count: created.length, branch: result.branch, total_revenue: created.reduce((s,r)=>s+r.revenue,0), total_orders: created.reduce((s,r)=>s+r.orders,0), schema: result.schema };
+      fs.writeFileSync(REPORTS_FILE, allRecs.map(r => JSON.stringify(r)).join('\n') + (allRecs.length ? '\n' : ''));
+      return { ok: true, mode: 'excel-hybrid-dedup', count: created.length, updated, inserted, branch: result.branch, total_revenue: created.reduce((s,r)=>s+r.revenue,0), total_orders: created.reduce((s,r)=>s+r.orders,0), schema: result.schema };
     }
     // Excel hybrid 失敗 → 留一筆失敗 record 方便除錯
     const rec = Object.assign({ id: genId(), ts: new Date().toISOString(), report_date: todayStr, type: 'other', branch: '', author: '', revenue: 0, orders: 0, problems: '', review: '', action_items: '', notes: 'Hybrid extraction failed: ' + (result.reason || 'unknown'), summary: '' }, baseRecord);
