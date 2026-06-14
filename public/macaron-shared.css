@@ -99,7 +99,7 @@ input:focus, textarea:focus, select:focus {
 
 /* macaron-topnav — 用品牌色 */
 .macaron-topnav {
-  background: linear-gradient(135deg, #c97e62 0%, #d9a378 100%) !important;
+  background: linear-gradient(135deg, #a26041 0%, #bd8665 100%) !important;
   padding: 8px 16px;
   display: flex;
   gap: 8px;
@@ -122,8 +122,8 @@ input:focus, textarea:focus, select:focus {
   border: 1px solid #e0d6c8;
   transition: all 0.15s;
 }
-.macaron-topnav a:hover { background: #f3eadd !important; color: #c97e62 !important; border-color: #c97e62 !important; }
-.macaron-topnav a.active { background: linear-gradient(135deg, #c97e62, #d9a378) !important; color: #ffffff !important; border-color: #c97e62 !important; }
+.macaron-topnav a:hover { background: #f3eadd !important; color: #a26041 !important; border-color: #a26041 !important; }
+.macaron-topnav a.active { background: linear-gradient(135deg, #a26041, #bd8665) !important; color: #ffffff !important; border-color: #a26041 !important; }
 .macaron-topnav.in-iframe { display: none !important; }
 
 /* Badge / pill */
