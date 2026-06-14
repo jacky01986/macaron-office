@@ -254,6 +254,44 @@ async function sendViaSaleSmartly(customer_id, text, contact, origin) {
   }
 }
 
+// =========== 回流偵測(polling SaleSmartly board) ===========
+// 邏輯:掃所有 sent_at 但無 replied_at 的 touches(7 天內),
+// 從 /api/closer/board 拿最新 last_at,若 last_at > sent_at 則客人回訊了。
+async function pollReplies(origin) {
+  const base = origin || ('http://localhost:' + (process.env.PORT || 3000));
+  const touches = loadTouches();
+  const sevenDay = 7 * 86400000;
+  const candidates = touches.filter(t =>
+    t.sent_at && !t.replied_at && t.chat_user_id &&
+    (Date.now() - new Date(t.sent_at).getTime()) <= sevenDay
+  );
+  if (!candidates.length) return { ok: true, checked: 0, marked: 0 };
+
+  let conversations = [];
+  try {
+    const r = await fetch(base + '/api/closer/board');
+    if (!r.ok) return { ok: false, error: 'board ' + r.status };
+    const d = await r.json();
+    conversations = d.conversations || [];
+  } catch (e) { return { ok: false, error: e.message }; }
+
+  const lastAtMap = new Map(conversations.map(c => [c.chat_user_id, c.last_at]));
+  let marked = 0;
+  const markedItems = [];
+  for (const t of candidates) {
+    const lastAtSec = lastAtMap.get(t.chat_user_id);
+    if (!lastAtSec) continue;
+    const sentMs = new Date(t.sent_at).getTime();
+    const lastMs = Number(lastAtSec) * 1000;
+    if (lastMs > sentMs + 5000) {  // 5 秒 buffer 避免時鐘漂移
+      updateTouch(t.id, { replied_at: new Date(lastMs).toISOString() });
+      marked++;
+      markedItems.push({ id: t.id, name: t.customer_name, replied_at: new Date(lastMs).toISOString() });
+    }
+  }
+  return { ok: true, checked: candidates.length, marked, items: markedItems };
+}
+
 // =========== Telegram 推早報 ===========
 async function notifyTelegram(items) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -378,6 +416,15 @@ function register(app, cron) {
     try { res.json(calculateStats()); } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
   });
 
+  // 手動觸發 polling(debug 用)
+  app.post('/api/personal-edm/poll-replies', async (req, res) => {
+    try {
+      const origin = 'http://localhost:' + (process.env.PORT || 3000);
+      const r = await pollReplies(origin);
+      res.json(r);
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
   // Cron — 早上 7:00 自動生成 + 推 Telegram
   if (cron && typeof cron.schedule === 'function') {
     const tz = process.env.TZ || 'Asia/Taipei';
@@ -410,10 +457,20 @@ function register(app, cron) {
         });
       } catch (e) { console.error('[personal-edm] weekly stats err:', e.message); }
     }, { timezone: tz });
-    console.log('[personal-edm] cron registered: 0 7 * * * (daily) + 0 23 * * 0 (weekly ROI)');
+    // 每 30 分鐘 poll 回流
+    cron.schedule('*/30 * * * *', async () => {
+      try {
+        const origin = 'http://localhost:' + (process.env.PORT || 3000);
+        const r = await pollReplies(origin);
+        if (r.ok && r.marked > 0) {
+          console.log('[personal-edm] poll —', r.marked, 'replies marked,', r.checked, 'checked');
+        }
+      } catch (e) { console.error('[personal-edm] poll err:', e.message); }
+    }, { timezone: tz });
+    console.log('[personal-edm] cron registered: 0 7 * * * + 0 23 * * 0 + */30 * * * * (poll replies)');
   }
 
-  console.log('[personal-edm v2] registered: SaleSmartly source + closer.js send + 7 endpoints + 2 cron');
+  console.log('[personal-edm v3] registered: SaleSmartly source + closer.js send + auto-poll replies');
 }
 
 module.exports = {
@@ -422,5 +479,6 @@ module.exports = {
   loadTouches,
   calculateStats,
   notifyTelegram,
-  sendViaSaleSmartly
+  sendViaSaleSmartly,
+  pollReplies
 };
