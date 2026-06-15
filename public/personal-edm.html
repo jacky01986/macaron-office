@@ -200,7 +200,7 @@ function renderCard(item) {
     '<div id="' + editingId + '" style="display:none;"><textarea class="draft-textarea" id="ta-' + item.id + '">' + (item.draft || '') + '</textarea></div>' +
     '<div class="card-actions">' +
       (item.status === 'sent' || item.status === 'skipped' ? '' :
-        '<button class="btn btn-success" onclick="sendItem(\'' + item.id + '\')">✓ 發送</button>' +
+        '<button class="btn btn-success" onclick="sendItem(\'' + item.id + '\')">📋 複製寄出</button>' +
         '<button class="btn btn-edit" onclick="toggleEdit(\'' + item.id + '\')">✏️ 編輯</button>' +
         '<button class="btn btn-skip" onclick="skipItem(\'' + item.id + '\')">略過</button>'
       ) +
@@ -247,13 +247,23 @@ async function saveDraft(id) {
 }
 
 async function sendItem(id) {
-  if (!confirm('確定要發送這封?(SaleSmartly DM 目前 dryrun 模式,Phase C 才真實串接)')) return;
+  const item = currentItems.find(i => i.id === id);
+  if (!item) { toast('找不到候選', 'error'); return; }
+  if (!confirm('要寄給 ' + (item.customer_name || '客人') + ' 嗎?\n\n會做這 3 件事:\n1. 複製草稿到剪貼簿\n2. 開 SaleSmartly 後台新分頁\n3. 標記為已寄出\n\n你打開後 Ctrl+V 貼到對話框寄出即可。')) return;
   try {
-    const r = await fetch('/api/personal-edm/send/' + id, { method: 'POST' });
+    await navigator.clipboard.writeText(item.draft);
+    window.open('https://app.salesmartly.com/', '_blank');
+    const r = await fetch('/api/personal-edm/mark-sent/' + id, { method: 'POST' });
     const d = await r.json();
-    if (d.ok) { toast('✓ 已發送', 'success'); await load(); }
-    else { toast('發送失敗: ' + (d.error || ''), 'error'); }
-  } catch (e) { toast('失敗: ' + e.message, 'error'); }
+    if (d.ok) {
+      toast('✓ 草稿已複製｜SaleSmartly 已開分頁｜Ctrl+V 貼上寄出', 'success');
+      await load();
+    } else {
+      toast('標記失敗: ' + (d.error || ''), 'error');
+    }
+  } catch (e) {
+    toast('複製失敗(請手動): ' + e.message, 'error');
+  }
 }
 
 async function skipItem(id) {
