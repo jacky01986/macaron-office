@@ -421,6 +421,16 @@ function register(app, cron) {
     try { res.json(calculateStats()); } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
   });
 
+  // 手動標 sent(MVP 一鍵複製模式 — 前端複製草稿後標記寄出,不真的呼 SaleSmartly)
+  app.post('/api/personal-edm/mark-sent/:id', (req, res) => {
+    const r = updateTouch(req.params.id, {
+      sent_at: new Date().toISOString(),
+      status_label: 'sent',
+      send_result: { ok: true, mode: 'manual_copy', via: 'clipboard' }
+    });
+    res.json({ ok: !!r, item: r });
+  });
+
   // 手動觸發 polling(debug 用)
   app.post('/api/personal-edm/poll-replies', async (req, res) => {
     try {
@@ -475,7 +485,7 @@ function register(app, cron) {
     console.log('[personal-edm] cron registered: 0 7 * * * + 0 23 * * 0 + */30 * * * * (poll replies)');
   }
 
-  console.log('[personal-edm v4] registered: SaleSmartly source + closer.js send + auto-poll replies + paragraph rule');
+  console.log('[personal-edm v5] registered: SaleSmartly source + manual_copy mode + auto-poll + paragraph rule');
 }
 
 module.exports = {
