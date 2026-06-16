@@ -462,7 +462,7 @@ function buildSummaryForAI() {
     b.avg_revenue = b.count > 0 ? Math.round(b.revenue / b.count) : 0;
     b.total_revenue = b.revenue;
     b.total_orders = b.reports.reduce((s, r) => s + (Number(r.orders) || 0), 0);
-    b.aov = b.total_orders > 0 ? Math.round(b.revenue / b.total_orders) : 0;
+    b.aov = b.total_orders > 0 ? Math.round(b.reports.reduce((s,r)=>s+((Number(r.orders)||0)>0?(Number(r.revenue)||0):0),0) / b.total_orders) : 0;
   });
   const by_branch = Object.values(branchMap).sort((a, b) => b.revenue - a.revenue);
   const recent_reports_brief = all.slice(-5).reverse().map(r => ({ date: r.report_date, branch: r.branch, summary: r.summary || (r.review || '').slice(0, 80), revenue: r.revenue }));
