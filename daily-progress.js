@@ -195,6 +195,31 @@ function register(app, cron) {
     } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
   });
 
+  // 對話記憶上傳端點(scheduled task 從外面 POST 整理好的 markdown,server 上傳到 Drive)
+  app.post('/api/daily-progress/upload-memory', async (req, res) => {
+    try {
+      const { filename, content, mimeType, folder_id_override } = req.body || {};
+      if (!filename) return res.status(400).json({ ok: false, error: 'filename required' });
+      if (!content) return res.status(400).json({ ok: false, error: 'content required' });
+      const folderId = folder_id_override || process.env.GDRIVE_PROGRESS_FOLDER_ID;
+      if (!folderId) return res.status(400).json({ ok: false, error: 'no folder id' });
+      const r = await uploadFile(filename, content, folderId, mimeType || 'text/markdown');
+      // Telegram 通知
+      const tgToken = process.env.TELEGRAM_BOT_TOKEN, tgChat = process.env.TELEGRAM_CHAT_ID;
+      if (tgToken && tgChat) {
+        try {
+          await fetch('https://api.telegram.org/bot' + tgToken + '/sendMessage', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: tgChat, text: '💭 對話記憶已存 Drive: ' + filename })
+          });
+        } catch {}
+      }
+      res.json({ ok: true, file_id: r.id, filename });
+    } catch (e) {
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  });
+
   app.get('/api/daily-progress/health', (req, res) => {
     res.json({
       ok: true,
@@ -225,10 +250,10 @@ function register(app, cron) {
       } catch (e) { console.error('[daily-progress] weekly err:', e.message); }
     }, { timezone: tz });
 
-    // 每月最後一天 23:00 — 用 28-31 號 hack:若隔天是 1 號就跑
+    // 每月最後一天 23:00 — 用 28-31 hack
     cron.schedule('0 23 28-31 * *', async () => {
       const tomorrow = new Date(Date.now() + 86400000);
-      if (tomorrow.getDate() !== 1) return;  // 不是月底
+      if (tomorrow.getDate() !== 1) return;
       try {
         const origin = 'http://localhost:' + (process.env.PORT || 3000);
         const r = await runReport('monthly', origin);
@@ -239,7 +264,7 @@ function register(app, cron) {
     console.log('[daily-progress] cron registered: daily 23:30 + weekly Sun 23:00 + monthly last-day 23:00');
   }
 
-  console.log('[daily-progress] registered: /run/:period + /health + 3 cron jobs');
+  console.log('[daily-progress] registered: /run/:period + /upload-memory + /health + 3 cron jobs');
 }
 
 module.exports = { register, runReport, uploadFile, getAccessToken };
