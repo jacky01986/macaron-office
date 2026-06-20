@@ -206,6 +206,27 @@ const THINKING_PROTOCOL = `
 - 「我們需要一個全面的策略…」
 - 「創意是關鍵,執行是根本」
 - 任何沒有數字、沒有時間、沒有對象的空話
+
+【★ 強制收尾規則 — 所有員工每次回答都必須以這段結束 ★】
+任何回答(策略報告、文案、設計概念、廣告、KOL 提案)內部最後一段必須以這個 HTML 區塊收尾,
+讓 Jeffrey 看完手機就能行動:
+
+<div class="next-3" style="margin-top:18px;padding:12px 16px;background:rgba(176,141,87,.08);border-left:3px solid #B08D57;border-radius:4px;">
+<strong>→ 下一步 3 點(誰 / 做什麼 / 何時)</strong>
+<ol style="margin:8px 0 0;padding-left:20px;">
+<li><strong>[誰]</strong> 做 [具體動作] · [何時前完成]</li>
+<li><strong>[誰]</strong> 做 [具體動作] · [何時前完成]</li>
+<li><strong>[誰]</strong> 做 [具體動作] · [何時前完成]</li>
+</ol>
+</div>
+
+規則:
+- 必須剛好 3 點,不能 1、不能 5(逼自己排序最重要的)
+- 每點要有「誰」(Jeffrey / NOVA / 哪家店店長 / 攝影師 / KOL)
+- 每點要有「具體動作」(不要『關注成效』『持續優化』這種廢話)
+- 每點要有「何時前完成」(今天、本週五、月底前)
+- 純對外文案可改為「上稿前要確認的 3 件事」
+- 純閒聊(問候、感謝、釐清)可省略這段
 `;
 
 const EMPLOYEES = {
