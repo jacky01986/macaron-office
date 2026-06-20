@@ -1159,8 +1159,7 @@ async function sendSingle(text) {
   conversations[emp.id].push(aiMsg);
   const msgEl = appendMessageToDOM(aiMsg);
   const bubbleEl = msgEl.querySelector('.bubble');
-  let accumulated = '';
-  let firstChunk = true;
+employeeStatus[emp.id] = 'idle';  let firstChunk = true;
 
   try {
     const res = await fetch('/api/chat', {
@@ -1201,6 +1200,21 @@ async function sendSingle(text) {
     aiMsg.content = bubbleEl.innerHTML;
     addFeed(emp.name, `❌ ${err.message}`);
   }
+      try {
+              const _ptRes = await fetch('/api/partner-take', {
+                        method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mainEmployeeId: emp.id, userQuestion: text, mainAnswer: accumulated.replace(/<[^>]+>/g, ' ').slice(0, 3000) }),
+              });
+              const _ptJson = await _ptRes.json();
+              for (const t of (_ptJson.takes || [])) {
+                        const card = document.createElement('div');
+                        card.style.cssText = 'margin-top:10px;padding:10px 14px;border-left:3px solid ' + (t.color || '#888') + ';background:rgba(255,255,255,.04);border-radius:6px;font-size:13.5px;line-height:1.6;';
+                        card.innerHTML = '<div style="font-weight:600;margin-bottom:4px;color:' + (t.color || '#ccc') + ';">' + (t.emoji || 'x') + ' ' + (t.name || '') + ' adds</div><div style="white-space:pre-wrap;color:#eee;">' + (t.text || '') + '</div>';
+                        msgEl.appendChild(card);
+                        addFeed(t.name || '?', '+ ' + (t.name || '') + ' adds');
+              }
+      } catch (_e) { console.error('[partner-take]', _e); }
 
   employeeStatus[emp.id] = 'idle';
   updateEmployeeStatusOnly();
