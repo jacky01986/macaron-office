@@ -4823,6 +4823,26 @@ try { app.use('/api/shopline', require('./shopline')); console.log('[shopline] r
 try { require('./shopline').registerCron(cron); } catch (e) { console.error('[shopline] cron failed:', e.message); }try { app.use('/api/shopline-polling', require('./shopline-polling')); console.log('[shopline-polling] mounted'); } catch (e) { console.error('[shopline-polling] mount failed:', e.message); }try { require('./shopline-polling').registerCron(cron); } catch (e) { console.error('[shopline-polling] cron failed:', e.message); } try { app.use('/api/offline-reports', require('./offline-reports')); console.log('[offline-reports] route mounted'); } catch (e) { console.error('[offline-reports] mount failed:', e.message); } try { const _offlr = require('./offline-reports'); if (_offlr.registerCron) _offlr.registerCron(cron); require('./gdrive-sync').register(app, cron); } catch (e) { console.error('[gdrive-sync] mount failed:', e.message); } try { require('./ai-enhancements').register(app, cron); } catch (e) { console.error('[ai-enhancements] mount failed:', e.message); } try { require('./offline-reports').registerCron(cron); } catch (e) { console.error('[offline-reports] cron failed:', e.message); } try { require('./personal-edm').register(app, cron); } catch (e) { console.error('[personal-edm] mount failed:', e.message); } try { require('./daily-progress').register(app, cron); } catch (e) { console.error('[daily-progress] mount failed:', e.message); }
 
 app.listen(PORT, () => {
+  // =====================================================================
+  // /api/partner-take - client polls this after /api/chat done
+  // Returns 1-2 short helper takes (DEX numbers / CAMILLE copy / etc)
+  // =====================================================================
+  app.post('/api/partner-take', async (req, res) => {
+      try {
+            const body = req.body || {};
+            const mainEmployeeId = body.mainEmployeeId;
+            const userQuestion = body.userQuestion || '';
+            const mainAnswer = body.mainAnswer || '';
+            if (!mainEmployeeId || !mainAnswer || mainAnswer.length < 200) return res.json({ takes: [] });
+            const pt = require('./partner-take');
+            const takes = await pt.partnerTake({ EMPLOYEES, mainEmployeeId: mainEmployeeId, userQuestion: userQuestion, mainAnswer: mainAnswer, send: null });
+            res.json({ takes: takes });
+      } catch (e) {
+            console.error('[partner-take endpoint]', e.message);
+            res.json({ takes: [], error: e.message });
+      }
+  });
+  
   console.log('🥐 溫點 WarmPlace · Virtual Office v2');
   console.log('   Listening on http://localhost:' + PORT);
   console.log('   Model: ' + MODEL);
