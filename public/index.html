@@ -1491,5 +1491,43 @@ document.getElementById('input').addEventListener('input', function() {
 
 boot();
 </script>
+<script>
+(function(){
+  var conv = document.getElementById("conv");
+  if (!conv) return;
+  var seen = new WeakSet();
+  var inFlight = false;
+  function check(){
+    if (inFlight) return;
+    var bs = conv.querySelectorAll(".bubble");
+    if (!bs.length) return;
+    var last = bs[bs.length-1];
+    if (seen.has(last)) return;
+    var txt = last.innerText || "";
+    if (txt.length < 300) return;
+    if (txt.indexOf("next-3") < 0 && txt.indexOf("\u4e0b\u4e00\u6b65") < 0) return;
+    seen.add(last);
+    if (last.parentElement.querySelector(".pt-card")) return;
+    inFlight = true;
+    var emp = window.currentEmployee || "";
+    var userMsg = bs.length >= 2 ? bs[bs.length-2].innerText : "";
+    fetch("/api/partner-take", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({mainEmployeeId: emp, userQuestion: userMsg.slice(0,500), mainAnswer: txt.slice(0,3500)})
+    }).then(function(r){return r.json();}).then(function(j){
+      (j.takes || []).forEach(function(t){
+        var c = document.createElement("div");
+        c.className = "pt-card";
+        c.style.cssText = "margin:10px 0 10px 60px;padding:14px 18px;border-left:3px solid " + (t.color || "#B08D57") + ";background:rgba(176,141,87,.1);border-radius:10px;font-size:14px;line-height:1.7;color:#eee;max-width:78%;";
+        c.innerHTML = "<div style=\"font-weight:700;margin-bottom:8px;color:" + (t.color || "#B08D57") + ";font-size:15px;\">" + (t.emoji || "+") + " " + (t.name || "") + " \u88dc\u4e00\u53e5</div><div style=\"white-space:pre-wrap;\">" + (t.text || "").replace(/[<>&]/g, function(ch){return ({"<":"&lt;",">":"&gt;","&":"&amp;"})[ch];}) + "</div>";
+        last.parentElement.parentElement.insertBefore(c, last.parentElement.nextSibling);
+      });
+      conv.scrollTop = conv.scrollHeight;
+    }).catch(function(e){console.error("[pt]", e);}).finally(function(){inFlight = false;});
+  }
+  new MutationObserver(function(){setTimeout(check, 1500);}).observe(conv, {childList:true, subtree:true, characterData:true});
+})();
+</script>
 </body>
 </html>
