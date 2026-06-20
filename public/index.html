@@ -63,13 +63,13 @@
     color: var(--gold);
   }
   .subnav a.featured {
-    background: linear-gradient(135deg, var(--gold) 0%, var(--burgundy-light) 100%);
-    color: var(--dark);
+    background: linear-gradient(135deg, #a26041 0%, #bd8665 100%);
+    color: #ffffff;
     font-weight: 600;
   }
   .subnav a.featured:hover {
-    background: linear-gradient(135deg, var(--gold-bright) 0%, var(--burgundy) 100%);
-    color: var(--dark);
+    background: linear-gradient(135deg, #8a4f33 0%, #a26041 100%);
+    color: #ffffff;
   }
   .subnav .nav-divider {
     width: 1px; height: 18px; background: var(--burgundy-dark);
@@ -632,7 +632,8 @@
     <a href="/ads-hub.html" class="featured">📊 廣告中心</a>
     <a href="/market-intel.html" class="featured">🔍 市場情報</a>
     <a href="/teachers.html" class="featured">🏪 門店戰報</a>
-  <a href="/guide.html">📖 使用說明</a>
+      <a href="/personal-edm.html" class="featured">💌 個人化觸及</a>
+  <a href="/offline-reports.html" class="featured">📋 線下報告中心 </a> <a href="/guide.html">📖 使用說明</a>
   </nav>
 
   <aside class="sidebar" id="sidebar">
@@ -705,7 +706,7 @@
     <div class="tab-bar">
       <button class="tab active" data-tab="features" onclick="switchTab('features')">🎯 功能</button>
       <button class="tab" data-tab="history" onclick="switchTab('history')">📚 歷史紀錄</button>
-      <button class="tab" data-tab="reports" onclick="switchTab('reports')">排程報告</button>
+      <button class="tab" data-tab="shopline" onclick="switchTab('shopline')">🛒 Shopline</button>
     </div>
     <div id="features">
       <div class="ff-group">
@@ -745,7 +746,23 @@
     </div>
     <div id="feed" style="display:none;"></div>
     <div id="history" style="display:none;"></div>
-    <div id="reports" style="display:none;"></div>
+    <div id="shopline" style="display:none;">
+      <div class="ff-group">
+        <div class="ff-title">🛒 Shopline 整合中心</div>
+        <a href="/shopline-dashboard.html" class="ff-link" style="background:linear-gradient(135deg,rgba(176,141,87,.28),rgba(94,42,58,.45));border:1px solid rgba(176,141,87,.55)"><span class="ff-ic">📊</span><span><b>商業儀表板</b> (即時數據可視化)</span></a>        <a href="/offline-reports.html" target="_blank" class="ff-link"><span class="ff-ic">📋</span><span>線下報告中心</span></a><a href="/shopline-hub.html" target="_blank" class="ff-link"><span class="ff-ic">🏪</span><span>完整能力盤點 + 4 階段整合</span></a>
+        
+
+
+
+      </div>
+      <div class="ff-group">
+        <div class="ff-title">✅ 已上線 (Token 接通)</div>
+
+
+
+        <a href="/customers.html" target="_blank" class="ff-link"><span class="ff-ic">👥</span><span>客人畫像 + LTV/RFM</span></a>      </div>      <div class="ff-group">
+      </div>
+    </div>
   </aside>
 </div>
 
@@ -1039,7 +1056,7 @@ async function switchTab(t) {
   if (cur) cur.classList.add('active');
   document.getElementById('feed').style.display = t === 'feed' ? 'block' : 'none';
   document.getElementById('history').style.display = t === 'history' ? 'block' : 'none';
-  document.getElementById('reports').style.display = t === 'reports' ? 'block' : 'none';
+  const _r=document.getElementById('reports'); if(_r) _r.style.display = t === 'reports' ? 'block' : 'none';  document.getElementById('shopline').style.display = t === 'shopline' ? 'block' : 'none';
   if (t === 'reports') await loadReports();
   if (t === 'history') await loadHistory();
 }
@@ -1172,23 +1189,6 @@ async function sendSingle(text) {
       done: (p) => {
         aiMsg.content = accumulated;
         addFeed(emp.name, `✅ 任務完成（${p.length || accumulated.length} 字）`);
-      },
-      partner_take: (p) => {
-        // 員工互補刀 — 在主 bubble 後面加小卡
-        const card = document.createElement('div');
-        card.className = 'partner-take';
-        card.style.cssText = 'margin-top:10px;padding:10px 14px;border-left:3px solid '+(p.color||'#888')+';background:rgba(255,255,255,.04);border-radius:6px;font-size:13.5px;line-height:1.6;';
-        card.innerHTML = '<div style="font-weight:600;margin-bottom:4px;color:'+(p.color||'#ccc')+';">'+
-          (p.emoji||'💫')+' '+escapeHtml(p.name||'')+' 補一句</div>'+
-          '<div style="white-space:pre-wrap;color:#eee;">'+escapeHtml(p.text||'')+'</div>';
-        msgEl.appendChild(card);
-        aiMsg.content = (aiMsg.content||accumulated) + '\n' + card.outerHTML;
-        const conv = document.getElementById('conv');
-        conv.scrollTop = conv.scrollHeight;
-        addFeed(p.name||'?', '➕ 補一句:「'+(p.text||'').slice(0,40)+'…」');
-      },
-      partner_done: (p) => {
-        if (p && p.count > 0) addFeed(emp.name, `🤝 互補刀完成（${p.count} 人補刀）`);
       },
       error: (p) => {
         bubbleEl.innerHTML = `<p style="color:#E8B54B;">⚠️ ${escapeHtml(p.message)}</p>`;
@@ -1442,4 +1442,40 @@ async function showPrompt() {
   document.getElementById('modal-title').textContent = `${emp.name} 的 System Prompt`;
   document.getElementById('modal-sub').textContent = `這份 System Prompt 是後端實際送進 Claude API 的 system 欄位。`;
   document.getElementById('modal-content').textContent = '載入中...';
-  document.getElementById('modal').classList.add('
+  document.getElementById('modal').classList.add('show');
+  try {
+    const res = await fetch(`/api/employees/${emp.id}/prompt`);
+    const data = await res.json();
+    document.getElementById('modal-content').textContent = data.systemPrompt;
+  } catch {
+    document.getElementById('modal-content').textContent = '載入失敗';
+  }
+}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+async function copyPrompt() {
+  const text = document.getElementById('modal-content').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ 已複製';
+    setTimeout(() => btn.textContent = orig, 1800);
+  } catch {}
+}
+
+// ============ INIT ============
+document.getElementById('input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+document.getElementById('input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+boot();
+</script>
+</body>
+</html>
