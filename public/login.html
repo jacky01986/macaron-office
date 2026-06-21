@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登入 · 溫點 WarmPlace</title>
+<style>
+:root {
+  --burgundy: #6D2E46;
+  --burgundy-dark: #4A1D2E;
+  --burgundy-light: #8B3A4E;
+  --gold: #B08D57;
+  --gold-bright: #D4AF7A;
+  --ivory: #FCF6F5;
+  --dark: #1C1213;
+  --dark-3: #362527;
+  --muted: #8B7278;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, var(--dark) 0%, var(--burgundy-dark) 100%);
+  color: var(--ivory);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.box {
+  background: var(--dark-3);
+  border-left: 3px solid var(--gold);
+  padding: 36px 40px;
+  border-radius: 10px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.5), 0 0 0 1px rgba(176,141,87,.1);
+  width: 100%;
+  max-width: 360px;
+}
+.brand {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--gold);
+  letter-spacing: 0.5px;
+}
+.sub {
+  margin: 0 0 28px;
+  font-size: 13px;
+  color: var(--muted);
+}
+label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 14px 0 6px;
+  letter-spacing: 0.5px;
+}
+input {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--dark);
+  border: 1px solid var(--burgundy-dark);
+  color: var(--ivory);
+  border-radius: 5px;
+  font-size: 14px;
+  transition: border-color .15s;
+}
+input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+button {
+  width: 100%;
+  margin-top: 22px;
+  padding: 12px;
+  background: var(--gold);
+  color: var(--dark);
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background .15s;
+}
+button:hover { background: var(--gold-bright); }
+button:disabled { opacity: .5; cursor: wait; }
+.err {
+  color: #E8B54B;
+  font-size: 12px;
+  margin-top: 14px;
+  min-height: 18px;
+  text-align: center;
+}
+.foot {
+  margin-top: 28px;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,.05);
+  padding-top: 18px;
+}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="brand">🥐 溫點 WarmPlace</div>
+  <p class="sub">虛擬辦公室 · 請登入</p>
+  <form id="f" autocomplete="on">
+    <label for="u">帳號</label>
+    <input id="u" name="username" autocomplete="username" required autofocus>
+    <label for="p">密碼</label>
+    <input id="p" name="password" type="password" autocomplete="current-password" required>
+    <button id="b" type="submit">登入</button>
+    <div class="err" id="e"></div>
+  </form>
+  <div class="foot">© 溫點 WarmPlace · AI Workforce Control Room</div>
+</div>
+<script>
+(function(){
+  const f = document.getElementById('f');
+  const u = document.getElementById('u');
+  const p = document.getElementById('p');
+  const b = document.getElementById('b');
+  const e = document.getElementById('e');
+  f.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    b.disabled = true;
+    b.textContent = '登入中…';
+    e.textContent = '';
+    try {
+      const r = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u.value, password: p.value })
+      });
+      if (r.ok) {
+        location.href = '/';
+        return;
+      }
+      const j = await r.json().catch(() => ({}));
+      e.textContent = j.error || ('登入失敗(' + r.status + ')');
+    } catch (err) {
+      e.textContent = '連線失敗:' + err.message;
+    } finally {
+      b.disabled = false;
+      b.textContent = '登入';
+    }
+  });
+})();
+</script>
+</body>
+</html>
