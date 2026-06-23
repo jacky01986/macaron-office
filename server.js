@@ -9,6 +9,7 @@
 // ============================================================
 
 require("dotenv").config();
+try { require('./readability-patch'); } catch (e) { console.error('[readability-patch load]', e.message); }
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
