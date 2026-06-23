@@ -1220,12 +1220,17 @@ ${workers.map(w => `- ${w.id} · ${w.name} · ${w.role}：${w.bio}`).join("\n")}
 
 請以 JSON 格式回覆，外面用 \`\`\`json ... \`\`\` 包覆，結構如下：
 {
-  "strategy": "你的策略思考（2–3 句）",
+  "strategy": "策略思考（**最多 1 句 / 50 字**，不要長段落）",
   "assignments": [
-    { "employeeId": "leon", "task": "請 LEON 具體要做什麼（1–3 句）" },
+    { "employeeId": "leon", "task": "派任務（**最多 1 句 / 40 字**，不要長段落）" },
     { "employeeId": "camille", "task": "..." }
   ]
 }
+
+【★ 字數鐵律 ★】
+- strategy: 「最多 1 句 50 字」— 違反規則就是壞輸出
+- 每個 task: 「最多 1 句 40 字」— 違反規則就是壞輸出
+- 字數限制是給 JSON field 用,不是排版規則。短句乾淨直接,長句就是違規。
 
 原則：
 - 至少分派給 3 位、最多 6 位成員（根據任務複雜度）
