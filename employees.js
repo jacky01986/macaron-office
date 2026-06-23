@@ -237,7 +237,7 @@ const READABILITY_RULE = `
 <li><strong>GQ Taiwan</strong>——男性禮贈場景</li>
 <li><strong>美食加 GUSTOSO</strong>——甜點品鑑 deep dive</li>
 </ul>
-\`;
+`;
 
 const BRAND_CONTEXT = `
 【品牌定位 (不可動搖)】
