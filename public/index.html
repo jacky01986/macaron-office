@@ -36,10 +36,38 @@
   .app {
     display: grid;
     grid-template-rows: 64px 50px 1fr;
-    grid-template-columns: 320px 1fr 360px;
+    grid-template-columns: var(--left-w, 320px) 1fr var(--right-w, 360px);
     grid-template-areas: "header header header" "subnav subnav subnav" "sidebar main activity";
     height: 100vh; width: 100vw;
+    transition: grid-template-columns 0.28s cubic-bezier(.4,0,.2,1);
   }
+  .app.left-collapsed { --left-w: 0px; }
+  .app.right-collapsed { --right-w: 0px; }
+  .app.left-collapsed .sidebar,
+  .app.right-collapsed .activity {
+    overflow: hidden; pointer-events: none; opacity: 0;
+    transition: opacity 0.2s;
+  }
+  /* Toggle handles — 永遠浮在邊緣可點 */
+  .panel-toggle {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    width: 22px; height: 64px;
+    background: linear-gradient(180deg, #6D2E46, #4a1f31);
+    border: 1px solid rgba(176,141,87,.4); border-radius: 0 8px 8px 0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 999;
+    color: #B08D57; font-size: 14px;
+    transition: left 0.28s cubic-bezier(.4,0,.2,1), right 0.28s cubic-bezier(.4,0,.2,1);
+    user-select: none;
+  }
+  .panel-toggle:hover { background: linear-gradient(180deg, #8a3a5a, #5c2740); color: #FCF6F5; }
+  .toggle-left { left: 320px; border-radius: 0 8px 8px 0; }
+  .toggle-right { right: 360px; border-radius: 8px 0 0 8px; }
+  .app.left-collapsed ~ .panel-toggle.toggle-left,
+  .app:has(.sidebar.actually-collapsed) .toggle-left { left: 0; }
+  .app.left-collapsed .toggle-left,
+  body.left-collapsed .toggle-left { left: 0; }
+  body.right-collapsed .toggle-right { right: 0; }
   .subnav {
     grid-area: subnav;
     background: var(--dark-2);
@@ -1527,6 +1555,39 @@ boot();
     }).catch(function(e){console.error("[pt]", e);}).finally(function(){inFlight = false;});
   }
   new MutationObserver(function(){setTimeout(check, 1500);}).observe(conv, {childList:true, subtree:true, characterData:true});
+})();
+</script>
+<!-- Cowork-style collapse handles -->
+<div class="panel-toggle toggle-left" id="toggleLeft" title="收合員工列表">◀</div>
+<div class="panel-toggle toggle-right" id="toggleRight" title="收合工作動態">▶</div>
+<script>
+(function(){
+  var app = document.querySelector('.app');
+  var body = document.body;
+  var tL = document.getElementById('toggleLeft');
+  var tR = document.getElementById('toggleRight');
+  if (!app || !tL || !tR) return;
+
+  // restore from localStorage
+  try {
+    if (localStorage.getItem('mo_leftCollapsed') === '1') { app.classList.add('left-collapsed'); body.classList.add('left-collapsed'); tL.textContent = '▶'; }
+    if (localStorage.getItem('mo_rightCollapsed') === '1') { app.classList.add('right-collapsed'); body.classList.add('right-collapsed'); tR.textContent = '◀'; }
+  } catch(e){}
+
+  tL.addEventListener('click', function(){
+    var collapsed = app.classList.toggle('left-collapsed');
+    body.classList.toggle('left-collapsed', collapsed);
+    tL.textContent = collapsed ? '▶' : '◀';
+    tL.title = collapsed ? '展開員工列表' : '收合員工列表';
+    try { localStorage.setItem('mo_leftCollapsed', collapsed ? '1' : '0'); } catch(e){}
+  });
+  tR.addEventListener('click', function(){
+    var collapsed = app.classList.toggle('right-collapsed');
+    body.classList.toggle('right-collapsed', collapsed);
+    tR.textContent = collapsed ? '◀' : '▶';
+    tR.title = collapsed ? '展開工作動態' : '收合工作動態';
+    try { localStorage.setItem('mo_rightCollapsed', collapsed ? '1' : '0'); } catch(e){}
+  });
 })();
 </script>
 </body>
