@@ -1518,7 +1518,7 @@ app.post('/api/auto-publish/upload-image/:draftId', imgUpload.single('image'), (
     draft.image_filename = filename;
     draft.image_source = 'manual';
     delete draft.image_error;
-    require('fs').writeFileSync(require('path').join(__dirname, 'data', 'auto-drafts.json'), JSON.stringify(state, null, 2));
+    require('fs').writeFileSync(require('path').join(process.env.RENDER_DISK_MOUNT_PATH || require('path').join(__dirname, 'data'), 'auto-drafts.json'), JSON.stringify(state, null, 2));
     res.json({ ok: true, draftId, image_url: publicUrl, filename });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -1558,7 +1558,7 @@ app.post('/api/auto-publish/approve/:draftId', express.json(), async (req, res) 
       draft.published_at = new Date().toISOString();
       draft.publish_id = r.id;
     }
-    require('fs').writeFileSync(require('path').join(__dirname, 'data', 'auto-drafts.json'), JSON.stringify(state, null, 2));
+    require('fs').writeFileSync(require('path').join(process.env.RENDER_DISK_MOUNT_PATH || require('path').join(__dirname, 'data'), 'auto-drafts.json'), JSON.stringify(state, null, 2));
     res.json({ ok: true, draft });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -1571,7 +1571,7 @@ app.post('/api/auto-publish/delete/:draftId', (req, res) => {
     const draftId = req.params.draftId;
     const state = autoPublish.loadDrafts();
     state.drafts = (state.drafts || []).filter(d => d.id !== draftId);
-    require('fs').writeFileSync(require('path').join(__dirname, 'data', 'auto-drafts.json'), JSON.stringify(state, null, 2));
+    require('fs').writeFileSync(require('path').join(process.env.RENDER_DISK_MOUNT_PATH || require('path').join(__dirname, 'data'), 'auto-drafts.json'), JSON.stringify(state, null, 2));
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
