@@ -473,5 +473,124 @@ loadAll();
 // 自動刷新一次(每 30 秒)
 setInterval(loadAll, 30000);
 </script>
+<script>
+/* === 待審草稿 人工編輯功能（追加，不動既有渲染） === */
+(function(){
+  var cache = {};
+  function getDraftId(card){
+    var els = card.querySelectorAll('[onclick]');
+    for (var i=0;i<els.length;i++){
+      var m = (els[i].getAttribute('onclick')||'').match(/'(draft_[a-z0-9_]+)'/i);
+      if (m) return m[1];
+    }
+    return null;
+  }
+  function fmt(iso){ if(!iso) return ''; try { return new Date(iso).toLocaleString('zh-TW',{hour12:false}); } catch(e){ return ''; } }
+  async function refreshCache(){
+    try { var r = await fetch('/api/auto-publish/drafts'); var j = await r.json(); cache = {}; (j.drafts||[]).forEach(function(d){ cache[d.id]=d; }); } catch(e){}
+  }
+  function enhance(){
+    document.querySelectorAll('#draftsArea .draft-card').forEach(function(card){
+      var id = getDraftId(card); if(!id) return;
+      var d = cache[id];
+      var body = card.querySelector('.body');
+      if (body && d && d.title && !body.querySelector('.wp-title-badge')){
+        var b = document.createElement('div');
+        b.className = 'wp-title-badge';
+        b.style.cssText = 'color:#D4AF7A;font-size:12px;font-weight:600;margin-bottom:6px;';
+        b.textContent = '🏷 ' + d.title;
+        body.insertBefore(b, body.firstChild);
+      }
+      var meta = card.querySelector('.meta');
+      if (meta && d && d.scheduled_at && !meta.querySelector('.wp-sched-badge')){
+        var s = document.createElement('span');
+        s.className = 'wp-sched-badge';
+        s.textContent = '📅 ' + fmt(d.scheduled_at);
+        meta.appendChild(s);
+      }
+      var actions = card.querySelector('.actions');
+      if (actions && !actions.querySelector('.wp-edit-btn')){
+        var btn = document.createElement('button');
+        btn.className = 'btn ghost wp-edit-btn';
+        btn.textContent = '✏️ 編輯';
+        btn.onclick = function(){ openEditor(id); };
+        actions.insertBefore(btn, actions.firstChild);
+      }
+    });
+  }
+  function ensureModal(){
+    if (document.getElementById('wpEditModal')) return;
+    var m = document.createElement('div');
+    m.id = 'wpEditModal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:300;padding:20px;';
+    m.innerHTML = '<div style="background:#2A1C1D;border:1px solid #B08D57;border-radius:12px;padding:22px;max-width:540px;width:100%;max-height:90vh;overflow:auto;font-family:inherit;">'
+      + '<h3 style="color:#B08D57;font-family:Georgia,serif;letter-spacing:2px;margin:0 0 16px;">✏️ 編輯草稿</h3>'
+      + '<input type="hidden" id="wpEditId">'
+      + '<label style="display:block;color:#8B7278;font-size:11px;letter-spacing:1px;margin:10px 0 4px;">標題 / 分類標籤</label>'
+      + '<input id="wpEditTitle" type="text" placeholder="例：母親節禮盒 / 品牌故事" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1D2E;background:#1C1213;color:#FCF6F5;font-size:13px;">'
+      + '<label style="display:block;color:#8B7278;font-size:11px;letter-spacing:1px;margin:12px 0 4px;">平台</label>'
+      + '<select id="wpEditPlatform" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1D2E;background:#1C1213;color:#FCF6F5;font-size:13px;"><option value="IG">IG</option><option value="FB">FB</option></select>'
+      + '<label style="display:block;color:#8B7278;font-size:11px;letter-spacing:1px;margin:12px 0 4px;">發布時間（排程／紀錄）</label>'
+      + '<input id="wpEditSched" type="datetime-local" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1D2E;background:#1C1213;color:#FCF6F5;font-size:13px;">'
+      + '<label style="display:block;color:#8B7278;font-size:11px;letter-spacing:1px;margin:12px 0 4px;">貼文文字內容</label>'
+      + '<textarea id="wpEditCaption" rows="9" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1D2E;background:#1C1213;color:#FCF6F5;font-size:13px;line-height:1.6;resize:vertical;font-family:inherit;"></textarea>'
+      + '<div style="display:flex;gap:10px;margin-top:16px;"><button class="btn primary" id="wpEditSave">💾 儲存</button><button class="btn ghost" id="wpEditCancel">取消</button></div>'
+      + '</div>';
+    document.body.appendChild(m);
+    m.addEventListener('click', function(e){ if(e.target===m) m.style.display='none'; });
+    document.getElementById('wpEditCancel').onclick = function(){ m.style.display='none'; };
+    document.getElementById('wpEditSave').onclick = saveEditor;
+  }
+  function toLocalInput(iso){
+    if(!iso) return '';
+    var dt = new Date(iso); if(isNaN(dt)) return '';
+    var p = function(n){ return String(n).padStart(2,'0'); };
+    return dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate())+'T'+p(dt.getHours())+':'+p(dt.getMinutes());
+  }
+  window.openEditor = async function(id){
+    ensureModal();
+    if(!cache[id]) await refreshCache();
+    var d = cache[id] || {};
+    document.getElementById('wpEditId').value = id;
+    document.getElementById('wpEditTitle').value = d.title || '';
+    document.getElementById('wpEditPlatform').value = (d.platform==='FB')?'FB':'IG';
+    document.getElementById('wpEditSched').value = toLocalInput(d.scheduled_at||'');
+    document.getElementById('wpEditCaption').value = d.caption || '';
+    document.getElementById('wpEditModal').style.display = 'flex';
+  };
+  async function saveEditor(){
+    var id = document.getElementById('wpEditId').value;
+    var sched = document.getElementById('wpEditSched').value;
+    var patch = {
+      title: document.getElementById('wpEditTitle').value.trim(),
+      platform: document.getElementById('wpEditPlatform').value,
+      caption: document.getElementById('wpEditCaption').value,
+      scheduled_at: sched ? new Date(sched).toISOString() : null
+    };
+    try {
+      var r = await fetch('/api/auto-publish/update/'+id, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(patch) });
+      var j = await r.json();
+      if (j.ok){
+        if(window.toast) toast('💾 已儲存','ok');
+        document.getElementById('wpEditModal').style.display='none';
+        await refreshCache();
+        if(window.loadAll) setTimeout(loadAll,300); else enhance();
+      } else {
+        if(window.toast) toast('❌ '+(j.error||'儲存失敗'),'err'); else alert('儲存失敗：'+(j.error||''));
+      }
+    } catch(e){ if(window.toast) toast('❌ '+e.message,'err'); else alert(e.message); }
+  }
+  function init(){
+    ensureModal();
+    var area = document.getElementById('draftsArea');
+    if(!area){ return setTimeout(init,500); }
+    var run = async function(){ await refreshCache(); enhance(); };
+    run();
+    new MutationObserver(function(){ enhance(); }).observe(area,{childList:true,subtree:true});
+    setInterval(run, 30000);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
 </body>
 </html>
