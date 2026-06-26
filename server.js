@@ -4872,7 +4872,7 @@ app.post('/api/auto-publish/update/:draftId', express.json(), (req, res) => {
     if (b.title !== undefined) draft.title = String(b.title || '');
     if (b.scheduled_at !== undefined) draft.scheduled_at = b.scheduled_at || null;
     draft.edited_at = new Date().toISOString();
-    require('fs').writeFileSync(require('path').join(__dirname, 'data', 'auto-drafts.json'), JSON.stringify(state, null, 2));
+    require('fs').writeFileSync(require('path').join(process.env.RENDER_DISK_MOUNT_PATH || require('path').join(__dirname, 'data'), 'auto-drafts.json'), JSON.stringify(state, null, 2));
     res.json({ ok: true, draft });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
