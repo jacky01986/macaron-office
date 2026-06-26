@@ -4855,3 +4855,26 @@ app.listen(PORT, () => {
   console.log('   Employees: ' + Object.keys(EMPLOYEES).length);
   console.log('   Cron: VICTOR Mon 09:00 / DEX Fri 17:00 (Asia/Taipei)');
 });
+
+// === 人工編輯草稿（文案 / 平台 / 發布時間 / 標題標籤） ===
+app.post('/api/auto-publish/update/:draftId', express.json(), (req, res) => {
+  try {
+    const draftId = req.params.draftId;
+    const state = autoPublish.loadDrafts();
+    const draft = (state.drafts || []).find(d => d.id === draftId);
+    if (!draft) return res.status(404).json({ ok: false, error: 'draft not found' });
+    const b = req.body || {};
+    if (b.platform !== undefined) {
+      if (!['IG', 'FB'].includes(b.platform)) return res.status(400).json({ ok: false, error: 'platform 只能是 IG 或 FB' });
+      draft.platform = b.platform;
+    }
+    if (b.caption !== undefined) draft.caption = String(b.caption);
+    if (b.title !== undefined) draft.title = String(b.title || '');
+    if (b.scheduled_at !== undefined) draft.scheduled_at = b.scheduled_at || null;
+    draft.edited_at = new Date().toISOString();
+    require('fs').writeFileSync(require('path').join(__dirname, 'data', 'auto-drafts.json'), JSON.stringify(state, null, 2));
+    res.json({ ok: true, draft });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
