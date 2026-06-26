@@ -4878,3 +4878,44 @@ app.post('/api/auto-publish/update/:draftId', express.json(), (req, res) => {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
+
+// === 發布時間排程：每分鐘檢查到點的待審草稿，自動發佈 IG/FB（依控制台設定的發布時間，IG 需已配圖） ===
+(function () {
+  const SCHED_DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || require('path').join(__dirname, 'data');
+  const SCHED_FILE = require('path').join(SCHED_DATA_DIR, 'auto-drafts.json');
+  async function runScheduledPublish() {
+    let state;
+    try { state = autoPublish.loadDrafts(); } catch (e) { return; }
+    const now = Date.now();
+    let published = 0;
+    for (const draft of (state.drafts || [])) {
+      if (!draft || draft.status !== 'pending' || !draft.scheduled_at) continue;
+      const t = new Date(draft.scheduled_at).getTime();
+      if (isNaN(t) || t > now) continue;
+      try {
+        if (draft.platform === 'IG') {
+          if (!draft.image_url) { draft.note = '排程到點但缺圖，暫不發'; continue; }
+          const r = await autoPublish.publishIG(draft.caption, draft.image_url);
+          draft.publish_id = r && r.id;
+        } else if (draft.platform === 'FB') {
+          const r = await autoPublish.publishFB(draft.caption);
+          draft.publish_id = r && r.id;
+        } else { continue; }
+        draft.status = 'published';
+        draft.published_at = new Date().toISOString();
+        draft.published_via = 'schedule';
+        published++;
+        console.log('[scheduled-publish] published ' + draft.platform + ' ' + draft.id);
+      } catch (e) {
+        draft.status = 'failed';
+        draft.error = e.message;
+        console.error('[scheduled-publish] failed ' + draft.id + ': ' + e.message);
+      }
+    }
+    if (published > 0) { try { require('fs').writeFileSync(SCHED_FILE, JSON.stringify(state, null, 2)); } catch (e) {} }
+  }
+  try {
+    cron.schedule('* * * * *', function () { runScheduledPublish().catch(function (e) { console.error('[scheduled-publish]', e.message); }); }, { timezone: process.env.TZ || 'Asia/Taipei' });
+    console.log('[scheduled-publish] cron registered (every minute)');
+  } catch (e) { console.error('[scheduled-publish cron]', e.message); }
+})();
