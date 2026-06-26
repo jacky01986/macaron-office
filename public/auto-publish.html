@@ -592,5 +592,42 @@ setInterval(loadAll, 30000);
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 </script>
+<script>
+/* === 卡片內就地編輯（覆寫彈窗版 openEditor） === */
+(function(){
+  function gid(card){var els=card.querySelectorAll("[onclick]");for(var i=0;i<els.length;i++){var m=(els[i].getAttribute("onclick")||"").match(/'(draft_[a-z0-9_]+)'/i);if(m)return m[1];}return null;}
+  function findCard(id){var cards=document.querySelectorAll("#draftsArea .draft-card");for(var i=0;i<cards.length;i++){if(gid(cards[i])===id)return cards[i];}return null;}
+  function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");}
+  function toLocalInput(iso){if(!iso)return "";var dt=new Date(iso);if(isNaN(dt))return "";var p=function(n){return String(n).padStart(2,"0");};return dt.getFullYear()+"-"+p(dt.getMonth()+1)+"-"+p(dt.getDate())+"T"+p(dt.getHours())+":"+p(dt.getMinutes());}
+  async function getDraft(id){try{var j=await (await fetch("/api/auto-publish/drafts")).json();return (j.drafts||[]).find(function(d){return d.id===id;});}catch(e){return null;}}
+  var _m=document.getElementById("wpEditModal"); if(_m) _m.style.display="none";
+  window.openEditor=async function(id){
+    var card=findCard(id); if(!card) return;
+    var body=card.querySelector(".body"); if(!body) return;
+    if(body.querySelector(".wp-inline-editor")) return;
+    var d=await getDraft(id) || {};
+    var lbl="display:block;color:#8B7278;font-size:11px;letter-spacing:1px;margin:8px 0 3px;";
+    var inp="width:100%;box-sizing:border-box;padding:8px;border-radius:6px;border:1px solid #4A1D2E;background:#1C1213;color:#FCF6F5;font-size:13px;font-family:inherit;";
+    body.innerHTML="<div class=\"wp-inline-editor\">"
+      +"<label style=\""+lbl+"\">標題 / 分類標籤</label>"
+      +"<input id=\"wpi-title\" type=\"text\" value=\""+esc(d.title||"")+"\" placeholder=\"例：母親節禮盒\" style=\""+inp+"\">"
+      +"<label style=\""+lbl+"\">平台</label>"
+      +"<select id=\"wpi-platform\" style=\""+inp+"\"><option value=\"IG\""+((d.platform!=="FB")?" selected":"")+">IG</option><option value=\"FB\""+((d.platform==="FB")?" selected":"")+">FB</option></select>"
+      +"<label style=\""+lbl+"\">發布時間（到點自動發佈 FB/IG）</label>"
+      +"<input id=\"wpi-sched\" type=\"datetime-local\" value=\""+toLocalInput(d.scheduled_at)+"\" style=\""+inp+"\">"
+      +"<label style=\""+lbl+"\">貼文文字內容</label>"
+      +"<textarea id=\"wpi-caption\" rows=\"8\" style=\""+inp+"resize:vertical;line-height:1.6;\">"+esc(d.caption||"")+"</textarea>"
+      +"<div style=\"display:flex;gap:8px;margin-top:10px;\"><button class=\"btn primary wpi-save\" style=\"padding:6px 14px;font-size:12px;\">💾 儲存</button><button class=\"btn ghost wpi-cancel\" style=\"padding:6px 14px;font-size:12px;\">取消</button></div>"
+      +"</div>";
+    body.querySelector(".wpi-cancel").onclick=function(){ if(window.loadAll) loadAll(); };
+    body.querySelector(".wpi-save").onclick=async function(){
+      var sched=body.querySelector("#wpi-sched").value;
+      var patch={title:body.querySelector("#wpi-title").value.trim(),platform:body.querySelector("#wpi-platform").value,caption:body.querySelector("#wpi-caption").value,scheduled_at:sched?new Date(sched).toISOString():null};
+      try{var r=await fetch("/api/auto-publish/update/"+id,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(patch)});var jj=await r.json();if(jj.ok){if(window.toast)toast("💾 已儲存","ok");if(window.loadAll)setTimeout(loadAll,300);}else{if(window.toast)toast("❌ "+(jj.error||"儲存失敗"),"err");else alert(jj.error||"儲存失敗");}}catch(e){if(window.toast)toast("❌ "+e.message,"err");}
+    };
+    var capEl=body.querySelector("#wpi-caption"); if(capEl) capEl.focus();
+  };
+})();
+</script>
 </body>
 </html>
