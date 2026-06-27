@@ -318,6 +318,25 @@ const TOOL_DEFINITIONS = {
     description: "Anthropic 原生 web_search (不在 executeReadTool 處理, 由 model server-side 自動跑)",
     input_schema: { type: "object", properties: {} }
   },
+  // ========== AiToEarn 跨平台 (MCP bridge) ==========
+  aitoearn_list_actions: {
+    category: "read",
+    description: "列出 AiToEarn 可用的跨平台動作（發布/互動/生成/變現）。用來查 TikTok/小紅書/YouTube/X/Threads/Pinterest 等內建工具沒涵蓋的渠道能做什麼。先查到動作名稱，再用 aitoearn_publish 執行。",
+    input_schema: { type: "object", properties: {} }
+  },
+  aitoearn_publish: {
+    category: "write",
+    description: "透過 AiToEarn 對其他平台（TikTok/小紅書/YouTube/X/Threads/Pinterest 等）執行一個動作。半自動，使用者確認後才送。action 必須是 aitoearn_list_actions 查到的名稱。",
+    input_schema: {
+      type: "object",
+      properties: {
+        action: { type: "string", description: "AiToEarn 動作名稱（來自 aitoearn_list_actions）" },
+        params: { type: "object", description: "該動作所需參數（平台、文案、媒體 URL、排程時間等）" },
+        note: { type: "string", description: "給人看的摘要：要發什麼、到哪個平台" }
+      },
+      required: ["action", "params"]
+    }
+  },
 };
 
 // 把 tool definition 轉成 Anthropic Tool Use API 格式
