@@ -38,6 +38,7 @@ const aiTeamContent = (() => { try { return require('./ai-team-content'); } catc
 const scout = (() => { try { return require('./scout'); } catch { return null; } })();
 const __webhookHits = [];
 const toolDefs = require("./tools");
+const aitoearn = require("./aitoearn");
 
 // In-memory proposal storage (保留在記憶體就好，重啟失效 OK)
 const PROPOSALS = new Map();
@@ -109,6 +110,17 @@ async function maybeAugmentSystemPrompt(emp) {
 }
 
 const app = express();
+
+// --- admin endpoint guard (非破壞：僅當設了 APP_ACCESS_TOKEN 才強制) ---
+app.use((req, res, next) => {
+  if (req.path && req.path.startsWith('/api/admin')) {
+    const need = process.env.APP_ACCESS_TOKEN;
+    if (need && req.get('x-app-token') !== need) {
+      return res.status(401).json({ error: 'unauthorized: admin endpoint requires x-app-token' });
+    }
+  }
+  next();
+});
 const PORT = process.env.PORT || 3000;
 const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5-20250929";
 const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || MODEL;
@@ -934,6 +946,11 @@ async function executeReadTool(name, input) {
         return { delegated_to: subEmp.name, output: txt.slice(0, 6000) };
       } catch(e) { return { error: e.message }; }
     }
+    case "aitoearn_list_actions": {
+      if (!aitoearn.configured()) return { error: "AITOEARN_API_KEY 未設定（請在環境變數設定後重新部署）" };
+      try { return { actions: await aitoearn.listTools() }; }
+      catch (e) { return { error: String(e.message || e) }; }
+    }
     default:
       return { error: "unknown tool: " + name };
   }
@@ -1160,6 +1177,12 @@ app.post("/api/proposals/:id/execute", async (req, res) => {
           catch(e) { result.push({ userId: c.userId, ok: false, error: String(e.message||e) }); }
         }
         appendAction({ type: "segment-push-agent", segment: input.segment, count: targets.length });
+        break;
+      }
+      case "aitoearn_publish": {
+        if (!aitoearn.configured()) { result = { error: "AITOEARN_API_KEY 未設定（請在環境變數設定後重新部署）" }; break; }
+        result = await aitoearn.callTool(input.action, input.params || {});
+        appendAction({ type: "aitoearn-action", action: input.action, note: (input.note || "").slice(0, 80) });
         break;
       }
       default:
