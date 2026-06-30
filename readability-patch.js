@@ -75,20 +75,30 @@ const READABILITY_RULE = [
   '─────────────────────────────────────────────',
 ].join('\n');
 
+// 把 RULE 變成 cached prefix(prompt caching) — 5 分鐘內 cache hit cost 降 90%
+// Anthropic API: system 接受 array of content blocks,第一個 block 加 cache_control:{type:'ephemeral'}
+// 後續呼叫只要 system 前綴沒變就 hit cache (sonnet $3/M → $0.30/M)
+const RULE_BLOCK_CACHED = { type: 'text', text: READABILITY_RULE, cache_control: { type: 'ephemeral' } };
+
 function injectRule(params) {
   if (!params || typeof params !== 'object' || params._noReadability) return params;
   try {
     if (typeof params.system === 'string') {
       if (params.system.indexOf('輸出排版鐵律') >= 0) return params;
-      return Object.assign({}, params, { system: READABILITY_RULE + '\n\n' + params.system });
+      // string → 變 array,第一塊 RULE 加 cache_control,第二塊原 system 不 cache
+      return Object.assign({}, params, { system: [
+        RULE_BLOCK_CACHED,
+        { type: 'text', text: params.system }
+      ]});
     }
     if (Array.isArray(params.system)) {
       const has = params.system.some(function(b){ return b && typeof b.text === 'string' && b.text.indexOf('輸出排版鐵律') >= 0; });
       if (has) return params;
-      return Object.assign({}, params, { system: [{ type: 'text', text: READABILITY_RULE }].concat(params.system) });
+      // array → prepend RULE_BLOCK_CACHED
+      return Object.assign({}, params, { system: [RULE_BLOCK_CACHED].concat(params.system) });
     }
     if (!params.system) {
-      return Object.assign({}, params, { system: READABILITY_RULE });
+      return Object.assign({}, params, { system: [RULE_BLOCK_CACHED] });
     }
   } catch (e) {
     console.error('[readability-patch] inject err:', e.message);
