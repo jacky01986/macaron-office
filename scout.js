@@ -14,7 +14,7 @@ const { BUSINESS_CONTEXT } = require('./business-context');
 // 預設用 Sonnet 4.6 跑 SCOUT（避開 Opus rate limit 30K/min）
 const SCOUT_MODEL = process.env.SCOUT_MODEL || 'claude-sonnet-4-6';
 // DISTILL 用 Opus 4.6（synthesis 需要更深度）
-const DISTILL_MODEL = process.env.DISTILL_MODEL || 'claude-opus-4-6';
+const DISTILL_MODEL = process.env.DISTILL_MODEL || 'claude-sonnet-4-6';  // [token-opt] Opus→Sonnet 省 5x
 
 const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 const SCOUT_FILE = path.join(DATA_DIR, 'scout-reports.json');

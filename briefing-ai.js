@@ -11,7 +11,7 @@ const salesmartly = (() => { try { return require('./salesmartly'); } catch { re
 const decisions = (() => { try { return require('./decisions'); } catch { return null; } })();
 const marketIntel = (() => { try { return require('./market-intel'); } catch { return null; } })();
 
-const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || 'claude-opus-4-6';
+const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || 'claude-sonnet-4-6';  // [token-opt] Opus→Sonnet 省 5x
 
 let client = null;
 function getClient() {
