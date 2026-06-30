@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="utf-8">
-<title>🏪 MIRA 門市教育中心 · 溫點 WarmPlace</title>
+<title>📥 知識上傳中心 · 自動傳達全員工 · 溫點 WarmPlace</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   :root{ --burgundy:#6D2E46; --burgundy-dark:#4a1f30; --gold:#B08D57; --dark:#1C1213; --dark-2:#2a1a1d; --ivory:#FCF6F5; --green:#3fb27f; }
@@ -54,8 +54,8 @@
 </div>
 
 <div class="wrap">
-  <h1>🏪 MIRA 門市教育中心</h1>
-  <p class="sub">MIRA = AI 門市教育主管。她結合「品牌核心風格 + 客戶常問(SaleSmartly) + 你上傳的知識庫 + 網路教育內容」產出可立刻給店員用的教材。每天 08:30 自動回顧優化。</p>
+  <h1>📥 知識上傳中心 <small style="font-size:14px;opacity:.7;font-weight:normal;">— 自動傳達 12 位 AI 員工 + 每天自我優化</small></h1>
+  <p class="sub"><strong>上傳任何文件、其他 AI 對話、報告</strong> → 全部 12 位 AI 員工(VICTOR / DEX / NOVA / CAMILLE / ARIA / LEON / MILO / RINA / SOLA / MIRA / JUNE / HANA)<strong>自動帶上這些知識</strong>,回答時自然引用。MIRA 每天 08:30 自我優化 playbook。支援 .txt / .md / .csv,也可直接貼 ChatGPT/Claude 對話。</p>
 
   <!-- 知識庫上傳 -->
   <div class="card">
@@ -69,7 +69,8 @@
       </div>
       <div style="flex:1;">
         <label>或上傳檔案（.txt / .md / .csv）</label>
-        <input type="file" id="kbfile" accept=".txt,.md,.csv,.text" style="font-size:12px;">
+        <input type="file" id="kbfile" multiple accept="*/*" style="font-size:12px;">
+        <p style="font-size:11px;color:#8B7278;margin:6px 0 0">✓ 支援 PDF / 圖檔(.png/.jpg) / Word(.docx) / Excel(.xlsx) / 文字檔 / 任意格式 · 可多檔同時 · PDF 跟圖檔會用 Claude 視覺萃取內容</p>
         <p class="pbnote" style="margin-top:6px;">PDF/Word 請先另存成純文字或直接複製內文貼上。</p>
       </div>
     </div>
@@ -123,11 +124,28 @@ async function loadKBList(){
 }
 function esc(s){ return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 
-$('kbfile').addEventListener('change', function(){
-  const f=this.files[0]; if(!f) return;
-  const rd=new FileReader();
-  rd.onload=()=>{ $('kbtext').value=rd.result; if(!$('kbtitle').value) $('kbtitle').value=f.name.replace(/\.[^.]+$/,''); };
-  rd.readAsText(f);
+// 多檔上傳 — 直接 multipart 給後端各別 parse
+$('kbfile').addEventListener('change', async function(){
+  const files = Array.from(this.files || []);
+  if (!files.length) return;
+  $('kbmsg').textContent = '⏳ 上傳中(' + files.length + ' 檔)… PDF / 圖檔需 Claude 萃取,30-90 秒…';
+  const fd = new FormData();
+  for (const f of files) fd.append('files', f);
+  try {
+    const j = await fetch('/api/mira/kb/upload', { method: 'POST', body: fd }).then(r => r.json());
+    if (j.ok) {
+      const okN = j.added || 0;
+      const errN = (j.errors || []).length;
+      $('kbmsg').textContent = '✅ 已吸收 ' + okN + ' 檔' + (errN ? ' · ⚠️ ' + errN + ' 檔失敗' : '');
+      if (errN) console.log('errors:', j.errors);
+      $('kbfile').value = '';
+      loadKBList();
+    } else {
+      $('kbmsg').textContent = '⚠️ ' + (j.error || '失敗');
+    }
+  } catch (e) {
+    $('kbmsg').textContent = '❌ ' + e.message;
+  }
 });
 
 async function addKB(){
