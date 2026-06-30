@@ -12,6 +12,85 @@ const router = express.Router();
 
 let Anthropic = null;
 try { Anthropic = require('@anthropic-ai/sdk'); } catch {}
+const multer = require('multer');
+const uploadMulti = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20*1024*1024, files: 20 } });
+let _mammoth = null; try { _mammoth = require('mammoth'); } catch {}
+let _exceljs = null; try { _exceljs = require('exceljs'); } catch {}
+
+// ── 任意檔案 → 文字摘要 ──
+async function extractFromFile(file) {
+  const name = file.originalname || 'file';
+  const mime = file.mimetype || '';
+  const buf = file.buffer;
+  const ext = (name.split('.').pop() || '').toLowerCase();
+
+  // 1) 純文字
+  if (mime.startsWith('text/') || ['txt','md','csv','log','json','tsv','yaml','yml','html','xml'].includes(ext)) {
+    try { return { source: name, content: buf.toString('utf8').slice(0, 50000) }; } catch {}
+  }
+  // 2) DOCX → mammoth
+  if (ext === 'docx' && _mammoth) {
+    try {
+      const r = await _mammoth.extractRawText({ buffer: buf });
+      return { source: name, content: (r.value||'').slice(0, 50000) };
+    } catch (e) { console.error('[mira docx]', e.message); }
+  }
+  // 3) XLSX → exceljs 轉 CSV
+  if (['xlsx','xls','xlsm'].includes(ext) && _exceljs) {
+    try {
+      const wb = new _exceljs.Workbook();
+      await wb.xlsx.load(buf);
+      const out = [];
+      wb.eachSheet(sh => {
+        out.push('# Sheet: ' + sh.name);
+        sh.eachRow(row => { out.push(row.values.slice(1).map(v => v==null?'':String(v).replace(/\n/g,' ')).join(' | ')); });
+        out.push('');
+      });
+      return { source: name, content: out.join('\n').slice(0, 50000) };
+    } catch (e) { console.error('[mira xlsx]', e.message); }
+  }
+  // 4) PDF → 用 Claude vision (document content block)
+  if (ext === 'pdf' || mime === 'application/pdf') {
+    const c = getClient();
+    if (!c) return { source: name, content: '(PDF 未處理:無 API key)' };
+    try {
+      const r = await c.messages.create({
+        model: 'claude-haiku-4-5-20251001', max_tokens: 4000,
+        messages: [{ role: 'user', content: [
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: buf.toString('base64') } },
+          { type: 'text', text: '把這份 PDF 的完整文字內容、表格資料、圖表重點全部抽出來,用繁體中文總結。不要省略具體數據、人名、金額、日期。最後加一段「核心洞察(3-5 條)」。' }
+        ]}]
+      });
+      const txt = r.content.map(b => b.text || '').join('');
+      return { source: name, content: txt.slice(0, 50000) };
+    } catch (e) { console.error('[mira pdf]', e.message); return { source: name, content: '(PDF 解析失敗:' + e.message + ')' }; }
+  }
+  // 5) 圖檔 → Claude vision
+  if (mime.startsWith('image/') || ['png','jpg','jpeg','gif','webp'].includes(ext)) {
+    const c = getClient();
+    if (!c) return { source: name, content: '(圖檔未處理:無 API key)' };
+    const mediaType = mime.startsWith('image/') ? mime : ('image/' + (ext==='jpg'?'jpeg':ext));
+    try {
+      const r = await c.messages.create({
+        model: 'claude-haiku-4-5-20251001', max_tokens: 3000,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: buf.toString('base64') } },
+          { type: 'text', text: '這張圖可能是報告截圖、設計稿、表格、廣告素材、聊天記錄或其他。把所有可見的文字、數據、關鍵元素、人物/品牌標識、版面結構都用繁體中文詳細描述。最後給 3-5 條「核心觀察/可學重點」。' }
+        ]}]
+      });
+      const txt = r.content.map(b => b.text || '').join('');
+      return { source: name, content: txt.slice(0, 50000) };
+    } catch (e) { console.error('[mira image]', e.message); return { source: name, content: '(圖檔解析失敗:' + e.message + ')' }; }
+  }
+  // 6) Fallback - 試 utf8
+  try {
+    const t = buf.toString('utf8');
+    if (/^[\s\S]{50,}$/.test(t) && !/[\x00-\x08\x0E-\x1F]/.test(t.slice(0,500))) {
+      return { source: name, content: t.slice(0, 50000) };
+    }
+  } catch {}
+  return { source: name, content: '(不支援的檔案格式:' + ext + ' / ' + mime + ')' };
+}
 const sm = (() => { try { return require('./salesmartly'); } catch { return null; } })();
 const _scout = (() => { try { return require('./scout'); } catch { return null; } })();
 function scoutTail() {
@@ -176,11 +255,39 @@ router.post('/generate', express.json({ limit: '256kb' }), async (req, res) => {
 
 // 知識庫
 router.get('/kb', (req, res) => { const kb = loadKB(); res.json({ ok: true, count: kb.docs.length, docs: kb.docs.map(d => ({ id: d.id, title: d.title, source: d.source, added_at: d.added_at, chars: (d.text || '').length })) }); });
+// 純文字路徑(原本的 JSON post)
 router.post('/kb', express.json({ limit: '2mb' }), (req, res) => {
   const { title, text } = req.body || {};
   if (!text || !String(text).trim()) return res.status(400).json({ ok: false, error: 'text 必填' });
   const doc = addKB(title, text, 'upload');
   res.json({ ok: true, doc: { id: doc.id, title: doc.title, chars: doc.text.length } });
+});
+
+// 任意檔案上傳路徑(multipart) — PDF/圖檔/Word/Excel/全部
+router.post('/kb/upload', uploadMulti.array('files', 20), async (req, res) => {
+  try {
+    const files = req.files || [];
+    if (!files.length) return res.status(400).json({ ok: false, error: '未提供檔案' });
+    const docs = [];
+    const errors = [];
+    for (const f of files) {
+      try {
+        const ex = await extractFromFile(f);
+        if (ex && ex.content && ex.content.length > 30) {
+          const doc = addKB(ex.source, ex.content, 'upload:' + (f.mimetype||'').split('/')[0]);
+          docs.push({ id: doc.id, title: doc.title, chars: doc.text.length, type: f.mimetype });
+        } else {
+          errors.push({ name: f.originalname, reason: '萃取結果過短' });
+        }
+      } catch (e) {
+        errors.push({ name: f.originalname, reason: e.message });
+      }
+    }
+    res.json({ ok: true, added: docs.length, docs, errors });
+  } catch (e) {
+    console.error('[mira /kb/upload]', e);
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 router.delete('/kb/:id', (req, res) => {
   const kb = loadKB(); const before = kb.docs.length;
@@ -203,6 +310,42 @@ function registerCron(cron) {
   console.log('[mira] MIRA cron registered (daily 08:30 self-optimize)');
 }
 
+// ── 給全員工帶上用(employees.js 會 require)──
+function kbAsBrandBlock(maxChars = 4000) {
+  const kb = loadKB();
+  if (!kb.docs || !kb.docs.length) return '';
+  let out = '【★ 老闆上傳的長期知識庫(MIRA 門市教育中心 · 自動傳達全 AI 員工)★】\n';
+  for (const d of kb.docs.slice(0, 20)) {
+    const chunk = '◆ ' + (d.title || '未命名') + '\n' + (d.text || '').slice(0, 800) + '\n\n';
+    if (out.length + chunk.length > maxChars) break;
+    out += chunk;
+  }
+  out += '請在回答時自然引用這些知識,不要硬背。\n';
+  return out;
+}
+
+// playbook 全員工帶上(每天 08:30 selfOptimize 後更新)
+function playbookAsBrandBlock() {
+  const p = getPlaybook();
+  if (!p || !p.focus_this_period) return '';
+  const out = [];
+  out.push('【★ 本期通用優化重點(MIRA 每天 08:30 從上傳知識庫 + 近 7 天客戶對話萃取)★】');
+  out.push('🎯 本期焦點:' + String(p.focus_this_period).slice(0, 400));
+  if (Array.isArray(p.staff_emphasis) && p.staff_emphasis.length) {
+    out.push('▎執行重點:');
+    for (const e of p.staff_emphasis.slice(0, 6)) out.push('  • ' + String(e).slice(0, 150));
+  }
+  if (Array.isArray(p.top_customer_questions) && p.top_customer_questions.length) {
+    out.push('▎近 7 天客戶常問:');
+    for (const q of p.top_customer_questions.slice(0, 5)) out.push('  • ' + (q.topic||'') + (q.count?` (${q.count}次)`:''));
+  }
+  if (p.learned_at) out.push('(優化於 ' + String(p.learned_at).slice(0,16) + ')');
+  return out.join('\n');
+}
+
 module.exports = router;
+module.exports.kbAsBrandBlock = kbAsBrandBlock;
+module.exports.playbookAsBrandBlock = playbookAsBrandBlock;
+module.exports.loadKB = loadKB;
 module.exports.registerCron = registerCron;
 module.exports.selfOptimize = selfOptimize;

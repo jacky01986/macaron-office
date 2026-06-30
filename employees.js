@@ -691,6 +691,23 @@ ${THINKING_PROTOCOL}
 // 每次拿 employee.systemPrompt 都會自動拼:
 //   [BRAND_MEMORY] + [base prompt] + [MARKET_INTEL]
 // ============================================================
+// MIRA KB hook — 老闆上傳的知識庫自動傳達全員工
+let _miraKbFn = () => '';
+let _miraPbFn = () => '';
+try {
+  const _mira = require('./mira');
+  if (_mira && typeof _mira.kbAsBrandBlock === 'function') {
+    _miraKbFn = () => _mira.kbAsBrandBlock(3500);
+    console.log('[employees] ✓ MIRA KB hook loaded — uploads will reach all 12 employees');
+  }
+  if (_mira && typeof _mira.playbookAsBrandBlock === 'function') {
+    _miraPbFn = () => _mira.playbookAsBrandBlock();
+    console.log('[employees] ✓ MIRA playbook hook loaded — daily 08:30 self-optimized insights reach all 12 employees');
+  }
+} catch (e) { console.error('[employees] mira hook fail:', e.message); }
+function getMiraKbHead() { try { return _miraKbFn() || ''; } catch { return ''; } }
+function getMiraPlaybookHead() { try { return _miraPbFn() || ''; } catch { return ''; } }
+
 const _origEmployees = EMPLOYEES;
 const EMPLOYEES_WITH_DYNAMIC = new Proxy(_origEmployees, {
   get(target, key) {
@@ -703,7 +720,11 @@ const EMPLOYEES_WITH_DYNAMIC = new Proxy(_origEmployees, {
           const memorySection = memoryHead ? memoryHead + '\n\n' : '';
           const liveStats = _liveStatsFn();
           const statsSection = liveStats ? liveStats + '\n' : '';
-          return memorySection + statsSection + t[k] + getMarketIntelTail();
+          const miraKb = getMiraKbHead();
+          const kbSection = miraKb ? miraKb + '\n' : '';
+          const miraPb = getMiraPlaybookHead();
+          const pbSection = miraPb ? miraPb + '\n\n' : '';
+          return memorySection + statsSection + pbSection + kbSection + t[k] + getMarketIntelTail();
         }
         return t[k];
       },
