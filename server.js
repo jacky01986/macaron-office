@@ -10,6 +10,8 @@
 
 require("dotenv").config();
 try { require('./readability-patch'); } catch (e) { console.error('[readability-patch load]', e.message); }
+let _historyCompressor = null;
+try { _historyCompressor = require('./history-compressor'); console.log('[history-compressor] loaded'); } catch (e) { console.error('[history-compressor load]', e.message); }
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
@@ -1081,11 +1083,16 @@ const _originalChatHandler = async (req, res) => {
   try {
     send("status", { text: `📥 ${emp.name} 收到任務` });
     const liveSystem = await maybeAugmentSystemPrompt(emp);
+    // [token-opt phase 4] history 壓縮:>10 條對話自動 Haiku summarize 舊的
+    let _msgs = messages.map(m => ({ role: m.role === "ai" ? "assistant" : m.role, content: typeof m.content === "string" ? m.content : String(m.content) }));
+    if (_historyCompressor && _historyCompressor.compressHistory) {
+      try { _msgs = await _historyCompressor.compressHistory(_msgs); } catch (e) { console.error('[chat compress]', e.message); }
+    }
     const stream = await anthropic.messages.stream({
       model: MODEL,
       max_tokens: 4096,
       system: liveSystem,
-      messages: messages.map(m => ({ role: m.role === "ai" ? "assistant" : m.role, content: typeof m.content === "string" ? m.content : String(m.content) })),
+      messages: _msgs,
     });
     let full = "";
     stream.on("text", (delta) => { full += delta; send("delta", { text: delta }); });
