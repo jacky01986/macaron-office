@@ -629,7 +629,36 @@
     .app { grid-template-columns: 280px 1fr; grid-template-areas: "header header" "sidebar main"; }
     .activity { display: none; }
   }
-</style>
+
+  /* ─── [v14] 精簡 orchestrate UI 只顯示最終答案 + 對話框加寬 ─── */
+  /* 隱藏 phase card(🚀 專員同時開工…)、分派 h4、策略思考、workers grid */
+  .msg.ai .bubble > .phase-card,
+  .msg.ai .bubble > .strategy-box,
+  .msg.ai .bubble > .workers-grid { display: none !important; }
+  .msg.ai .bubble > h4:first-of-type { display: none !important; }
+  /* 保留 summary_delta 產出的最終答案(在 wrap div 內的 h4 + summary-body)*/
+  .msg.ai .bubble .summary-body {
+    background: transparent !important;
+    border-left: none !important;
+    padding: 0 !important;
+    font-size: 15px !important;
+    line-height: 1.9 !important;
+  }
+  .msg.ai .bubble > div > h4:first-child {
+    color: var(--gold-bright, #E8B54B) !important;
+    font-size: 16px !important;
+    margin-top: 0 !important;
+  }
+
+  /* 對話框加寬 — 從 92% → 98% */
+  .msg { max-width: 98% !important; }
+  .msg.ai { max-width: 98% !important; }
+  .msg.user { max-width: 85% !important; }
+
+  /* 對話區左右內距減少 */
+  .main { padding: 0 !important; }
+  .conv-wrap, .conv { padding-left: 18px !important; padding-right: 18px !important; }
+  </style>
 <link rel="stylesheet" href="/macaron-shared.css">
 </head>
 <body>
