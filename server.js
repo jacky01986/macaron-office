@@ -258,9 +258,16 @@ function setupSSE(res) {
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders?.();
+  // 💓 心跳：每 15 秒送 SSE comment，防代理閒置切線
+  const _hb = setInterval(() => { try { res.write(": ping\n\n"); } catch (e) {} }, 15000);
+  res.on("close", () => clearInterval(_hb));
+  const _end = res.end.bind(res);
+  res.end = (...a) => { clearInterval(_hb); return _end(...a); };
   return (event, data) => {
-    res.write(`event: ${event}\n`);
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
+    try {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    } catch (e) {}
   };
 }
 
