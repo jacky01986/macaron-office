@@ -125,7 +125,7 @@ app.use((req, res, next) => {
 });
 const PORT = process.env.PORT || 3000;
 const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5-20250929";
-const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || MODEL;
+const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || 'claude-opus-4-6';  // [VICTOR upgrade] Opus 深度推理 (3x Sonnet)
 const DATA_DIR = path.join(__dirname, "data");
 const REPORTS_FILE = path.join(DATA_DIR, "reports.json");
 
