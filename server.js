@@ -125,7 +125,7 @@ app.use((req, res, next) => {
 });
 const PORT = process.env.PORT || 3000;
 const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5-20250929";
-const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || 'claude-opus-4-6';  // [VICTOR upgrade] Opus 深度推理 (3x Sonnet)
+const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || MODEL;
 const DATA_DIR = path.join(__dirname, "data");
 const REPORTS_FILE = path.join(DATA_DIR, "reports.json");
 
@@ -1270,7 +1270,7 @@ ${workers.map(w => `- ${w.id} · ${w.name} · ${w.role}：${w.bio}`).join("\n")}
 
     const planResp = await anthropic.messages.create({
       model: DIRECTOR_MODEL,
-      max_tokens: 4096,
+      max_tokens: 8192,  // [VICTOR upgrade] Opus 深度思考 + 統整需更大 output budget
       system: director.systemPrompt,
       messages: [{ role: "user", content: planningPrompt }],
     });
@@ -1407,7 +1407,7 @@ ${consolidationParts}
 
     const finalStream = await anthropic.messages.stream({
       model: DIRECTOR_MODEL,
-      max_tokens: 4096,
+      max_tokens: 8192,  // [VICTOR upgrade] Opus 深度思考 + 統整需更大 output budget
       system: director.systemPrompt,
       messages: [{ role: "user", content: consolidationPrompt }],
     });
@@ -2113,7 +2113,7 @@ app.post("/api/google/analyze", async (req, res) => {
     const userPrompt = `資料區間：${dateRange}\n\n資料：\n${dataBlock}\n\n${extraContext ? "額外情境：" + extraContext + "\n\n" : ""}請給優化建議。`;
     const msg = await anthropic.messages.create({
       model: DIRECTOR_MODEL,
-      max_tokens: 4096,
+      max_tokens: 8192,  // [VICTOR upgrade] Opus 深度思考 + 統整需更大 output budget
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });
@@ -2601,7 +2601,7 @@ app.post("/api/customers/:userId/analyze", async (req, res) => {
 
     const msg = await anthropic.messages.create({
       model: DIRECTOR_MODEL,
-      max_tokens: 4096,
+      max_tokens: 8192,  // [VICTOR upgrade] Opus 深度思考 + 統整需更大 output budget
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });
@@ -2652,7 +2652,7 @@ app.post("/api/customers/segment-broadcast", async (req, res) => {
 
     const msg = await anthropic.messages.create({
       model: DIRECTOR_MODEL,
-      max_tokens: 4096,
+      max_tokens: 8192,  // [VICTOR upgrade] Opus 深度思考 + 統整需更大 output budget
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });
