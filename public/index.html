@@ -35,7 +35,7 @@
 
   .app {
     display: grid;
-    grid-template-rows: 64px 50px 1fr;
+    grid-template-rows: 64px var(--subnav-h, 50px) 1fr;
     grid-template-columns: var(--left-w, 320px) 1fr var(--right-w, 360px);
     grid-template-areas: "header header header" "subnav subnav subnav" "sidebar main activity";
     height: 100vh; width: 100vw;
@@ -658,7 +658,33 @@
   /* 對話區左右內距減少 */
   .main { padding: 0 !important; }
   .conv-wrap, .conv { padding-left: 18px !important; padding-right: 18px !important; }
-  </style>
+  
+  /* ─── [v15] subnav 可收合 ─── */
+  .app.subnav-collapsed { --subnav-h: 0px; }
+  .app.subnav-collapsed .subnav {
+    overflow: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    transition: opacity 0.2s;
+  }
+  .subnav-toggle {
+    position: fixed; z-index: 999;
+    left: 50%; transform: translateX(-50%);
+    top: 114px;  /* header 64 + subnav 50 */
+    width: 60px; height: 20px;
+    background: linear-gradient(180deg, #6D2E46, #4a1f31);
+    border: 1px solid rgba(176,141,87,.4);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: #B08D57; font-size: 11px;
+    transition: top 0.28s cubic-bezier(.4,0,.2,1);
+    user-select: none;
+  }
+  .subnav-toggle:hover { background: linear-gradient(180deg, #8a3a5a, #5c2740); color: #FCF6F5; }
+  body.subnav-collapsed .subnav-toggle { top: 64px; }  /* 只剩 header 64 */
+</style>
 <link rel="stylesheet" href="/macaron-shared.css">
 </head>
 <body>
@@ -1588,6 +1614,7 @@ boot();
 })();
 </script>
 <!-- Cowork-style collapse handles -->
+<div class="subnav-toggle" id="subnavToggle" title="收合上方選單">▲</div>
 <div class="panel-toggle toggle-left" id="toggleLeft" title="收合員工列表">◀</div>
 <div class="panel-toggle toggle-right" id="toggleRight" title="收合工作動態">▶</div>
 <script>
@@ -1595,6 +1622,7 @@ boot();
   var app = document.querySelector('.app');
   var body = document.body;
   var tL = document.getElementById('toggleLeft');
+  var tSub = document.getElementById('subnavToggle');
   var tR = document.getElementById('toggleRight');
   if (!app || !tL || !tR) return;
 
@@ -1617,6 +1645,21 @@ boot();
     tR.textContent = collapsed ? '◀' : '▶';
     tR.title = collapsed ? '展開工作動態' : '收合工作動態';
     try { localStorage.setItem('mo_rightCollapsed', collapsed ? '1' : '0'); } catch(e){}
+  });
+
+  // subnav toggle
+  try {
+    if (localStorage.getItem('mo_subnavCollapsed') === '1') {
+      app.classList.add('subnav-collapsed'); body.classList.add('subnav-collapsed');
+      if (tSub) tSub.textContent = '▼';
+    }
+  } catch(e){}
+  if (tSub) tSub.addEventListener('click', function(){
+    var collapsed = app.classList.toggle('subnav-collapsed');
+    body.classList.toggle('subnav-collapsed', collapsed);
+    tSub.textContent = collapsed ? '▼' : '▲';
+    tSub.title = collapsed ? '展開上方選單' : '收合上方選單';
+    try { localStorage.setItem('mo_subnavCollapsed', collapsed ? '1' : '0'); } catch(e){}
   });
 })();
 </script>
