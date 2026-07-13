@@ -154,6 +154,8 @@
   // ================ Universal chat beautifier ================
   // 目標:讓所有 AI 回應的 raw 文字(含 \n、HTML 標籤、JSON、proposal 樣板)變成人可讀
   function beautify() {
+    // ⛔ 串流中不重寫訊息，避免孤兒化正在輸出的節點（修「生成到一半卡住」）
+    try { if (typeof isStreaming !== "undefined" && isStreaming) return; } catch (e) {}
     // 找所有 chat 訊息容器
     const selectors = [
       '.message', '.msg-content', '.chat-bubble', '.bubble', '.chat-msg',
