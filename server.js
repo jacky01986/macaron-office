@@ -973,21 +973,40 @@ const chatAgentHandler = async (req, res) => {
 
     send("status", { text: `📥 ${emp.name} 收到任務，可用工具 ${tools.length} 個` });
 
+    // ⚡ fast-path：簡單訊息 → 快模型、零工具、即時串流
+    const _fpLast = messages[messages.length - 1];
+    const _fpText = typeof _fpLast.content === "string" ? _fpLast.content : "";
+    const _fpNeedTools = /廣告|成效|ROAS|CTR|CPM|預算|數據|報表|競品|排程|投放|素材|貼文|文案|活動|策略|規劃|分析|健檢|掃|客戶|名單|LINE|SEO|部落格|搜尋|查|報告|KOL|門店|櫃點/i.test(_fpText);
+    if (_fpText && _fpText.length < 80 && !_fpNeedTools) {
+      const FAST_MODEL = process.env.CLAUDE_FAST_MODEL || "claude-sonnet-4-5";
+      const _fs = await anthropic.messages.stream({
+        model: FAST_MODEL,
+        max_tokens: 2048,
+        system: system + "\n\n【快速模式】這是日常對話或簡單問題：直接精簡回答（200 字內），不要跑警訊協議、不要完整報告結構、不要呼叫工具。",
+        messages: msgs,
+      });
+      _fs.on("text", (_d) => send("delta", { text: _d }));
+      await _fs.finalMessage();
+      send("done", { ok: true, turns: 1 });
+      return res.end();
+    }
+
     let safety = 0;
     while (safety++ < 8) {
-      const resp = await anthropic.messages.create({
+      const _stream = await anthropic.messages.stream({
         model: MODEL,
         max_tokens: 4096,
         system,
         tools,
         messages: msgs,
       });
+      _stream.on("text", (_d) => send("delta", { text: _d }));
+      const resp = await _stream.finalMessage();
 
       const textBlocks = resp.content.filter(b => b.type === "text");
       const toolUses = resp.content.filter(b => b.type === "tool_use");
 
-      // Stream text blocks
-      for (const tb of textBlocks) send("delta", { text: tb.text });
+      // (text 已於 stream 時即時送出)
 
       if (toolUses.length === 0 || resp.stop_reason !== "tool_use") {
         send("done", { ok: true, turns: safety });
@@ -1256,7 +1275,7 @@ ${workers.map(w => `- ${w.id} · ${w.name} · ${w.role}：${w.bio}`).join("\n")}
 - employeeId 必須來自上面的清單`;
 
     const planResp = await anthropic.messages.create({
-      model: DIRECTOR_MODEL,
+      model: process.env.CLAUDE_PLAN_MODEL || "claude-sonnet-4-5", // 分工規劃結構化任務用 Sonnet 提速
       max_tokens: 4096,
       system: director.systemPrompt,
       messages: [{ role: "user", content: planningPrompt }],
