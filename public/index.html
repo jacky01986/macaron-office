@@ -662,7 +662,7 @@
     <a href="/teachers.html" class="featured">🏪 門店戰報</a>
     <a href="/mira.html" class="featured">📥 知識上傳</a>
       <a href="/personal-edm.html" class="featured">💌 個人化觸及</a>
-  <a href="/offline-reports.html" class="featured">📋 線下報告中心 </a> <a href="/guide.html">📖 使用說明</a>
+  <a href="/offline-reports.html" class="featured">📋 線下報告中心 </a> <a href="/guide.html">📖 使用說明</a> <a href="javascript:void(0)" onclick="showAllApps()" style="color:#B08D57;cursor:pointer">⚙️ 全部功能</a>
   </nav>
 
   <aside class="sidebar" id="sidebar">
@@ -1590,6 +1590,91 @@ boot();
     try { localStorage.setItem('mo_rightCollapsed', collapsed ? '1' : '0'); } catch(e){}
   });
 })();
+</script>
+<!-- ⚙️ 全部功能 modal -->
+<div id="allAppsModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);overflow-y:auto" onclick="if(event.target.id==='allAppsModal')this.style.display='none'">
+  <div style="max-width:1000px;margin:40px auto;background:#2a1a1e;border:1px solid #6D2E46;border-radius:12px;padding:32px 40px;color:#FCF6F5">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h2 style="margin:0;color:#B08D57;font-size:24px">⚙️ 全部功能 · 38 個子頁面</h2>
+      <button onclick="document.getElementById('allAppsModal').style.display='none'" style="background:none;border:1px solid #6D2E46;color:#FCF6F5;padding:6px 14px;border-radius:6px;cursor:pointer">✕ 關閉</button>
+    </div>
+    <p style="color:#8B7278;font-size:13px;margin:0 0 20px">按分類點擊直接進入。主控台 subnav 是常用捷徑,這裡是全部功能。</p>
+    <div id="allAppsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px"></div>
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid #4a1f31;font-size:11px;color:#8B7278">共 38 個 sub-page / 12 位 AI 員工 / 60+ 後端模組 / 15+ 個 cron 自動化</div>
+  </div>
+</div>
+<script>
+const ALL_APPS = [
+  {cat:'🥐 主控台 & 員工', items:[
+    ['/','🥐 主控台','12 員工對話 + 補刀'],
+    ['/mira.html','📥 知識上傳中心','任意檔案 → 全員工帶上'],
+    ['/reels.html','🎬 RINA 短影音','Reels 腳本 / 分鏡'],
+    ['/sola.html','🛒 SOLA 官網','商品頁 / 活動頁 / SEO'],
+    ['/june.html','📋 JUNE 專案','行銷專案管理'],
+    ['/closer.html','💬 HANA 成交','私訊自動回覆'],
+    ['/shot-guide.html','📸 拍攝示意','商品照 10 + 分鏡 15'],
+  ]},
+  {cat:'📚 內容 & 發文', items:[
+    ['/content-hub.html','📚 內容中心','總入口'],
+    ['/ai-content.html','🤖 AI 內容','AI 生成內容庫'],
+    ['/social.html','📱 社群管理','貼文排程'],
+    ['/auto-publish.html','⚙️ 自動發文','排程管理'],
+    ['/personal-edm.html','💌 個人化 EDM','1-to-1 電郵'],
+    ['/shopline-blog.html','📝 Shopline 部落格','WordPress 同步'],
+    ['/content-studio.html','🎨 內容工作室','實驗中'],
+  ]},
+  {cat:'👥 客戶 & 客服', items:[
+    ['/customer-hub.html','👥 客戶中心','總入口'],
+    ['/customers.html','📇 客戶清單','資料庫'],
+    ['/line.html','📱 LINE 客服','私訊回覆'],
+    ['/conversion.html','💰 轉換分析','漏斗'],
+  ]},
+  {cat:'📊 廣告 & 數據', items:[
+    ['/ads-hub.html','📊 廣告中心','總入口'],
+    ['/roas.html','💹 ROAS 儀表','即時廣告效益'],
+    ['/optimize.html','⚡ 廣告優化','LEON 建議'],
+    ['/work-status.html','⏱️ 工作狀態','AI 員工 live'],
+  ]},
+  {cat:'🔍 市場 & 競品', items:[
+    ['/market-intel.html','🔍 市場情報','總入口'],
+    ['/competitor.html','🎯 競品分析','對手掃描'],
+    ['/scout.html','🔭 Scout 掃描','每日 06:00'],
+    ['/geo.html','📍 地理情報','門店周邊'],
+    ['/google.html','🔎 Google 相關','Places / 評論'],
+  ]},
+  {cat:'🏪 門店 & 教學', items:[
+    ['/teachers.html','🏪 門店戰報','4 家店績效'],
+    ['/teachers-report.html','📄 教師報告','細節'],
+    ['/mira.html','🎓 MIRA 門市教育','話術 / SOP'],
+  ]},
+  {cat:'🛒 Shopline', items:[
+    ['/shopline-dashboard.html','📈 Shopline 儀表','訂單即時'],
+    ['/shopline-hub.html','🏬 Shopline 中心','商品 / 客戶'],
+  ]},
+  {cat:'📋 系統 & 記憶', items:[
+    ['/offline-reports.html','📋 線下報告中心','週報 / 月報'],
+    ['/actions.html','⚡ 動作日誌','系統操作'],
+    ['/memory.html','🧠 團隊記憶','brand-memory'],
+    ['/history-view.html','🕐 歷史紀錄','10 天'],
+    ['/switcher.html','🔀 帳號切換','multi-tenant'],
+    ['/guide.html','📖 使用說明','操作手冊'],
+  ]},
+];
+function showAllApps(){
+  const grid = document.getElementById('allAppsGrid');
+  if (!grid.innerHTML) {
+    grid.innerHTML = ALL_APPS.map(g => 
+      '<div style="grid-column:1/-1;margin-top:8px"><h3 style="margin:8px 0 10px;color:#E8B54B;font-size:14px;border-bottom:1px solid #4a1f31;padding-bottom:6px">' + g.cat + '</h3></div>' +
+      g.items.map(([url, title, desc]) =>
+        '<a href="' + url + '" style="display:block;padding:12px 14px;background:#362527;border:1px solid #4a1f31;border-radius:8px;text-decoration:none;color:#FCF6F5;transition:.15s" onmouseover="this.style.borderColor=\'#B08D57\';this.style.background=\'#3f2b2e\'" onmouseout="this.style.borderColor=\'#4a1f31\';this.style.background=\'#362527\'">' +
+        '<div style="font-weight:600;font-size:14px;margin-bottom:4px">' + title + '</div>' +
+        '<div style="font-size:11px;color:#8B7278">' + desc + '</div>' +
+        '</a>'
+      ).join('')
+    ).join('');
+  }
+  document.getElementById('allAppsModal').style.display = 'block';
+}
 </script>
 </body>
 </html>
