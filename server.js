@@ -979,17 +979,23 @@ const chatAgentHandler = async (req, res) => {
     // ⚡ fast-path：簡單訊息 → 快模型、零工具、即時串流
     const _fpLast = messages[messages.length - 1];
     const _fpText = typeof _fpLast.content === "string" ? _fpLast.content : "";
-    const _fpNeedTools = /廣告|成效|ROAS|CTR|CPM|預算|數據|報表|競品|排程|投放|素材|貼文|文案|活動|策略|規劃|分析|健檢|掃|客戶|名單|LINE|SEO|部落格|搜尋|查|報告|KOL|門店|櫃點/i.test(_fpText);
+    const _fpNeedTools = /廣告|成效|ROAS|CTR|CPM|預算|數據|報表|競品|排程|投放|素材|貼文|文案|活動|策略|規劃|分析|健檢|掃|客戶|名單|LINE|SEO|部落格|搜尋|查|報告|KOL|門店|櫃點|生產|庫存|過剩|滯銷|訂單|出貨|定價|價格|促銷|折扣|節慶/i.test(_fpText);
     if (_fpText && _fpText.length < 80 && !_fpNeedTools) {
       const FAST_MODEL = process.env.CLAUDE_FAST_MODEL || "claude-sonnet-4-5";
       const _fs = await anthropic.messages.stream({
         model: FAST_MODEL,
-        max_tokens: 2048,
+        max_tokens: 4096,
         system: system + "\n\n【快速模式】這是日常對話或簡單問題：直接精簡回答（200 字內），不要跑警訊協議、不要完整報告結構、不要呼叫工具。",
         messages: msgs,
       });
-      _fs.on("text", (_d) => send("delta", { text: _d }));
-      await _fs.finalMessage();
+      let _fsAcc = "";
+      _fs.on("text", (_d) => { _fsAcc += _d; send("delta", { text: _d }); });
+      let _fsFin = await _fs.finalMessage();
+      for (let _r = 0; _r < 2 && _fsFin.stop_reason === "max_tokens"; _r++) {
+        const _cont = await anthropic.messages.stream({ model: FAST_MODEL, max_tokens: 4096, system, messages: msgs.concat([{ role: "assistant", content: _fsAcc.trimEnd() }]) });
+        _cont.on("text", (_d) => { _fsAcc += _d; send("delta", { text: _d }); });
+        _fsFin = await _cont.finalMessage();
+      }
       send("done", { ok: true, turns: 1 });
       return res.end();
     }
@@ -998,7 +1004,7 @@ const chatAgentHandler = async (req, res) => {
     while (safety++ < 8) {
       const _stream = await anthropic.messages.stream({
         model: MODEL,
-        max_tokens: 4096,
+        max_tokens: 8192,
         system,
         tools,
         messages: msgs,
@@ -1260,15 +1266,21 @@ app.post("/api/orchestrate", async (req, res) => {
       send("phase", { phase: "direct", text: `👑 ${director.name} 直接回覆…` });
       const _ds = await anthropic.messages.stream({
         model: process.env.CLAUDE_FAST_MODEL || "claude-sonnet-4-5",
-        max_tokens: 2048,
+        max_tokens: 4096,
         system: director.systemPrompt + "\n\n【快速模式】這是日常對話或簡單問題：直接精簡回答（200 字內），不要分派、不要完整報告結構。",
         messages: [{ role: "user", content: q }],
       });
-      _ds.on("text", (d) => send("summary_delta", { text: d }));
-      await _ds.finalMessage();
+      let _dsAcc = "";
+      _ds.on("text", (d) => { _dsAcc += d; send("summary_delta", { text: d }); });
+      let _dsFin = await _ds.finalMessage();
+      for (let _r = 0; _r < 2 && _dsFin.stop_reason === "max_tokens"; _r++) {
+        const _cont = await anthropic.messages.stream({ model: process.env.CLAUDE_FAST_MODEL || "claude-sonnet-4-5", max_tokens: 4096, system: director.systemPrompt, messages: [{ role: "user", content: q }, { role: "assistant", content: _dsAcc.trimEnd() }] });
+        _cont.on("text", (d) => { _dsAcc += d; send("summary_delta", { text: d }); });
+        _dsFin = await _cont.finalMessage();
+      }
       send("done", { ok: true, direct: true });
     };
-    const _oNeed = /廣告|成效|ROAS|CTR|CPM|預算|數據|報表|競品|排程|投放|素材|貼文|文案|活動|策略|規劃|分析|健檢|掃|客戶|名單|LINE|SEO|部落格|報告|KOL|門店|櫃點|禮盒|企劃|發想|方案/i.test(task);
+    const _oNeed = /廣告|成效|ROAS|CTR|CPM|預算|數據|報表|競品|排程|投放|素材|貼文|文案|活動|策略|規劃|分析|健檢|掃|客戶|名單|LINE|SEO|部落格|報告|KOL|門店|櫃點|禮盒|企劃|發想|方案|生產|庫存|過剩|滯銷|訂單|出貨|定價|價格|促銷|折扣|節慶/i.test(task);
     if (task.length < 80 && !_oNeed) { await _victorDirect(task); return res.end(); }
 
     // ───────── Phase 1: Director planning ─────────
@@ -1449,7 +1461,12 @@ ${consolidationParts}
       finalText += delta;
       send("summary_delta", { text: delta });
     });
-    await finalStream.finalMessage();
+    let _finFin = await finalStream.finalMessage();
+    for (let _r = 0; _r < 2 && _finFin.stop_reason === "max_tokens"; _r++) {
+      const _cont = await anthropic.messages.stream({ model: DIRECTOR_MODEL, max_tokens: 8192, system: director.systemPrompt, messages: [{ role: "user", content: consolidationPrompt }, { role: "assistant", content: finalText.trimEnd() }] });
+      _cont.on("text", (delta) => { finalText += delta; send("summary_delta", { text: delta }); });
+      _finFin = await _cont.finalMessage();
+    }
 
     send("done", { ok: true, totalWorkers: plan.assignments.length, summaryLength: finalText.length });
     // 記錄整個 orchestrate 對話
