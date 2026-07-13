@@ -1364,6 +1364,8 @@ async function sendOrchestrate(text) {
   let workerOutputMsgs = {}; // empId → reference to ai message in that worker's own conversations[]
   let summaryAccum = '';
   let summaryEl = null;
+  let gotDone = false;
+  const _t0 = Date.now();
 
   try {
     const res = await fetch('/api/orchestrate', {
@@ -1518,6 +1520,7 @@ async function sendOrchestrate(text) {
         conv.scrollTop = conv.scrollHeight;
       },
       done: (p) => {
+        gotDone = true;
         // Hide the phase card on completion
         const card = bubbleEl.querySelector('.phase-card');
         if (card) card.style.display = 'none';
@@ -1529,6 +1532,36 @@ async function sendOrchestrate(text) {
         addFeed(director.name, `❌ ${p.message}`);
       },
     });
+
+    // 🛟 斷流自救：沒收到 done → 輪詢 history 補回完整報告
+    if (!gotDone) {
+      addFeed(director.name, '📡 串流中斷，改用補抓完整報告…');
+      const _key = text.substring(0, 12);
+      for (let _i = 0; _i < 18; _i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        try {
+          const lj = await (await fetch('/api/history/list?limit=3')).json();
+          const it = (lj.items || []).find(x => x.title && x.title.indexOf(_key) >= 0 && x.ts >= _t0 - 120000);
+          if (!it) continue;
+          const dj = await (await fetch('/api/history/' + it.id)).json();
+          const full = dj.html || dj.text || '';
+          if (!full) continue;
+          if (!summaryEl) {
+            const sw = document.createElement('div');
+            sw.innerHTML = '<h4 style="margin-top:18px;">📊 行銷總監最終整合報告</h4><div class="summary-body"></div>';
+            bubbleEl.appendChild(sw);
+            summaryEl = sw.querySelector('.summary-body');
+          }
+          summaryEl.innerHTML = full;
+          const card = bubbleEl.querySelector('.phase-card');
+          if (card) card.style.display = 'none';
+          containerMsg.content = bubbleEl.innerHTML;
+          addFeed(director.name, '✅ 已補回完整報告');
+          conv.scrollTop = conv.scrollHeight;
+          break;
+        } catch (e) {}
+      }
+    }
   } catch (err) {
     bubbleEl.innerHTML += `<p style="color:#E8B54B;">⚠️ 連線失敗：${escapeHtml(err.message)}</p>`;
     addFeed(director.name, `❌ ${err.message}`);
