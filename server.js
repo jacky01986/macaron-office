@@ -1255,6 +1255,22 @@ app.post("/api/orchestrate", async (req, res) => {
   }
 
   try {
+    // ⚡ VICTOR 直接回覆（不分派）
+    const _victorDirect = async (q) => {
+      send("phase", { phase: "direct", text: `👑 ${director.name} 直接回覆…` });
+      const _ds = await anthropic.messages.stream({
+        model: process.env.CLAUDE_FAST_MODEL || "claude-sonnet-4-5",
+        max_tokens: 2048,
+        system: director.systemPrompt + "\n\n【快速模式】這是日常對話或簡單問題：直接精簡回答（200 字內），不要分派、不要完整報告結構。",
+        messages: [{ role: "user", content: q }],
+      });
+      _ds.on("text", (d) => send("summary_delta", { text: d }));
+      await _ds.finalMessage();
+      send("done", { ok: true, direct: true });
+    };
+    const _oNeed = /廣告|成效|ROAS|CTR|CPM|預算|數據|報表|競品|排程|投放|素材|貼文|文案|活動|策略|規劃|分析|健檢|掃|客戶|名單|LINE|SEO|部落格|報告|KOL|門店|櫃點|禮盒|企劃|發想|方案/i.test(task);
+    if (task.length < 80 && !_oNeed) { await _victorDirect(task); return res.end(); }
+
     // ───────── Phase 1: Director planning ─────────
     send("phase", { phase: "planning", text: `👑 ${director.name} 正在分析任務並規劃分工…` });
 
@@ -1298,12 +1314,10 @@ ${workers.map(w => `- ${w.id} · ${w.name} · ${w.role}：${w.bio}`).join("\n")}
     let plan;
     try {
       plan = JSON.parse(jsonMatch ? jsonMatch[1] : planText);
-    } catch (e) {
-      send("error", { message: "總監規劃 JSON 解析失敗" });
-      return res.end();
-    }
-    if (!Array.isArray(plan.assignments) || plan.assignments.length === 0) {
-      send("error", { message: "總監未產生有效分派" });
+    } catch (e) { plan = null; }
+    if (!plan || !Array.isArray(plan.assignments) || plan.assignments.length === 0) {
+      // ⚡ 規劃失敗或不需分派 → VICTOR 直接回答，不報錯
+      await _victorDirect(task);
       return res.end();
     }
     // Filter out invalid assignments
