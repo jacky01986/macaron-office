@@ -979,6 +979,7 @@ const chatAgentHandler = async (req, res) => {
   try {
     const system = await maybeAugmentSystemPrompt(emp);
     const tools = toolDefs.asAnthropicTools(emp.tools || []);
+    for (let _di = tools.length - 1; _di >= 0; _di--) if (tools[_di].name === "web_search") tools.splice(_di, 1); // 去重：移除舊自訂 web_search
     tools.push({ type: "web_search_20250305", name: "web_search", max_uses: 3 }); // 🌐 原生網搜：有問必答
     let msgs = messages.map(m => ({ role: m.role === "ai" ? "assistant" : m.role, content: typeof m.content === "string" ? m.content : JSON.stringify(m.content) }));
 
@@ -1297,6 +1298,7 @@ app.post("/api/orchestrate", async (req, res) => {
       const goal = task.trim().replace(/^任務[:：]\s*/, "");
       send("phase", { phase: "mission", text: "🤖 任務模式啟動：VICTOR 正在規劃步驟…" });
       const _vTools = toolDefs.asAnthropicTools(EMPLOYEES.victor.tools || []);
+      for (let _di = _vTools.length - 1; _di >= 0; _di--) if (_vTools[_di].name === "web_search") _vTools.splice(_di, 1);
       _vTools.push({ type: "web_search_20250305", name: "web_search", max_uses: 3 });
       const planR = await anthropic.messages.create({
         model: process.env.CLAUDE_PLAN_MODEL || "claude-sonnet-4-5",
