@@ -979,6 +979,7 @@ const chatAgentHandler = async (req, res) => {
   try {
     const system = await maybeAugmentSystemPrompt(emp);
     const tools = toolDefs.asAnthropicTools(emp.tools || []);
+    tools.push({ type: "web_search_20250305", name: "web_search", max_uses: 3 }); // 🌐 原生網搜：有問必答
     let msgs = messages.map(m => ({ role: m.role === "ai" ? "assistant" : m.role, content: typeof m.content === "string" ? m.content : JSON.stringify(m.content) }));
 
     send("status", { text: `📥 ${emp.name} 收到任務，可用工具 ${tools.length} 個` });
@@ -992,7 +993,8 @@ const chatAgentHandler = async (req, res) => {
       const _fs = await anthropic.messages.stream({
         model: FAST_MODEL,
         max_tokens: 4096,
-        system: system + "\n\n【快速模式】這是日常對話或簡單問題：直接精簡回答（200 字內），不要跑警訊協議、不要完整報告結構、不要呼叫工具。",
+        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
+        system: system + "\n\n【快速模式】寒暄閒聊就簡短自然回；知識型問題（任何領域）用你自身的知識完整回答，有問必答、不推託；需要即時或最新資訊就用 web_search 查證後回答。不要跑警訊協議、不要完整報告結構。",
         messages: msgs,
       });
       let _fsAcc = "";
@@ -1276,7 +1278,8 @@ app.post("/api/orchestrate", async (req, res) => {
       const _ds = await anthropic.messages.stream({
         model: process.env.CLAUDE_FAST_MODEL || "claude-sonnet-4-5",
         max_tokens: 4096,
-        system: director.systemPrompt + "\n\n【快速模式】這是日常對話或簡單問題：直接精簡回答（200 字內），不要分派、不要完整報告結構。",
+        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
+        system: director.systemPrompt + "\n\n【快速模式】寒暄閒聊就簡短自然回；知識型問題（任何領域）用你自身的知識完整回答，有問必答、不推託；需要即時或最新資訊就用 web_search 查證後回答。不要分派、不要完整報告結構。",
         messages: [{ role: "user", content: q }],
       });
       let _dsAcc = "";
