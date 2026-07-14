@@ -14,8 +14,16 @@
 const PROTOCOL_VERSION = "2025-06-18";
 
 let SERVERS = [];
-try { SERVERS = JSON.parse(process.env.MCP_SERVERS || "[]"); }
-catch (e) { console.error("[mcp-bridge] MCP_SERVERS JSON 解析失敗:", e.message); }
+try {
+  const _raw = (process.env.MCP_SERVERS || "").trim();
+  if (_raw.startsWith("http")) {
+    // 容錯：老闆直接貼一條網址也行 → 自動當成 zapier + confirm 安全模式
+    SERVERS = [{ name: "zapier", url: _raw, confirm: true }];
+  } else {
+    SERVERS = JSON.parse(_raw || "[]");
+  }
+}
+catch (e) { console.error("[mcp-bridge] MCP_SERVERS 解析失敗:", e.message); }
 
 const state = {}; // name -> { session, id, tools, cfg }
 
