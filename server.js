@@ -181,7 +181,7 @@ app.post('/api/line/webhook',
   }
 );
 
-app.use(express.json({ limit: "1mb" })); try { require('./auth')(app); } catch (e) { console.error('[auth load]', e.message); }
+app.use(express.json({ limit: "15mb" })); try { require('./auth')(app); } catch (e) { console.error('[auth load]', e.message); }
 
 // ============================================================
 // GET / — 注入全站導覽列到 index.html
