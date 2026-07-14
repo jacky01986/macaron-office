@@ -10,6 +10,8 @@
 
 require("dotenv").config();
 try { require('./readability-patch'); } catch (e) { console.error('[readability-patch load]', e.message); }
+let mcpBridge = null;
+try { mcpBridge = require('./mcp-bridge'); mcpBridge.init().catch(e => console.error('[mcp-bridge init]', e.message)); } catch (e) { console.error('[mcp-bridge load]', e.message); }
 let _historyCompressor = null;
 try { _historyCompressor = require('./history-compressor'); console.log('[history-compressor] loaded'); } catch (e) { console.error('[history-compressor load]', e.message); }
 const express = require("express");
@@ -981,6 +983,7 @@ const chatAgentHandler = async (req, res) => {
     const tools = toolDefs.asAnthropicTools(emp.tools || []);
     for (let _di = tools.length - 1; _di >= 0; _di--) if (tools[_di].name === "web_search") tools.splice(_di, 1); // 去重：移除舊自訂 web_search
     tools.push({ type: "web_search_20250305", name: "web_search", max_uses: 3 }); // 🌐 原生網搜：有問必答
+    try { if (mcpBridge) tools.push(...mcpBridge.getAnthropicTools()); } catch (e) {} // 🔌 MCP 外掛手
     let msgs = messages.map(m => ({ role: m.role === "ai" ? "assistant" : m.role, content: typeof m.content === "string" ? m.content : JSON.stringify(m.content) }));
 
     send("status", { text: `📥 ${emp.name} 收到任務，可用工具 ${tools.length} 個` });
@@ -1077,6 +1080,22 @@ const chatAgentHandler = async (req, res) => {
           send("delta", { text: `\n\n⚠️ **想執行：${toolDefs.TOOL_DEFINITIONS[tu.name].description}**\n\n\`\`\`json\n${JSON.stringify(tu.input, null, 2)}\n\`\`\`\n\nProposal ID: \`${proposalId}\`\n\n半自動模式：請檢查上方提案，然後 POST /api/proposals/${proposalId}/execute 確認執行。` });
           send("done", { ok: true, pending_proposal: true });
           return res.end();
+        }
+        // 🔌 MCP 外掛工具 - execute
+        if (mcpBridge && mcpBridge.isMcpTool(tu.name)) {
+          if (mcpBridge.needsConfirm(tu.name)) {
+            toolResults.push({ type: "tool_result", tool_use_id: tu.id, content: "此外掛工具設為需老闆確認（confirm:true），未執行。請在回覆中清楚列出你想執行的動作與參數，請老闆確認後手動執行。" });
+            continue;
+          }
+          send("tool_call", { tool: tu.name, input: tu.input });
+          try {
+            const _mr = await mcpBridge.callTool(tu.name, tu.input || {});
+            send("tool_result", { tool: tu.name, ok: true });
+            toolResults.push({ type: "tool_result", tool_use_id: tu.id, content: _mr });
+          } catch (e) {
+            toolResults.push({ type: "tool_result", tool_use_id: tu.id, content: "MCP err: " + e.message, is_error: true });
+          }
+          continue;
         }
         // READ tool - execute
         send("tool_call", { tool: tu.name, input: tu.input });
@@ -1300,6 +1319,7 @@ app.post("/api/orchestrate", async (req, res) => {
       const _vTools = toolDefs.asAnthropicTools(EMPLOYEES.victor.tools || []);
       for (let _di = _vTools.length - 1; _di >= 0; _di--) if (_vTools[_di].name === "web_search") _vTools.splice(_di, 1);
       _vTools.push({ type: "web_search_20250305", name: "web_search", max_uses: 3 });
+      try { if (mcpBridge) _vTools.push(...mcpBridge.getAnthropicTools()); } catch (e) {}
       const planR = await anthropic.messages.create({
         model: process.env.CLAUDE_PLAN_MODEL || "claude-sonnet-4-5",
         max_tokens: 2048,
@@ -1329,6 +1349,12 @@ app.post("/api/orchestrate", async (req, res) => {
             const trs = [];
             for (const tu of fin.content.filter(b => b.type === "tool_use")) {
               if (toolDefs.isWriteTool(tu.name)) { trs.push({ type: "tool_result", tool_use_id: tu.id, content: "此為寫入工具，任務模式不自動執行；請在最終報告標註需 Jeffrey 確認後執行。" }); continue; }
+              if (mcpBridge && mcpBridge.isMcpTool(tu.name)) {
+                if (mcpBridge.needsConfirm(tu.name)) { trs.push({ type: "tool_result", tool_use_id: tu.id, content: "此外掛工具需老闆確認，任務模式跳過；請在報告標註。" }); continue; }
+                let _mr; try { _mr = await mcpBridge.callTool(tu.name, tu.input || {}); } catch (e) { _mr = "MCP err: " + e.message; }
+                trs.push({ type: "tool_result", tool_use_id: tu.id, content: _mr });
+                continue;
+              }
               let r; try { r = await executeReadTool(tu.name, tu.input || {}); } catch (e) { r = "err: " + e.message; }
               trs.push({ type: "tool_result", tool_use_id: tu.id, content: (typeof r === "string" ? r : JSON.stringify(r)).slice(0, 6000) });
             }
