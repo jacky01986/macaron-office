@@ -108,7 +108,14 @@ function _find(anthName) {
   return null;
 }
 
-function needsConfirm(name) { const f = _find(name); return !!(f && f.cfg.confirm); }
+function needsConfirm(name) {
+  const f = _find(name);
+  if (!f || !f.cfg.confirm) return false;
+  // 智慧閘：查詢類自動放行，動作/寫入類才請示老闆
+  const rn = String(f.tool.realName || "").toLowerCase();
+  const readSafe = /^(discover|list|get|read|search|find|fetch|status|describe|preview)/.test(rn) || rn.indexOf("_read_") >= 0;
+  return !readSafe;
+}
 
 async function callTool(anthName, args) {
   const f = _find(anthName);
