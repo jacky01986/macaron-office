@@ -1292,6 +1292,68 @@ app.post("/api/orchestrate", async (req, res) => {
       }
       send("done", { ok: true, direct: true });
     };
+    // 🤖 任務模式：「任務：xxx」→ 計畫 → 逐步執行（工具+自檢+重試）→ 統整回報
+    if (/^任務[:：]/.test(task.trim())) {
+      const goal = task.trim().replace(/^任務[:：]\s*/, "");
+      send("phase", { phase: "mission", text: "🤖 任務模式啟動：VICTOR 正在規劃步驟…" });
+      const _vTools = toolDefs.asAnthropicTools(EMPLOYEES.victor.tools || []);
+      _vTools.push({ type: "web_search_20250305", name: "web_search", max_uses: 3 });
+      const planR = await anthropic.messages.create({
+        model: process.env.CLAUDE_PLAN_MODEL || "claude-sonnet-4-5",
+        max_tokens: 2048,
+        system: director.systemPrompt,
+        messages: [{ role: "user", content: "目標：「" + goal + "」\n把它拆成 2-6 個可依序執行的步驟（你自己用工具與網搜執行，不分派專員）。只回 JSON：{\"steps\":[\"步驟1\",\"步驟2\"]}" }],
+      });
+      let _steps = [];
+      try { const m = planR.content.map(b => b.text || "").join("").match(/\{[\s\S]*\}/); _steps = JSON.parse(m[0]).steps || []; } catch (e) {}
+      if (!_steps.length) _steps = [goal];
+      send("phase", { phase: "mission", text: "📋 計畫 " + _steps.length + " 步：" + _steps.join(" → ").slice(0, 110) });
+      const _results = [];
+      for (let si = 0; si < _steps.length; si++) {
+        const step = _steps[si];
+        send("phase", { phase: "mission", text: "⚙️ 步驟 " + (si + 1) + "/" + _steps.length + "：" + step });
+        let _msgs = [{ role: "user", content: "任務總目標：" + goal + "\n已完成：\n" + (_results.map((r, i) => (i + 1) + ". " + _steps[i] + "：" + String(r).slice(0, 400)).join("\n") || "(無)") + "\n\n現在執行步驟 " + (si + 1) + "：「" + step + "」。需要數據用工具、需要外部資訊用 web_search。直接給這一步的具體產出。" }];
+        let _out = "", _ok = false;
+        for (let attempt = 0; attempt < 2 && !_ok; attempt++) {
+          _out = "";
+          let guard = 0;
+          while (guard++ < 6) {
+            const st = await anthropic.messages.stream({ model: MODEL, max_tokens: 4096, system: director.systemPrompt, tools: _vTools, messages: _msgs });
+            st.on("text", (d) => { _out += d; });
+            const fin = await st.finalMessage();
+            if (fin.stop_reason !== "tool_use") break;
+            const _safe = fin.content.filter(_b => _b.type !== "thinking" || (_b.thinking && _b.signature));
+            _msgs.push({ role: "assistant", content: _safe.length ? _safe : fin.content });
+            const trs = [];
+            for (const tu of fin.content.filter(b => b.type === "tool_use")) {
+              if (toolDefs.isWriteTool(tu.name)) { trs.push({ type: "tool_result", tool_use_id: tu.id, content: "此為寫入工具，任務模式不自動執行；請在最終報告標註需 Jeffrey 確認後執行。" }); continue; }
+              let r; try { r = await executeReadTool(tu.name, tu.input || {}); } catch (e) { r = "err: " + e.message; }
+              trs.push({ type: "tool_result", tool_use_id: tu.id, content: (typeof r === "string" ? r : JSON.stringify(r)).slice(0, 6000) });
+            }
+            _msgs.push({ role: "user", content: trs });
+          }
+          try {
+            const chk = await anthropic.messages.create({ model: "claude-haiku-4-5-20251001", max_tokens: 120, messages: [{ role: "user", content: "步驟要求：「" + step + "」\n產出：「" + _out.slice(0, 1500) + "」\n產出有沒有具體完成要求？只回 PASS 或 FAIL+一句原因。" }] });
+            const vt = chk.content.map(b => b.text || "").join("");
+            _ok = vt.indexOf("PASS") >= 0;
+            if (!_ok && attempt === 0) {
+              send("phase", { phase: "mission", text: "🔁 步驟 " + (si + 1) + " 自檢未過，重試中…" });
+              _msgs = [{ role: "user", content: "上次執行「" + step + "」被檢核退回：" + vt + "\n重新執行並修正。上次產出：" + _out.slice(0, 800) }];
+            }
+          } catch (e) { _ok = true; }
+        }
+        _results.push(_out);
+      }
+      send("phase", { phase: "mission", text: "🧾 全部步驟完成，統整最終報告…" });
+      const _sum = await anthropic.messages.stream({ model: DIRECTOR_MODEL, max_tokens: 8192, system: director.systemPrompt, messages: [{ role: "user", content: "任務目標：" + goal + "\n各步驟產出：\n" + _results.map((r, i) => "【步驟" + (i + 1) + "：" + _steps[i] + "】\n" + r).join("\n\n") + "\n\n整合成最終交付報告（HTML 排版），最後列出需要 Jeffrey 人工確認或執行的事項。" }] });
+      let _finalTxt = "";
+      _sum.on("text", (d) => { _finalTxt += d; send("summary_delta", { text: d }); });
+      await _sum.finalMessage();
+      try { require('./history').record({ fn: 'VICTOR', title: '任務模式 · ' + goal.slice(0, 40), html: _finalTxt, text: _finalTxt, meta: { source: 'mission', steps: _steps.length } }); } catch (e) {}
+      send("done", { ok: true, mission: true, steps: _steps.length });
+      return res.end();
+    }
+
     const _oNeed = /廣告|成效|ROAS|CTR|CPM|預算|數據|報表|競品|排程|投放|素材|貼文|文案|活動|策略|規劃|分析|健檢|掃|客戶|名單|LINE|SEO|部落格|報告|KOL|門店|櫃點|禮盒|企劃|發想|方案|生產|庫存|過剩|滯銷|訂單|出貨|定價|價格|促銷|折扣|節慶/i.test(task);
     if (task.length < 80 && !_oNeed) { await _victorDirect(task); return res.end(); }
 
