@@ -808,8 +808,11 @@
       <div class="conversation" id="conv"></div>
       <div class="input-bar">
         <div class="quick-tasks" id="quick-tasks"></div>
+        <div id="img-chip" style="display:none;padding:4px 12px;font-size:12px;color:var(--gold);"></div>
         <div class="input-row">
-          <textarea id="input" placeholder="交付任務給您的 AI 員工..." rows="1"></textarea>
+          <input type="file" id="img-input" accept="image/*" style="display:none" onchange="onImgPicked(this)">
+          <button class="send" id="img-btn" title="附加圖片" style="padding:0 14px;" onclick="document.getElementById('img-input').click()">📷</button>
+          <textarea id="input" placeholder="交付任務給您的 AI 員工...(可附圖)" rows="1"></textarea>
           <button class="send" id="send-btn" onclick="send()">交付</button>
         </div>
       </div>
@@ -1258,10 +1261,10 @@ async function readSSE(response, handlers) {
 }
 
 // ============ SEND (single employee) ============
-async function sendSingle(text) {
+async function sendSingle(text, _img) {
   const emp = EMPLOYEES[currentEmployee];
   const _ts = new Date().toLocaleTimeString('zh-TW', {hour12:false, hour:'2-digit', minute:'2-digit'});
-  const _userMsg = { role: 'user', content: text, ts: _ts };
+  const _userMsg = { role: 'user', content: (_img ? '🖼️ ' : '') + text, ts: _ts };
   conversations[emp.id].push(_userMsg);
   appendMessageToDOM(_userMsg);
 
@@ -1282,9 +1285,13 @@ employeeStatus[emp.id] = 'idle';  let firstChunk = true;
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         employeeId: emp.id,
-        messages: conversations[emp.id]
-          .filter(m => m.role === 'user' || (m.role === 'ai' && !m.content.includes('thinking')))
-          .map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: stripHtml(m.content) })),
+        messages: (() => {
+          const arr = conversations[emp.id]
+            .filter(m => m.role === 'user' || (m.role === 'ai' && !m.content.includes('thinking')))
+            .map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: stripHtml(m.content) }));
+          if (_img && arr.length) { const last = arr[arr.length - 1]; last.content = [{ type: 'image', source: { type: 'base64', media_type: _img.media_type, data: _img.data } }, { type: 'text', text: String(last.content) }]; }
+          return arr;
+        })(),
       }),
     });
     if (!res.ok || !res.body) throw new Error('Network error ' + res.status);
@@ -1336,10 +1343,10 @@ employeeStatus[emp.id] = 'idle';  let firstChunk = true;
 }
 
 // ============ SEND (orchestrate) ============
-async function sendOrchestrate(text) {
+async function sendOrchestrate(text, _img) {
   const director = EMPLOYEES.victor;
   conversations.victor.push({ role: 'user', content: text });
-  appendMessageToDOM({ role: 'user', content: text });
+  appendMessageToDOM({ role: 'user', content: (_img ? '🖼️ ' : '') + text });
 
   addFeed(`${director.name} · 行銷總監`, `📥 收到複雜任務：「${text.substring(0,30)}${text.length>30?'…':''}」`, true);
 
@@ -1371,7 +1378,7 @@ async function sendOrchestrate(text) {
     const res = await fetch('/api/orchestrate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ task: text }),
+      body: JSON.stringify({ task: text, image: _img ? { media_type: _img.media_type, data: _img.data } : undefined }),
     });
     if (!res.ok || !res.body) throw new Error('Network error ' + res.status);
 
@@ -1569,11 +1576,33 @@ async function sendOrchestrate(text) {
 }
 
 // ============ MAIN SEND ============
+// 🖼️ 貼圖（眼睛）
+let pendingImage = null;
+function onImgPicked(el) {
+  const f = el.files && el.files[0];
+  el.value = '';
+  if (!f) return;
+  if (f.size > 4.5 * 1024 * 1024) { alert('圖片請小於 4.5MB'); return; }
+  const rd = new FileReader();
+  rd.onload = () => {
+    const m = String(rd.result).match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/);
+    if (!m) { alert('讀取圖片失敗'); return; }
+    pendingImage = { media_type: m[1], data: m[2], name: f.name };
+    const chip = document.getElementById('img-chip');
+    chip.style.display = 'block';
+    chip.innerHTML = '📎 ' + f.name + ' <span style="cursor:pointer;margin-left:6px;" onclick="clearImg()">✕</span>';
+  };
+  rd.readAsDataURL(f);
+}
+function clearImg() { pendingImage = null; const c = document.getElementById('img-chip'); if (c) { c.style.display = 'none'; c.innerHTML = ''; } }
+
 async function send() {
   if (!currentEmployee || isStreaming) return;
   const input = document.getElementById('input');
-  const text = input.value.trim();
-  if (!text) return;
+  let text = input.value.trim();
+  if (!text && !pendingImage) return;
+  if (!text) text = '請幫我看這張圖';
+  const _img = pendingImage; clearImg();
   input.value = '';
   input.style.height = 'auto';
 
@@ -1582,9 +1611,9 @@ async function send() {
 
   const emp = EMPLOYEES[currentEmployee];
   if (emp.isDirector) {
-    await sendOrchestrate(text);
+    await sendOrchestrate(text, _img);
   } else {
-    await sendSingle(text);
+    await sendSingle(text, _img);
   }
 
   isStreaming = false;
