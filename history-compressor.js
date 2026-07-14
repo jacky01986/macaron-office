@@ -9,9 +9,9 @@ try {
 } catch (e) { console.error('[history-compressor] sdk init', e.message); }
 
 const FAST_MODEL = 'claude-haiku-4-5-20251001';
-const THRESHOLD = 10;      // > 10 條才壓
-const KEEP_RECENT = 6;     // 保留最近 6 條
-const MAX_SUMMARY = 600;   // summary 上限 600 字
+const THRESHOLD = 40;      // > 40 條才壓（記憶長度升級：Opus 200k context + prompt caching 撐得住）
+const KEEP_RECENT = 20;    // 保留最近 20 條原文
+const MAX_SUMMARY = 1200;  // summary 上限 1200 字
 
 // 簡易記憶體快取:hash(舊 messages) → summary text,避免重複 LLM call
 const _cache = new Map();
