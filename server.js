@@ -1046,7 +1046,9 @@ const chatAgentHandler = async (req, res) => {
       }
 
       // Process tool uses
-      msgs.push({ role: "assistant", content: resp.content });
+      // 過濾 SDK 串流組不完整的空 thinking block（避免 400 each thinking block must contain thinking）
+      const _safeContent = resp.content.filter(_b => _b.type !== "thinking" || (_b.thinking && _b.signature));
+      msgs.push({ role: "assistant", content: _safeContent.length ? _safeContent : resp.content });
       const toolResults = [];
       for (const tu of toolUses) {
         if (toolDefs.isWriteTool(tu.name)) {
