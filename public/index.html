@@ -1582,7 +1582,7 @@ function onImgPicked(el) {
   const f = el.files && el.files[0];
   el.value = '';
   if (!f) return;
-  if (f.size > 4.5 * 1024 * 1024) { alert('圖片請小於 4.5MB'); return; }
+  if (f.size > 3.5 * 1024 * 1024) { alert('圖片請小於 3.5MB（API 限制）'); return; }
   const rd = new FileReader();
   rd.onload = () => {
     const m = String(rd.result).match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/);
