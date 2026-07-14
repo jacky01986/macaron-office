@@ -984,7 +984,7 @@ const chatAgentHandler = async (req, res) => {
     for (let _di = tools.length - 1; _di >= 0; _di--) if (tools[_di].name === "web_search") tools.splice(_di, 1); // 去重：移除舊自訂 web_search
     tools.push({ type: "web_search_20250305", name: "web_search", max_uses: 3 }); // 🌐 原生網搜：有問必答
     try { if (mcpBridge) tools.push(...mcpBridge.getAnthropicTools()); } catch (e) {} // 🔌 MCP 外掛手
-    let msgs = messages.map(m => ({ role: m.role === "ai" ? "assistant" : m.role, content: typeof m.content === "string" ? m.content : JSON.stringify(m.content) }));
+    let msgs = messages.map(m => ({ role: m.role === "ai" ? "assistant" : m.role, content: Array.isArray(m.content) ? m.content : (typeof m.content === "string" ? m.content : JSON.stringify(m.content)) }));
 
     send("status", { text: `📥 ${emp.name} 收到任務，可用工具 ${tools.length} 個` });
 
@@ -1287,7 +1287,7 @@ app.post("/api/chat", _originalChatHandler);
 // Phase 3: Director consolidates final deliverable
 // ============================================================
 app.post("/api/orchestrate", async (req, res) => {
-  const { task } = req.body || {};
+  const { task, image } = req.body || {};
   if (!task || typeof task !== "string")
     return res.status(400).json({ error: "task required" });
 
@@ -1310,7 +1310,7 @@ app.post("/api/orchestrate", async (req, res) => {
         max_tokens: 4096,
         tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
         system: director.systemPrompt + "\n\n【快速模式】寒暄閒聊就簡短自然回；知識型問題（任何領域）用你自身的知識完整回答，有問必答、不推託；需要即時或最新資訊就用 web_search 查證後回答。不要分派、不要完整報告結構。",
-        messages: [{ role: "user", content: q }],
+        messages: [{ role: "user", content: (image && image.data) ? [{ type: "image", source: { type: "base64", media_type: image.media_type || "image/png", data: image.data } }, { type: "text", text: q }] : q }],
       });
       let _dsAcc = "";
       _ds.on("text", (d) => { _dsAcc += d; send("summary_delta", { text: d }); });
@@ -1341,6 +1341,7 @@ app.post("/api/orchestrate", async (req, res) => {
       if (!_steps.length) _steps = [goal];
       send("phase", { phase: "mission", text: "📋 計畫 " + _steps.length + " 步：" + _steps.join(" → ").slice(0, 110) });
       const _results = [];
+      let _replans = 0;
       for (let si = 0; si < _steps.length; si++) {
         const step = _steps[si];
         send("phase", { phase: "mission", text: "⚙️ 步驟 " + (si + 1) + "/" + _steps.length + "：" + step });
@@ -1381,6 +1382,15 @@ app.post("/api/orchestrate", async (req, res) => {
           } catch (e) { _ok = true; }
         }
         _results.push(_out);
+        // 🧭 v2 動態重規劃：每步完成後檢視剩餘計畫（最多改 2 次）
+        if (si < _steps.length - 1 && _replans < 2) {
+          try {
+            const rp = await anthropic.messages.create({ model: process.env.CLAUDE_PLAN_MODEL || "claude-sonnet-4-5", max_tokens: 1024, messages: [{ role: "user", content: "目標：" + goal + "\n已完成步驟與結果摘要：\n" + _results.map((r, i) => (i + 1) + ". " + _steps[i] + " → " + String(r).slice(0, 200)).join("\n") + "\n剩餘步驟：" + JSON.stringify(_steps.slice(si + 1)) + "\n根據目前結果，剩餘計畫需要調整嗎？只回 JSON：{\"keep\":true} 或 {\"keep\":false,\"newSteps\":[\"新步驟1\",\"新步驟2\"]}" }] });
+            const rt = rp.content.map(b => b.text || "").join("");
+            const rm = rt.match(/\{[\s\S]*\}/);
+            if (rm) { const rj = JSON.parse(rm[0]); if (rj && rj.keep === false && Array.isArray(rj.newSteps) && rj.newSteps.length) { _steps = _steps.slice(0, si + 1).concat(rj.newSteps); _replans++; send("phase", { phase: "mission", text: "🧭 計畫調整（根據新發現）：" + rj.newSteps.join(" → ").slice(0, 100) }); } }
+          } catch (e) {}
+        }
       }
       send("phase", { phase: "mission", text: "🧾 全部步驟完成，統整最終報告…" });
       const _sum = await anthropic.messages.stream({ model: DIRECTOR_MODEL, max_tokens: 8192, system: director.systemPrompt, messages: [{ role: "user", content: "任務目標：" + goal + "\n各步驟產出：\n" + _results.map((r, i) => "【步驟" + (i + 1) + "：" + _steps[i] + "】\n" + r).join("\n\n") + "\n\n整合成最終交付報告（HTML 排版），最後列出需要 Jeffrey 人工確認或執行的事項。" }] });
@@ -1393,7 +1403,7 @@ app.post("/api/orchestrate", async (req, res) => {
     }
 
     const _oNeed = /廣告|成效|ROAS|CTR|CPM|預算|數據|報表|競品|排程|投放|素材|貼文|文案|活動|策略|規劃|分析|健檢|掃|客戶|名單|LINE|SEO|部落格|報告|KOL|門店|櫃點|禮盒|企劃|發想|方案|生產|庫存|過剩|滯銷|訂單|出貨|定價|價格|促銷|折扣|節慶/i.test(task);
-    if (task.length < 80 && !_oNeed) { await _victorDirect(task); return res.end(); }
+    if ((image && image.data) || (task.length < 80 && !_oNeed)) { await _victorDirect(task); return res.end(); } // 有圖一律直答（vision）
 
     // ───────── Phase 1: Director planning ─────────
     send("phase", { phase: "planning", text: `👑 ${director.name} 正在分析任務並規劃分工…` });
