@@ -1120,6 +1120,16 @@ const chatAgentHandler = async (req, res) => {
   }
 };
 
+// 🔍 MCP 橋狀態診斷
+app.get("/api/mcp/status", (req, res) => {
+  try {
+    const st = mcpBridge ? mcpBridge._state : {};
+    const out = {};
+    for (const k of Object.keys(st)) out[k] = { tools: st[k].tools.map(t => t.anthName), session: !!st[k].session };
+    res.json({ ok: true, envSet: !!(process.env.MCP_SERVERS || "").trim(), envHead: (process.env.MCP_SERVERS || "").trim().slice(0, 12), servers: out });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
 app.post("/api/chat-agent", chatAgentHandler);
 
 // /api/chat — 若員工有 tools，自動走 agent 流程
