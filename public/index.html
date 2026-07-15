@@ -1582,17 +1582,27 @@ function onImgPicked(el) {
   const f = el.files && el.files[0];
   el.value = '';
   if (!f) return;
-  if (f.size > 3.5 * 1024 * 1024) { alert('圖片請小於 3.5MB（API 限制）'); return; }
-  const rd = new FileReader();
-  rd.onload = () => {
-    const m = String(rd.result).match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/);
+  // 任何大小都收：自動縮到長邊 2048 + 壓到 API 限制內
+  const url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    const maxSide = 2048;
+    let w = img.width, h = img.height;
+    if (Math.max(w, h) > maxSide) { const k = maxSide / Math.max(w, h); w = Math.round(w * k); h = Math.round(h * k); }
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+    let q = 0.9, dataUrl = cv.toDataURL('image/jpeg', q);
+    while (dataUrl.length > 4.6 * 1024 * 1024 && q > 0.4) { q -= 0.1; dataUrl = cv.toDataURL('image/jpeg', q); }
+    const m = dataUrl.match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/);
     if (!m) { alert('讀取圖片失敗'); return; }
     pendingImage = { media_type: m[1], data: m[2], name: f.name };
     const chip = document.getElementById('img-chip');
     chip.style.display = 'block';
-    chip.innerHTML = '📎 ' + f.name + ' <span style="cursor:pointer;margin-left:6px;" onclick="clearImg()">✕</span>';
+    chip.innerHTML = '📎 ' + f.name + '（' + w + '×' + h + '，已自動優化） <span style="cursor:pointer;margin-left:6px;" onclick="clearImg()">✕</span>';
   };
-  rd.readAsDataURL(f);
+  img.onerror = () => { URL.revokeObjectURL(url); alert('讀取圖片失敗，請換一張'); };
+  img.src = url;
 }
 function clearImg() { pendingImage = null; const c = document.getElementById('img-chip'); if (c) { c.style.display = 'none'; c.innerHTML = ''; } }
 
