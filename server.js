@@ -221,7 +221,7 @@ app.post("/api/line/upload", (req, res) => {
 
 let anthropic = null;
 if (process.env.ANTHROPIC_API_KEY) {
-  anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); try { const _enh = require("./ai-enhancements"); const _orig = anthropic.messages.create.bind(anthropic.messages); anthropic.messages.create = function(o) { try { return _enh.enhancedCreate(_orig, o); } catch (e) { console.error("[ai-enhancements] enhancedCreate err:", e.message); return _orig(o); } }; console.log("[ai-enhancements] enhancedCreate auto-injected: EVIDENCE_RULE + web_search tool + tool_use loop"); } catch (e) { console.error("[ai-enhancements] wrapper inject failed:", e.message); }
+  anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   console.log("[OK] Anthropic client initialized | worker:", MODEL, "| director:", DIRECTOR_MODEL);
 } else {
   console.warn("[WARN] ANTHROPIC_API_KEY not set");
@@ -882,7 +882,11 @@ async function executeReadTool(name, input) {
     }
     case "get_google_summary": {
       if (!google.tokenOk()) return { error: "Google Ads 未設定" };
-      return await google.getAccountSummary({ dateRange: input.dateRange || "LAST_7_DAYS" });
+      try {
+        return await google.getAccountSummary({ dateRange: input.dateRange || "LAST_7_DAYS" });
+      } catch (e) {
+        return { unavailable: true, note: "Google Ads 目前無法連線（授權可能已失效），請 Jeffrey 重新授權後才有數據。錯誤：" + String(e.message).slice(0, 120) };
+      }
     }
     case "get_account_health": {
       const out = { timestamp: new Date().toISOString() };
