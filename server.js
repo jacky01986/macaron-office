@@ -126,7 +126,7 @@ app.use((req, res, next) => {
   next();
 });
 const PORT = process.env.PORT || 3000;
-const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5-20250929";
+const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-5-20250929";
 const DIRECTOR_MODEL = process.env.CLAUDE_DIRECTOR_MODEL || MODEL;
 const DATA_DIR = path.join(__dirname, "data");
 const REPORTS_FILE = path.join(DATA_DIR, "reports.json");
@@ -993,7 +993,7 @@ const chatAgentHandler = async (req, res) => {
     const _fpText = typeof _fpLast.content === "string" ? _fpLast.content : "";
     const _fpNeedTools = /廣告|成效|ROAS|CTR|CPM|預算|數據|報表|競品|排程|投放|素材|貼文|文案|活動|策略|規劃|分析|健檢|掃|客戶|名單|LINE|SEO|部落格|搜尋|查|報告|KOL|門店|櫃點|生產|庫存|過剩|滯銷|訂單|出貨|定價|價格|促銷|折扣|節慶/i.test(_fpText);
     if (_fpText && _fpText.length < 80 && !_fpNeedTools) {
-      const FAST_MODEL = process.env.CLAUDE_FAST_MODEL || "claude-sonnet-4-5";
+      const FAST_MODEL = process.env.CLAUDE_FAST_MODEL || "claude-sonnet-5";
       const _fs = await anthropic.messages.stream({
         model: FAST_MODEL,
         max_tokens: 4096,
@@ -1306,7 +1306,7 @@ app.post("/api/orchestrate", async (req, res) => {
     const _victorDirect = async (q) => {
       send("phase", { phase: "direct", text: `👑 ${director.name} 直接回覆…` });
       const _ds = await anthropic.messages.stream({
-        model: process.env.CLAUDE_FAST_MODEL || "claude-sonnet-4-5",
+        model: process.env.CLAUDE_FAST_MODEL || "claude-sonnet-5",
         max_tokens: 4096,
         tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
         system: director.systemPrompt + "\n\n【快速模式】寒暄閒聊就簡短自然回；知識型問題（任何領域）用你自身的知識完整回答，有問必答、不推託；需要即時或最新資訊就用 web_search 查證後回答。不要分派、不要完整報告結構。",
@@ -1316,7 +1316,7 @@ app.post("/api/orchestrate", async (req, res) => {
       _ds.on("text", (d) => { _dsAcc += d; send("summary_delta", { text: d }); });
       let _dsFin = await _ds.finalMessage();
       for (let _r = 0; _r < 2 && _dsFin.stop_reason === "max_tokens"; _r++) {
-        const _cont = await anthropic.messages.stream({ model: process.env.CLAUDE_FAST_MODEL || "claude-sonnet-4-5", max_tokens: 4096, system: director.systemPrompt, messages: [{ role: "user", content: q }, { role: "assistant", content: _dsAcc.trimEnd() }] });
+        const _cont = await anthropic.messages.stream({ model: process.env.CLAUDE_FAST_MODEL || "claude-sonnet-5", max_tokens: 4096, system: director.systemPrompt, messages: [{ role: "user", content: q }, { role: "assistant", content: _dsAcc.trimEnd() }] });
         _cont.on("text", (d) => { _dsAcc += d; send("summary_delta", { text: d }); });
         _dsFin = await _cont.finalMessage();
       }
@@ -1331,7 +1331,7 @@ app.post("/api/orchestrate", async (req, res) => {
       _vTools.push({ type: "web_search_20250305", name: "web_search", max_uses: 3 });
       try { if (mcpBridge) _vTools.push(...mcpBridge.getAnthropicTools()); } catch (e) {}
       const planR = await anthropic.messages.create({
-        model: process.env.CLAUDE_PLAN_MODEL || "claude-sonnet-4-5",
+        model: process.env.CLAUDE_PLAN_MODEL || "claude-sonnet-5",
         max_tokens: 2048,
         system: director.systemPrompt,
         messages: [{ role: "user", content: "目標：「" + goal + "」\n把它拆成 2-6 個可依序執行的步驟（你自己用工具與網搜執行，不分派專員）。只回 JSON：{\"steps\":[\"步驟1\",\"步驟2\"]}" }],
@@ -1385,7 +1385,7 @@ app.post("/api/orchestrate", async (req, res) => {
         // 🧭 v2 動態重規劃：每步完成後檢視剩餘計畫（最多改 2 次）
         if (si < _steps.length - 1 && _replans < 2) {
           try {
-            const rp = await anthropic.messages.create({ model: process.env.CLAUDE_PLAN_MODEL || "claude-sonnet-4-5", max_tokens: 1024, messages: [{ role: "user", content: "目標：" + goal + "\n已完成步驟與結果摘要：\n" + _results.map((r, i) => (i + 1) + ". " + _steps[i] + " → " + String(r).slice(0, 200)).join("\n") + "\n剩餘步驟：" + JSON.stringify(_steps.slice(si + 1)) + "\n根據目前結果，剩餘計畫需要調整嗎？只回 JSON：{\"keep\":true} 或 {\"keep\":false,\"newSteps\":[\"新步驟1\",\"新步驟2\"]}" }] });
+            const rp = await anthropic.messages.create({ model: process.env.CLAUDE_PLAN_MODEL || "claude-sonnet-5", max_tokens: 1024, messages: [{ role: "user", content: "目標：" + goal + "\n已完成步驟與結果摘要：\n" + _results.map((r, i) => (i + 1) + ". " + _steps[i] + " → " + String(r).slice(0, 200)).join("\n") + "\n剩餘步驟：" + JSON.stringify(_steps.slice(si + 1)) + "\n根據目前結果，剩餘計畫需要調整嗎？只回 JSON：{\"keep\":true} 或 {\"keep\":false,\"newSteps\":[\"新步驟1\",\"新步驟2\"]}" }] });
             const rt = rp.content.map(b => b.text || "").join("");
             const rm = rt.match(/\{[\s\S]*\}/);
             if (rm) { const rj = JSON.parse(rm[0]); if (rj && rj.keep === false && Array.isArray(rj.newSteps) && rj.newSteps.length) { _steps = _steps.slice(0, si + 1).concat(rj.newSteps); _replans++; send("phase", { phase: "mission", text: "🧭 計畫調整（根據新發現）：" + rj.newSteps.join(" → ").slice(0, 100) }); } }
@@ -1438,7 +1438,7 @@ ${workers.map(w => `- ${w.id} · ${w.name} · ${w.role}：${w.bio}`).join("\n")}
 - employeeId 必須來自上面的清單`;
 
     const planResp = await anthropic.messages.create({
-      model: process.env.CLAUDE_PLAN_MODEL || "claude-sonnet-4-5", // 分工規劃結構化任務用 Sonnet 提速
+      model: process.env.CLAUDE_PLAN_MODEL || "claude-sonnet-5", // 分工規劃結構化任務用 Sonnet 提速
       max_tokens: 8192,  // [VICTOR upgrade] Opus 深度思考 + 統整需更大 output budget
       system: director.systemPrompt,
       messages: [{ role: "user", content: planningPrompt }],
