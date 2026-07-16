@@ -265,7 +265,8 @@ function register(app, cron) {
   app.get('/api/offline-reports/gdrive/debug/files', async (req, res) => {
     try {
       const files = await listFolderFiles();
-      res.json({ ok: true, count: files.length, files });
+      let saEmail = null; try { saEmail = getServiceAccount().client_email; } catch (e) {}
+      res.json({ ok: true, serviceAccountEmail: saEmail, count: files.length, files });
     } catch (e) { res.status(500).json({ ok: false, error: e.message, stack: e.stack }); }
   });
 
