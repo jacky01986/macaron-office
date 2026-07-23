@@ -722,6 +722,35 @@
 
   /* sidebar handle 對應上調(header 縮小)*/
   .panel-toggle { top: calc(50% + 20px) !important; }
+
+  /* ── 手機版 RWD（<=768px）：單欄 + 側欄抽屜 ── */
+  @media (max-width: 768px) {
+    .app {
+      grid-template-columns: 1fr !important;
+      grid-template-areas: "header" "subnav" "main" !important;
+      grid-template-rows: 54px var(--subnav-h, 44px) 1fr !important;
+    }
+    .sidebar, .activity {
+      position: fixed !important; top: 0; bottom: 0;
+      width: 84vw; max-width: 330px; z-index: 60;
+      box-shadow: 0 0 40px rgba(0,0,0,.55);
+      transition: transform .28s cubic-bezier(.4,0,.2,1);
+      overflow-y: auto;
+    }
+    .sidebar { left: 0; transform: translateX(-102%); }
+    .activity { right: 0; transform: translateX(102%); }
+    .app:not(.left-collapsed) .sidebar { transform: translateX(0); }
+    .app:not(.right-collapsed) .activity { transform: translateX(0); }
+    .msg, .msg.ai, .msg.user { max-width: 100% !important; }
+    .conversation { padding: 10px !important; }
+    .input-bar { padding: 8px !important; }
+    .subnav { font-size: 12px; }
+    .panel-toggle { width: 30px !important; height: 56px !important; z-index: 61; }
+    /* 手機遮罩：側欄打開時點暗處關閉 */
+    #mobScrim { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 55; }
+    .app:not(.left-collapsed) ~ #mobScrim,
+    .app:not(.right-collapsed) ~ #mobScrim { display: block; }
+  }
 </style>
 <link rel="stylesheet" href="/macaron-shared.css">
 </head>
@@ -1857,5 +1886,14 @@ function showAllApps(){
 }
 </script>
 <script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(e){console.warn("[sw]",e);});});}</script>
+<div id="mobScrim" onclick="(function(){var a=document.querySelector('.app'); if(a){a.classList.add('left-collapsed','right-collapsed'); try{localStorage.setItem('mo_leftCollapsed','1');localStorage.setItem('mo_rightCollapsed','1');}catch(e){}}})()"></div>
+<script>
+(function(){
+  function mobForce(){ if(window.innerWidth<=768){ var a=document.querySelector('.app'); if(a){ a.classList.add('left-collapsed','right-collapsed'); } } }
+  window.addEventListener('load', function(){ setTimeout(mobForce, 60); });
+  window.addEventListener('resize', mobForce);
+  mobForce();
+})();
+</script>
 </body>
 </html>
