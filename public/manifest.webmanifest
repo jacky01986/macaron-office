@@ -1,0 +1,32 @@
+{
+  "name": "溫點 WarmPlace 虛擬辦公室",
+  "short_name": "溫點辦公室",
+  "description": "溫點 WarmPlace AI 行銷團隊 · VICTOR 行銷總監",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1C1213",
+  "theme_color": "#6D2E46",
+  "lang": "zh-Hant",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
