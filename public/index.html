@@ -766,6 +766,39 @@
     .panel-toggle { opacity: .5; }
     .panel-toggle:active, .panel-toggle:hover { opacity: 1; }
   }
+
+  /* ── 手機版：極簡，只留一個對話框 ── */
+  @media (max-width: 768px) {
+    .app {
+      grid-template-rows: 52px 1fr !important;
+      grid-template-columns: 1fr !important;
+      grid-template-areas: "header" "main" !important;
+    }
+    .subnav, .quick-tasks, .panel-toggle, .subnav-toggle,
+    .sidebar, .activity, #mobScrim { display: none !important; }
+    .main-header .prompt-btn { display: none !important; }
+    .main-header { padding: 8px 14px !important; }
+    .main-header .title h2 { font-size: 18px !important; letter-spacing: .5px !important; }
+    .main-header .title .sub { font-size: 10px !important; }
+    .main-header .big-av { width: 36px !important; height: 36px !important; font-size: 19px !important; }
+    .msg, .msg.ai, .msg.user { max-width: 100% !important; }
+    .conversation { padding: 10px !important; }
+    .input-bar { padding: 8px !important; }
+  }
+
+  /* mobile-simple: 只留對話框 */
+  @media (max-width: 768px) {
+    .app { grid-template-rows: 52px 1fr !important; grid-template-columns: 1fr !important; grid-template-areas: "header" "main" !important; }
+    .subnav, .quick-tasks, .panel-toggle, .subnav-toggle, .sidebar, .activity, #mobScrim { display: none !important; }
+    .main-header .prompt-btn { display: none !important; }
+    .main-header { padding: 8px 14px !important; }
+    .main-header .title h2 { font-size: 18px !important; letter-spacing: .5px !important; }
+    .main-header .title .sub { font-size: 10px !important; }
+    .main-header .big-av { width: 36px !important; height: 36px !important; font-size: 19px !important; }
+    .msg, .msg.ai, .msg.user { max-width: 100% !important; }
+    .conversation { padding: 10px !important; }
+    .input-bar { padding: 8px !important; }
+  }
 </style>
 <link rel="stylesheet" href="/macaron-shared.css">
 </head>
