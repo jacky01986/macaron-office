@@ -109,7 +109,9 @@ module.exports = function attachAuth(app) {
     /^\/api\/health$/,
     /^\/favicon/,
     // Static assets
-    /\.(css|js|png|jpg|jpeg|gif|svg|webp|woff2?|ttf|ico|map)$/i,
+    /\.(css|js|png|jpg|jpeg|gif|svg|webp|woff2?|ttf|ico|map|webmanifest)$/i,
+    /^\/manifest\.webmanifest$/,
+    /^\/sw\.js$/,
   ];
 
   // Auth gate middleware - everything else requires cookie
