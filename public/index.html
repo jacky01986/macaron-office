@@ -751,6 +751,21 @@
     .app:not(.left-collapsed) ~ #mobScrim,
     .app:not(.right-collapsed) ~ #mobScrim { display: block; }
   }
+
+  /* ── 手機版 RWD 精修 v2 ── */
+  @media (max-width: 768px) {
+    .subnav-toggle { display: none !important; }          /* 隱藏會壓到標題的 ▲ */
+    .main-header { padding: 8px 12px !important; gap: 10px !important; }
+    .main-header .big-av { width: 38px !important; height: 38px !important; font-size: 20px !important; }
+    .main-header .title h2 { font-size: 17px !important; letter-spacing: .5px !important; }
+    .main-header .title .sub { font-size: 10px !important; }
+    .main-header .prompt-btn { padding: 5px 10px !important; font-size: 10px !important; white-space: nowrap; }
+    .subnav a { padding: 6px 10px !important; font-size: 12px !important; }
+    .quick-tasks { max-height: 30vh; overflow-y: auto; margin-bottom: 6px !important; }
+    .quick-tasks .chip { font-size: 12px !important; padding: 7px 11px !important; }
+    .panel-toggle { opacity: .5; }
+    .panel-toggle:active, .panel-toggle:hover { opacity: 1; }
+  }
 </style>
 <link rel="stylesheet" href="/macaron-shared.css">
 </head>
