@@ -5090,6 +5090,7 @@ app.post('/api/auto-publish/update/:draftId', express.json(), (req, res) => {
   const SCHED_DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || require('path').join(__dirname, 'data');
   const SCHED_FILE = require('path').join(SCHED_DATA_DIR, 'auto-drafts.json');
   async function runScheduledPublish() {
+  return { skipped: true, reason: 'MERGED-DISABLE runScheduledPublish — 已合併到 auto-publish.js（FB 全自動、IG 待核准），舊每分鐘自動貼停用' };
     let state;
     try { state = autoPublish.loadDrafts(); } catch (e) { return; }
     const now = Date.now();
