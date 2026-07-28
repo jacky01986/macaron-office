@@ -191,6 +191,20 @@ async function generateAndQueueDrafts() {
 
     try { const H = require('./history'); H.record({ fn:'AUTO', title: platform + ' 自動草稿 · ' + String(caption||'').slice(0,40), html: '<h4>'+platform+' 自動發文草稿</h4><div style="white-space:pre-wrap">'+String(caption||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</div>'+(draft.image_url?'<p>🖼 <a href="'+draft.image_url+'" target="_blank">圖片</a></p>':''), text: String(caption||'').slice(0,2000), meta: { platform, draftId: draft.id, image_url: draft.image_url } }); } catch(e){ console.error('[history auto]', e.message); }
     generated.push(draft);
+    // ★ FB 全自動：產完直接貼粉專，不進待審佇列
+    if (platform === 'FB') {
+      try {
+        const _r = await publishFB(draft.caption);
+        draft.status = 'published';
+        draft.published_at = new Date().toISOString();
+        draft.publish_id = _r.id;
+        await tgSendText('✅ FB 已自動發佈（合併版）\n\n' + htmlToPlain(draft.caption).slice(0, 200));
+      } catch (e) {
+        draft.status = 'failed'; draft.error = e.message;
+        await tgSendText('⚠️ FB 自動發佈失敗：' + e.message);
+      }
+      continue;
+    }
     if (decisions && decisions.addPending) {
       try {
         const dec = await decisions.addPending({
