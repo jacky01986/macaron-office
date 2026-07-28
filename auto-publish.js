@@ -248,17 +248,32 @@ async function metaGraphPost(endpoint, params = {}) {
   return j;
 }
 
+// 把 AI 產出的 HTML/Markdown 轉成 FB/IG 能吃的純文字(FB 貼文不會渲染標籤,會直接顯示 <ul><li>)
+function htmlToPlain(s) {
+  if (!s) return '';
+  let x = String(s);
+  x = x.replace(/<\/(li|p|div|h[1-6]|tr)>/gi, '\n');
+  x = x.replace(/<li[^>]*>/gi, '・');
+  x = x.replace(/<br\s*\/?>/gi, '\n');
+  x = x.replace(/<[^>]+>/g, '');            // 去掉其餘所有標籤(ul/strong/em...)
+  x = x.replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<')
+       .replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#39;/gi, "'");
+  x = x.replace(/\*\*(.+?)\*\*/g, '$1').replace(/^#{1,6}\s+/gm, ''); // 去 markdown 粗體/標題
+  x = x.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  return x;
+}
+
 async function publishFB(caption) {
   const pageId = process.env.META_FB_PAGE_ID;
   if (!pageId) throw new Error('META_FB_PAGE_ID not set');
-  return metaGraphPost('/' + pageId + '/feed', { message: caption });
+  return metaGraphPost('/' + pageId + '/feed', { message: htmlToPlain(caption) });
 }
 
 async function publishIG(caption, imageUrl) {
   const igId = process.env.META_IG_USER_ID;
   if (!igId) throw new Error('META_IG_USER_ID not set');
   if (!imageUrl) throw new Error('IG requires image_url');
-  const created = await metaGraphPost('/' + igId + '/media', { image_url: imageUrl, caption });
+  const created = await metaGraphPost('/' + igId + '/media', { image_url: imageUrl, caption: htmlToPlain(caption) });
   return metaGraphPost('/' + igId + '/media_publish', { creation_id: created.id });
 }
 
