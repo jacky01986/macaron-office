@@ -14,7 +14,8 @@ const REGISTRY = [
   { key: 'auto_publish',    label: 'FB / IG 自動發文（每天 09:00 / 19:00）', desc: 'FB 產完直接貼粉專；IG 產草稿等你核准。', default: true },
   { key: 'geo_publish',     label: 'GEO 長文自動發布', desc: '每天把 GEO 長文發到自架 blog / FB。', default: true },
   { key: 'shopline_digest', label: 'Shopline 每日早報（Telegram）', desc: '每天 09:00 推昨日訂單 / 營收到 Telegram。', default: true },
-  { key: 'auto_reply_flows',label: '自動回覆流程（FB / IG 私訊）', desc: '關鍵字觸發的私訊自動回覆流程。', default: true },
+  { key: 'auto_reply_flows',label: '🆕 新自動回覆流程（本站自建 flows）', desc: '本站 /flows.html 的關鍵字觸發私訊自動回覆。此開關為真實控制：關掉本站就不會回私訊。', default: true },
+  { key: 'salesmartly_reply', label: '🔵 SaleSmartly 自動回覆（外部系統）', desc: '你在 SaleSmartly 上跑的自動回覆。此為狀態標記/提醒——實際開關請到 SaleSmartly 後台；客人私訊進哪一套由 Meta Webhook 指向決定。建議兩套只留一套開。', default: true },
 ];
 
 function ensureDir(){ try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {} }
