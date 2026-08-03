@@ -433,6 +433,7 @@ function getRecentCompetitorReports(n = 10) { return readLog(COMPETITOR_LOG, n);
 // 6. Daily auto-publish to Medium (draft) — runs via cron
 // =============================================================
 async function dailyAutoPublishToMedium(opts = {}) {
+  try { if (!require('./automation').isEnabled('geo_publish')) return { ok: false, disabled: true, reason: '已由自動化主控台關閉' }; } catch {}
   ensureDir();
   const AUTO_LOG = path.join(GEO_DIR, "auto_publish_log.jsonl");
   const blog = require('./blog');
