@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🎯 自動回覆流程管理 · 溫點 WarmPlace</title>
+<style>
+:root{--burgundy:#6D2E46;--burgundy-d:#4A1D2E;--gold:#B08D57;--ivory:#FCF6F5;--dark:#1C1213;--dark2:#241619;--dark3:#2E1A1F;--green:#3FB27F;--muted:#9A8790}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--dark);color:var(--ivory);line-height:1.55;padding:20px 16px;max-width:900px;margin:0 auto}
+a{color:var(--gold);text-decoration:none}
+h1{font-size:23px;color:var(--gold);margin:0 0 2px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+button{font-family:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--burgundy);background:var(--dark3);color:var(--ivory);padding:8px 14px;font-size:13px}
+button.primary{background:linear-gradient(90deg,var(--burgundy),var(--burgundy-d));border-color:var(--gold);color:var(--gold);font-weight:700}
+button.danger{border-color:#7a2130;color:#e88}
+button.mini{padding:4px 9px;font-size:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.flow{background:var(--dark2);border:1px solid var(--burgundy-d);border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+.flow .info{flex:1}
+.flow .nm{font-weight:700}
+.flow .meta{color:var(--muted);font-size:12px;margin-top:2px}
+.pill{display:inline-block;background:var(--dark3);border:1px solid var(--burgundy);color:var(--gold);border-radius:12px;font-size:11px;padding:1px 8px;margin-right:4px}
+.off{opacity:.5}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 3px}
+input,select,textarea{width:100%;background:var(--dark3);border:1px solid var(--burgundy-d);color:var(--ivory);border-radius:7px;padding:8px;font-family:inherit;font-size:13px}
+textarea{min-height:56px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.panel{background:var(--dark2);border:1px solid var(--gold);border-radius:12px;padding:16px 18px;margin-top:14px}
+.step{background:var(--dark3);border:1px solid var(--burgundy-d);border-radius:8px;padding:10px;margin:8px 0}
+.step .hd{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.sim{background:#12100f;border:1px dashed var(--gold);border-radius:10px;padding:14px;margin-top:14px}
+.bubble{background:var(--burgundy);color:var(--ivory);border-radius:14px 14px 14px 3px;padding:8px 12px;margin:6px 0;max-width:80%;font-size:13px;white-space:pre-wrap}
+.hidden{display:none}
+.toast{position:fixed;top:14px;right:14px;background:var(--green);color:#04240f;padding:6px 12px;border-radius:20px;font-weight:700;font-size:13px;opacity:0;transition:.3s}
+.toast.show{opacity:1}
+</style></head><body>
+<div class="toast" id="toast">✓ 已存</div>
+<a href="/">← 返回辦公室</a>
+<h1>🎯 自動回覆流程管理</h1>
+<div class="sub">關鍵字觸發 · 多步驟 · 條件分支 · 貼標籤 · 冷卻。FB Messenger / Instagram 私訊自動回覆。</div>
+<div class="row"><button class="primary" onclick="newFlow()">➕ 新增流程</button><button class="mini" onclick="loadList()">🔄 重新載入</button></div>
+<div id="list" style="margin-top:14px">載入中…</div>
+<div id="editor" class="panel hidden"></div>
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const toast=()=>{const t=$('#toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1200);};
+let FLOWS=[],cur=null;
+async function loadList(){
+  try{const r=await fetch('/api/flows');const j=await r.json();FLOWS=j.flows||[];renderList();}
+  catch(e){$('#list').innerHTML='<div style="color:#e88">載入失敗：'+e.message+'</div>';}
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function renderList(){
+  if(!FLOWS.length){$('#list').innerHTML='<div style="color:var(--muted)">還沒有流程。按「➕ 新增流程」建立第一個。</div>';return;}
+  $('#list').innerHTML=FLOWS.map(f=>'<div class="flow'+(f.enabled?'':' off')+'">'
+    +'<div class="info"><div class="nm">'+esc(f.name)+'</div>'
+    +'<div class="meta"><span class="pill">'+(f.platform==='instagram'?'📸 IG':'💬 Messenger')+'</span>'
+    +(f.category?'<span class="pill">'+esc(f.category)+'</span>':'')
+    +'關鍵字：'+esc((f.keywords||[]).join('、')||'（無）')+' · '+(f.steps||[]).length+' 步 · 冷卻 '+(f.cooldownHours||0)+'h · '+(f.enabled?'✅ 啟用':'⏸ 停用')+'</div></div>'
+    +'<button class="mini" onclick="editFlow(\''+f.id+'\')">編輯</button>'
+    +'<button class="mini danger" onclick="delFlow(\''+f.id+'\')">刪</button></div>').join('');
+}
+function newFlow(){cur={id:'',name:'',platform:'messenger',account:'',category:'',price:0,keywords:[],cooldownHours:24,enabled:true,steps:[{type:'message',text:''}]};renderEditor();}
+function editFlow(id){cur=JSON.parse(JSON.stringify(FLOWS.find(f=>f.id===id)));renderEditor();}
+async function delFlow(id){if(!confirm('確定刪除這個流程？'))return;await fetch('/api/flows/'+id,{method:'DELETE'});loadList();}
+function stepHtml(s,i){
+  const t=s.type||'message';
+  const sel='<select onchange="chgType('+i+',this.value)">'+['message','condition','tag','quick_replies'].map(o=>'<option value="'+o+'"'+(o===t?' selected':'')+'>'+({message:'訊息',condition:'條件分支',tag:'貼標籤',quick_replies:'快速回覆按鈕'}[o])+'</option>').join('')+'</select>';
+  let body='';
+  if(t==='message')body='<textarea placeholder="回覆內容" oninput="setStep('+i+',\'text\',this.value)">'+esc(s.text)+'</textarea>';
+  else if(t==='condition')body='<input placeholder="若客人訊息含此關鍵字" value="'+esc(s.keyword)+'" oninput="setStep('+i+',\'keyword\',this.value)"><textarea placeholder="符合 → 回這個" oninput="setStep('+i+',\'ifText\',this.value)">'+esc(s.ifText)+'</textarea><textarea placeholder="不符合 → 回這個" oninput="setStep('+i+',\'elseText\',this.value)">'+esc(s.elseText)+'</textarea>';
+  else if(t==='tag')body='<input placeholder="標籤名（例：熱客/詢問中秋）" value="'+esc(s.tag)+'" oninput="setStep('+i+',\'tag\',this.value)">';
+  else if(t==='quick_replies')body='<textarea placeholder="按鈕上方訊息" oninput="setStep('+i+',\'text\',this.value)">'+esc(s.text)+'</textarea><input placeholder="按鈕選項，逗號分隔（例：預約,看價格,門市）" value="'+esc((s.options||[]).join(','))+'" oninput="setOpts('+i+',this.value)">';
+  return '<div class="step"><div class="hd"><strong>步驟 '+(i+1)+'</strong>'+sel+'<button class="mini danger" onclick="rmStep('+i+')">✕</button></div>'+body+'</div>';
+}
+function renderEditor(){
+  const f=cur;const e=$('#editor');e.classList.remove('hidden');
+  e.innerHTML='<h3 style="margin-top:0;color:var(--gold)">'+(f.id?'編輯流程':'新增流程')+'</h3>'
+    +'<label>流程名稱</label><input id="f_name" value="'+esc(f.name)+'">'
+    +'<div class="grid2"><div><label>平台</label><select id="f_platform"><option value="messenger"'+(f.platform==='messenger'?' selected':'')+'>💬 Messenger</option><option value="instagram"'+(f.platform==='instagram'?' selected':'')+'>📸 Instagram</option></select></div>'
+    +'<div><label>服務類別（可留空）</label><input id="f_category" value="'+esc(f.category)+'"></div></div>'
+    +'<div class="grid2"><div><label>價格 NT$（可 0）</label><input id="f_price" type="number" value="'+(f.price||0)+'"></div>'
+    +'<div><label>冷卻（小時，同客人 N 小時內只觸發一次）</label><input id="f_cd" type="number" value="'+(f.cooldownHours||0)+'"></div></div>'
+    +'<label>觸發關鍵字（逗號或空格分隔）</label><input id="f_kw" value="'+esc((f.keywords||[]).join('、'))+'">'
+    +'<label style="display:flex;align-items:center;gap:8px;margin-top:12px"><input type="checkbox" id="f_enabled" '+(f.enabled?'checked':'')+' style="width:auto">啟用此流程</label>'
+    +'<h4 style="margin:16px 0 4px">📋 步驟流程</h4><div id="steps">'+(f.steps||[]).map(stepHtml).join('')+'</div>'
+    +'<button class="mini" onclick="addStep()">➕ 加步驟</button>'
+    +'<div class="sim"><strong>🧪 模擬器</strong><label>模擬客人輸入</label><input id="sim_in" placeholder="打一句客人可能會說的話"><div class="row" style="margin-top:8px"><button onclick="runSim()">▶️ 跑一次</button></div><div id="sim_out"></div></div>'
+    +'<div class="row" style="margin-top:16px"><button class="primary" onclick="saveFlow()">💾 儲存</button><button onclick="closeEditor()">取消</button></div>';
+}
+function collect(){cur.name=$('#f_name').value;cur.platform=$('#f_platform').value;cur.category=$('#f_category').value;cur.price=Number($('#f_price').value)||0;cur.cooldownHours=Number($('#f_cd').value)||0;cur.keywords=$('#f_kw').value.split(/[,\s，、]+/).map(s=>s.trim()).filter(Boolean);cur.enabled=$('#f_enabled').checked;}
+function addStep(){collect();cur.steps.push({type:'message',text:''});renderEditor();}
+function rmStep(i){collect();cur.steps.splice(i,1);renderEditor();}
+function chgType(i,t){collect();cur.steps[i]={type:t};renderEditor();}
+function setStep(i,k,val){cur.steps[i][k]=val;}
+function setOpts(i,val){cur.steps[i].options=val.split(',').map(s=>s.trim()).filter(Boolean);}
+async function saveFlow(){collect();if(!cur.name){alert('請填流程名稱');return;}if(!cur.keywords.length){alert('請至少填一個觸發關鍵字');return;}
+  const r=await fetch('/api/flows',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cur)});const j=await r.json();
+  if(j.ok){toast();closeEditor();loadList();}else alert('儲存失敗：'+(j.error||''));}
+function closeEditor(){$('#editor').classList.add('hidden');cur=null;}
+async function runSim(){collect();const input=$('#sim_in').value;
+  const r=await fetch('/api/flows/simulate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({flow:cur,input})});const j=await r.json();
+  const out=$('#sim_out');
+  if(!j.ok){out.innerHTML='<div style="color:#e88">'+esc(j.error)+'</div>';return;}
+  let h='<div style="color:var(--muted);font-size:12px;margin-top:8px">'+(j.matched?'✅ 這句會觸發此流程':'⚠️ 這句「不會」觸發（關鍵字沒中，但以下是流程若跑起來的輸出）')+'</div>';
+  h+=(j.messages||[]).filter(m=>m.type!=='_tag').map(m=>'<div class="bubble">'+esc(m.text)+(m.quick_replies&&m.quick_replies.length?'<br>['+m.quick_replies.map(esc).join('] [')+']':'')+'</div>').join('');
+  const tags=(j.messages||[]).filter(m=>m.type==='_tag');
+  if(tags.length)h+='<div style="color:var(--gold);font-size:12px;margin-top:6px">🏷 貼標籤：'+tags.map(t=>esc(t.tag)).join('、')+'</div>';
+  out.innerHTML=h;}
+loadList();
+</script>
+</body></html>
