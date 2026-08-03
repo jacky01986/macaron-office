@@ -3908,7 +3908,7 @@ app.post('/api/meta/webhook/messages', express.json(), async (req, res) => {
   try {
     const bot = require('./auto-reply-bot');
     for (const entry of (req.body.entry || [])) {
-      await bot.handleMessageEvent(entry); try { await require('./flows').handleMessageEvent(entry); } catch(_e){ console.error('[flows hook]', _e.message); }.catch(e => console.error('[auto-reply]', e.message));
+      await require('./flows').handleMessageEvent(entry).catch(function(){}); /*flowsPre_*/ await bot.handleMessageEvent(entry).catch(e => console.error('[auto-reply]', e.message));
     }
   } catch (e) { console.error('[auto-reply webhook]', e.message); }
 });
