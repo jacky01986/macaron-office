@@ -52,9 +52,12 @@ function matchFlow(text, platform){
 function renderNode(flow, nodeId){
   const node = (flow.nodes || {})[nodeId];
   if (!node) return null;
+  const all = (node.buttons || []).filter(b => b && b.label);
+  const urlBtns = all.filter(b => b.url);
+  const jumpBtns = all.filter(b => !b.url);
   const msg = { type: 'text', text: node.text || '' };
-  const btns = (node.buttons || []).filter(b => b && b.label);
-  if (btns.length) msg.quick_replies = btns.map(b => ({ title: b.label, payload: [PB, flow.id, b.next || ''].join('|') }));
+  if (urlBtns.length) msg.url_buttons = urlBtns.slice(0, 3).map(b => ({ title: b.label, url: b.url }));
+  if (jumpBtns.length) msg.quick_replies = jumpBtns.map(b => ({ title: b.label, payload: [PB, flow.id, b.next || ''].join('|') }));
   return { message: msg, node };
 }
 
@@ -72,7 +75,12 @@ async function getPageToken(pageId){
 }
 async function sendMessage(pageId, recipientId, msg){
   const token = await getPageToken(pageId);
-  const body = { recipient: { id: recipientId }, messaging_type: 'RESPONSE', message: { text: (msg.text || '').slice(0, 2000) } };
+  const body = { recipient: { id: recipientId }, messaging_type: 'RESPONSE', message: {} };
+  if (msg.url_buttons && msg.url_buttons.length){
+    body.message.attachment = { type: 'template', payload: { template_type: 'button', text: (msg.text || ' ').slice(0, 640), buttons: msg.url_buttons.slice(0, 3).map(b => ({ type: 'web_url', url: b.url, title: String(b.title).slice(0, 20) })) } };
+  } else {
+    body.message.text = (msg.text || '').slice(0, 2000);
+  }
   if (msg.quick_replies && msg.quick_replies.length){
     body.message.quick_replies = msg.quick_replies.slice(0, 13).map(q => ({ content_type: 'text', title: String(q.title || q).slice(0, 20), payload: String(q.payload || q.title || q).slice(0, 1000) }));
   }
@@ -144,7 +152,7 @@ router.post('/simulate', express.json({ limit: '1mb' }), (req, res) => {
   if (!nodeId) return res.json({ ok: true, matched: false, text: '', buttons: [] });
   const r = renderNode(flow, nodeId);
   if (!r) return res.json({ ok: true, matched, text: '(節點不存在)', buttons: [] });
-  res.json({ ok: true, matched, nodeId, text: r.message.text, buttons: (r.node.buttons || []).filter(x => x && x.label).map(x => ({ label: x.label, next: x.next || '' })) });
+  res.json({ ok: true, matched, nodeId, text: r.message.text, buttons: (r.node.buttons || []).filter(x => x && x.label).map(x => ({ label: x.label, next: x.next || '', url: x.url || '' })) });
 });
 router.get('/log', (req, res) => { try { const items = fs.readFileSync(LOG_FILE, 'utf8').trim().split('\n').filter(Boolean).slice(-50).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean).reverse(); res.json({ ok: true, items }); } catch { res.json({ ok: true, items: [] }); } });
 
