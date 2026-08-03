@@ -44,6 +44,7 @@ textarea{min-height:70px;resize:vertical}
 <h1>🎯 自動回覆流程</h1>
 <div class="sub">關鍵字觸發 → 訊息＋按鈕分支（按按鈕跳到對應節點）。FB Messenger / Instagram 私訊。附可點擊模擬器。</div>
 <div class="row"><button class="primary" onclick="newFlow()">➕ 新增流程</button><button class="mini" onclick="loadList()">🔄 重新載入</button></div>
+<div class="panel" id="cfgPanel" style="border-color:var(--burgundy-d);margin-top:12px"><strong>⚙️ 智慧回覆（客人私訊「沒中任何關鍵字」時怎麼辦）</strong><label>處理方式</label><select id="cfg_mode" onchange="cfgModeChange()"><option value="off">不回覆</option><option value="text">回一則固定訊息</option><option value="ai">交給 AI 客服自動回答（有問必答）</option></select><div id="cfg_textwrap" class="hidden"><label>固定回覆內容</label><textarea id="cfg_text" placeholder="例：感謝您的訊息 🥐 稍後將由專人為您服務，也可先逛官網 www.warmplacehere.com"></textarea></div><div class="row" style="margin-top:8px"><button class="primary" onclick="saveCfg()">💾 儲存智慧回覆設定</button></div></div>
 <div id="list" style="margin-top:12px">載入中…</div>
 <div id="editor" class="panel hidden"></div>
 <script>
@@ -71,6 +72,7 @@ function renderNodes(){
       +'<button class="mini" onclick="dupNode(\''+id+'\')">⧉ 複製</button>'
       +(nodeIds().length>1?'<button class="mini danger" onclick="delNode(\''+id+'\')">刪</button>':'')+'</div>'
       +'<input placeholder="節點名稱（例：起點/門店/線上）" value="'+esc(n.label||'')+'" oninput="cur.nodes[\''+id+'\'].label=this.value" style="margin-bottom:6px">'
+      +'<input placeholder="🖼 圖片網址（可留空）" value="'+esc(n.image||'')+'" oninput="cur.nodes[\''+id+'\'].image=this.value" style="margin-bottom:6px">'
       +'<textarea placeholder="這個節點要回覆的訊息" oninput="cur.nodes[\''+id+'\'].text=this.value">'+esc(n.text)+'</textarea>'
       +'<div style="font-size:11px;color:var(--muted);margin-top:6px">按鈕（客人按了跳到指定節點）：</div>'
       +(n.buttons||[]).map((b,i)=>{var isUrl=!!b.url;return '<div class="btnrow"><input placeholder="按鈕文字" value="'+esc(b.label)+'" oninput="cur.nodes[\''+id+'\'].buttons['+i+'].label=this.value"><select onchange="setBtnType(\''+id+'\','+i+',this.value)" style="width:82px"><option value="next"'+(isUrl?'':' selected')+'>跳節點</option><option value="url"'+(isUrl?' selected':'')+'>開連結</option></select>'+(isUrl?'<input placeholder="https://連結網址" value="'+esc(b.url)+'" oninput="cur.nodes[\''+id+'\'].buttons['+i+'].url=this.value">':'<select onchange="cur.nodes[\''+id+'\'].buttons['+i+'].next=this.value">'+nodeOptions(b.next)+'</select>')+'<button class="mini danger" onclick="delBtn(\''+id+'\','+i+')">✕</button></div>';}).join('')+'<button class="mini" style="margin-top:6px" onclick="addBtn(\''+id+'\')">➕ 加按鈕</button></div>';
@@ -114,6 +116,10 @@ function renderSimNode(j){const c=$('#sim_chat');let h='<div class="bubble">'+es
   c.insertAdjacentHTML('beforeend',h);
   [...c.querySelectorAll('span.qbtn')].forEach(el=>{el.onclick=()=>{const n=el.getAttribute('data-next');const l=el.getAttribute('data-label');[...c.querySelectorAll('.qbtn')].forEach(x=>x.style.pointerEvents='none');simGo(n,l);};});
   c.scrollTop=c.scrollHeight;}
+async function loadCfg(){try{var r=await fetch('/api/flows/config');var j=await r.json();var c=j.config||{};document.getElementById('cfg_mode').value=c.fallback||'off';document.getElementById('cfg_text').value=c.fallbackText||'';cfgModeChange();}catch(e){}}
+function cfgModeChange(){var m=document.getElementById('cfg_mode').value;document.getElementById('cfg_textwrap').classList.toggle('hidden',m!=='text');}
+async function saveCfg(){var body={fallback:document.getElementById('cfg_mode').value,fallbackText:document.getElementById('cfg_text').value};var r=await fetch('/api/flows/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});var j=await r.json();if(j.ok)toast();}
+loadCfg();
 loadList();
 </script>
 </body></html>
