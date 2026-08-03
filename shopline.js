@@ -492,6 +492,7 @@ router.post('/webhook', express.json({ verify: (req, _res, buf) => { req.rawBody
 
 // ─────────── Cron ───────────
 async function sendShoplineDigestToTelegram() {
+  try { if (!require('./automation').isEnabled('shopline_digest')) return { ok: false, disabled: true }; } catch {}
   const tgToken = process.env.TELEGRAM_BOT_TOKEN;
   const tgChat = process.env.TELEGRAM_CHAT_ID;
   if (!tgToken || !tgChat) return { ok: false, reason: 'no telegram' };
