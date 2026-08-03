@@ -10,6 +10,21 @@ const FLOWS_FILE = path.join(DATA_DIR, 'flows.json');
 const CD_FILE = path.join(DATA_DIR, 'flows_cooldown.json');
 const LOG_FILE = path.join(DATA_DIR, 'flows_log.jsonl');
 const PB = 'SSF'; // postback payload: SSF|flowId|nodeId
+const CONFIG_FILE = path.join(DATA_DIR, 'flows_config.json');
+let _Anthropic = null; try { _Anthropic = require('@anthropic-ai/sdk'); } catch {}
+function loadConfig(){ try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); } catch { return { fallback: 'off', fallbackText: '', welcomeText: '' }; } }
+function saveConfig(c){ try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(CONFIG_FILE, JSON.stringify(c, null, 2)); } catch {} }
+let _aiClient = null;
+async function aiReply(userText){
+  try {
+    if (!_Anthropic || !process.env.ANTHROPIC_API_KEY) return null;
+    if (!_aiClient) _aiClient = new (_Anthropic.default || _Anthropic)({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const sys = '你是溫點 WarmPlace 客服。用繁體中文、親切專業、簡短(2-4句)回覆客人私訊。不確定或要下單就引導到官網 www.warmplacehere.com 或請客人留言由專人服務。不要編造價格或活動細節。';
+    const r = await _aiClient.messages.create({ model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-6', max_tokens: 500, system: sys, messages: [{ role: 'user', content: String(userText).slice(0, 800) }] });
+    const b = r.content && r.content.find(function(x){return x.type==='text';});
+    return b ? b.text.trim() : null;
+  } catch (e) { console.error('[flows aiReply]', e.message); return null; }
+}
 
 function ensureDir(){ try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {} }
 function loadFlows(){ ensureDir(); try { return JSON.parse(fs.readFileSync(FLOWS_FILE, 'utf8')).map(migrate); } catch { return []; } }
@@ -56,6 +71,7 @@ function renderNode(flow, nodeId){
   const urlBtns = all.filter(b => b.url);
   const jumpBtns = all.filter(b => !b.url);
   const msg = { type: 'text', text: node.text || '' };
+  if (node.image) msg.image = node.image;
   if (urlBtns.length) msg.url_buttons = urlBtns.slice(0, 3).map(b => ({ title: b.label, url: b.url }));
   if (jumpBtns.length) msg.quick_replies = jumpBtns.map(b => ({ title: b.label, payload: [PB, flow.id, b.next || ''].join('|') }));
   return { message: msg, node };
@@ -87,7 +103,8 @@ async function sendMessage(pageId, recipientId, msg){
   const r = await fetch('https://graph.facebook.com/v19.0/me/messages?access_token=' + encodeURIComponent(token), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   return r.json();
 }
-async function sendNode(pageId, recipientId, flow, nodeId){ const r = renderNode(flow, nodeId); if (!r) return; await sendMessage(pageId, recipientId, r.message); }
+async function sendImage(pageId, recipientId, url){ const token = await getPageToken(pageId); return fetch('https://graph.facebook.com/v19.0/me/messages?access_token=' + encodeURIComponent(token), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipient: { id: recipientId }, message: { attachment: { type: 'image', payload: { url: url, is_reusable: true } } } }) }).then(function(r){return r.json();}); }
+async function sendNode(pageId, recipientId, flow, nodeId){ const r = renderNode(flow, nodeId); if (!r) return; if (r.message.image) { try { await sendImage(pageId, recipientId, r.message.image); } catch (e) {} } await sendMessage(pageId, recipientId, r.message); }
 
 // Webhook: 私訊進來 → 關鍵字啟動 startNode；按鈕 postback → 跳對應節點
 async function handleMessageEvent(entry, platform){
@@ -107,7 +124,14 @@ async function handleMessageEvent(entry, platform){
     const text = ev.message && ev.message.text;
     if (!text || (ev.message && ev.message.is_echo)) continue;
     const flow = matchFlow(text, platform);
-    if (!flow) continue;
+    if (!flow){
+      const cfg = loadConfig();
+      try {
+        if (cfg.fallback === 'text' && cfg.fallbackText){ await sendMessage(pageId, senderId, { text: cfg.fallbackText }); results.push({ fallback: 'text' }); }
+        else if (cfg.fallback === 'ai'){ const a = await aiReply(text); if (a){ await sendMessage(pageId, senderId, { text: a }); results.push({ fallback: 'ai' }); } }
+      } catch (e) { results.push({ fallbackError: e.message }); }
+      continue;
+    }
     if (onCooldown(flow.id, senderId, flow.cooldownHours)){ results.push({ flow: flow.id, skipped: 'cooldown' }); continue; }
     try { await sendNode(pageId, senderId, flow, flow.startNode || 'n1'); } catch (e) { results.push({ error: e.message }); }
     markCooldown(flow.id, senderId);
@@ -154,6 +178,8 @@ router.post('/simulate', express.json({ limit: '1mb' }), (req, res) => {
   if (!r) return res.json({ ok: true, matched, text: '(節點不存在)', buttons: [] });
   res.json({ ok: true, matched, nodeId, text: r.message.text, buttons: (r.node.buttons || []).filter(x => x && x.label).map(x => ({ label: x.label, next: x.next || '', url: x.url || '' })) });
 });
+router.get('/config', (req, res) => res.json({ ok: true, config: loadConfig() }));
+router.post('/config', express.json(), (req, res) => { const b = req.body || {}; const c = loadConfig(); const m = { fallback: b.fallback || c.fallback || 'off', fallbackText: b.fallbackText != null ? b.fallbackText : (c.fallbackText||''), welcomeText: b.welcomeText != null ? b.welcomeText : (c.welcomeText||'') }; saveConfig(m); res.json({ ok: true, config: m }); });
 router.get('/log', (req, res) => { try { const items = fs.readFileSync(LOG_FILE, 'utf8').trim().split('\n').filter(Boolean).slice(-50).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean).reverse(); res.json({ ok: true, items }); } catch { res.json({ ok: true, items: [] }); } });
 
 module.exports = router;
