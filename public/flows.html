@@ -56,19 +56,21 @@ function renderList(){
   if(!FLOWS.length){$('#list').innerHTML='<div style="color:var(--muted)">還沒有流程。按「➕ 新增流程」建立第一個。</div>';return;}
   $('#list').innerHTML=FLOWS.map(f=>{const nc=Object.keys(f.nodes||{}).length;return '<div class="flow'+(f.enabled?'':' off')+'">'
     +'<div class="info"><div class="nm">'+esc(f.name)+'</div><div class="meta"><span class="pill">'+(f.platform==='instagram'?'📸 IG':'💬 Messenger')+'</span>'+(f.category?'<span class="pill">'+esc(f.category)+'</span>':'')+'關鍵字：'+esc((f.keywords||[]).join('、')||'（無）')+' · '+nc+' 節點 · 冷卻 '+(f.cooldownHours||0)+'h · '+(f.enabled?'✅ 啟用':'⏸ 停用')+'</div></div>'
-    +'<button class="mini" onclick="editFlow(\''+f.id+'\')">編輯</button><button class="mini danger" onclick="delFlow(\''+f.id+'\')">刪</button></div>';}).join('');
+    +'<button class="mini" onclick="editFlow(\''+f.id+'\')">編輯</button><button class="mini" onclick="cloneFlow(\''+f.id+'\')">⧉ 複製</button><button class="mini danger" onclick="delFlow(\''+f.id+'\')">刪</button></div>';}).join('');
 }
 function newFlow(){cur={id:'',name:'',platform:'messenger',category:'',keywords:[],cooldownHours:24,enabled:true,startNode:'n1',nodes:{n1:{text:'',buttons:[]}}};renderEditor();}
 function editFlow(id){cur=JSON.parse(JSON.stringify(FLOWS.find(f=>f.id===id)));if(!cur.nodes||!Object.keys(cur.nodes).length){cur.nodes={n1:{text:'',buttons:[]}};cur.startNode='n1';}renderEditor();}
 async function delFlow(id){if(!confirm('確定刪除這個流程？'))return;await fetch('/api/flows/'+id,{method:'DELETE'});loadList();}
 function nodeIds(){return Object.keys(cur.nodes);}
 function nextNodeName(){let i=1;while(cur.nodes['n'+i])i++;return 'n'+i;}
-function nodeOptions(sel){return '<option value="">（結束對話）</option>'+nodeIds().map(id=>'<option value="'+id+'"'+(id===sel?' selected':'')+'>'+id+'：'+esc((cur.nodes[id].text||'').slice(0,14))+'</option>').join('');}
+function nodeOptions(sel){return '<option value="">（結束對話）</option>'+nodeIds().map(id=>'<option value="'+id+'"'+(id===sel?' selected':'')+'>'+id+(cur.nodes[id].label?'｜'+esc(cur.nodes[id].label):'')+'：'+esc((cur.nodes[id].text||'').slice(0,12))+'</option>').join('');}
 function renderNodes(){
   return nodeIds().map(id=>{const n=cur.nodes[id];const isStart=cur.startNode===id;
-    return '<div class="node'+(isStart?' start':'')+'"><div class="hd"><span class="tag">'+id+(isStart?' ⭐起點':'')+'</span>'
+    return '<div class="node'+(isStart?' start':'')+'"><div class="hd"><span class="tag">'+id+(n.label?'｜'+esc(n.label):'')+(isStart?' ⭐起點':'')+'</span>'
       +(isStart?'':'<button class="mini" onclick="setStart(\''+id+'\')">設為起點</button>')
-      +(nodeIds().length>1?'<button class="mini danger" onclick="delNode(\''+id+'\')">刪節點</button>':'')+'</div>'
+      +'<button class="mini" onclick="dupNode(\''+id+'\')">⧉ 複製</button>'
+      +(nodeIds().length>1?'<button class="mini danger" onclick="delNode(\''+id+'\')">刪</button>':'')+'</div>'
+      +'<input placeholder="節點名稱（例：起點/門店/線上）" value="'+esc(n.label||'')+'" oninput="cur.nodes[\''+id+'\'].label=this.value" style="margin-bottom:6px">'
       +'<textarea placeholder="這個節點要回覆的訊息" oninput="cur.nodes[\''+id+'\'].text=this.value">'+esc(n.text)+'</textarea>'
       +'<div style="font-size:11px;color:var(--muted);margin-top:6px">按鈕（客人按了跳到指定節點）：</div>'
       +(n.buttons||[]).map((b,i)=>{var isUrl=!!b.url;return '<div class="btnrow"><input placeholder="按鈕文字" value="'+esc(b.label)+'" oninput="cur.nodes[\''+id+'\'].buttons['+i+'].label=this.value"><select onchange="setBtnType(\''+id+'\','+i+',this.value)" style="width:82px"><option value="next"'+(isUrl?'':' selected')+'>跳節點</option><option value="url"'+(isUrl?' selected':'')+'>開連結</option></select>'+(isUrl?'<input placeholder="https://連結網址" value="'+esc(b.url)+'" oninput="cur.nodes[\''+id+'\'].buttons['+i+'].url=this.value">':'<select onchange="cur.nodes[\''+id+'\'].buttons['+i+'].next=this.value">'+nodeOptions(b.next)+'</select>')+'<button class="mini danger" onclick="delBtn(\''+id+'\','+i+')">✕</button></div>';}).join('')+'<button class="mini" style="margin-top:6px" onclick="addBtn(\''+id+'\')">➕ 加按鈕</button></div>';
@@ -91,6 +93,8 @@ function delNode(id){collect();delete cur.nodes[id];nodeIds().forEach(k=>cur.nod
 function addBtn(id){collect();cur.nodes[id].buttons=cur.nodes[id].buttons||[];cur.nodes[id].buttons.push({label:'',next:''});renderNodes2();}
 function delBtn(id,i){collect();cur.nodes[id].buttons.splice(i,1);renderNodes2();}
 function setBtnType(id,i,t){collect();var b=cur.nodes[id].buttons[i];if(t==='url'){b.url=b.url||'';delete b.next;}else{b.next=b.next||'';delete b.url;}renderNodes2();}
+function dupNode(id){collect();var nid=nextNodeName();cur.nodes[nid]=JSON.parse(JSON.stringify(cur.nodes[id]));if(cur.nodes[nid].label)cur.nodes[nid].label=cur.nodes[nid].label+'複本';renderNodes2();}
+async function cloneFlow(id){var src=FLOWS.find(function(f){return f.id===id;});if(!src)return;var other=src.platform==='messenger'?'instagram':'messenger';var toOther=confirm('要複製成另一平台（'+(other==='instagram'?'IG':'Messenger')+'）版嗎？\n\n確定 = 複製為另一平台版\n取消 = 複製為同平台副本');var clone=JSON.parse(JSON.stringify(src));clone.id='';if(toOther){clone.platform=other;clone.name=src.name.replace(/ (FB|IG)$/,'')+(other==='instagram'?' IG':' FB');}else{clone.name=src.name+' (複製)';}var r=await fetch('/api/flows',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(clone)});var j=await r.json();if(j.ok){toast();loadList();}else alert('複製失敗');}
 function renderNodes2(){$('#nodes').innerHTML=renderNodes();}
 function collect(){if(!$('#f_name'))return;cur.name=$('#f_name').value;cur.platform=$('#f_platform').value;cur.category=$('#f_category').value;cur.cooldownHours=Number($('#f_cd').value)||0;cur.keywords=$('#f_kw').value.split(/[,\s，、]+/).map(s=>s.trim()).filter(Boolean);cur.enabled=$('#f_enabled').checked;}
 async function saveFlow(){collect();if(!cur.name){alert('請填流程名稱');return;}if(!cur.keywords.length){alert('請至少填一個觸發關鍵字');return;}
