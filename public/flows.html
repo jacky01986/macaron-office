@@ -59,8 +59,8 @@ function renderList(){
     +'<div class="info"><div class="nm">'+esc(f.name)+'</div><div class="meta"><span class="pill">'+(f.platform==='instagram'?'📸 IG':'💬 Messenger')+'</span>'+(f.category?'<span class="pill">'+esc(f.category)+'</span>':'')+'關鍵字：'+esc((f.keywords||[]).join('、')||'（無）')+' · '+nc+' 節點 · 冷卻 '+(f.cooldownHours||0)+'h · '+(f.enabled?'✅ 啟用':'⏸ 停用')+'</div></div>'
     +'<button class="mini" onclick="editFlow(\''+f.id+'\')">編輯</button><button class="mini" onclick="cloneFlow(\''+f.id+'\')">⧉ 複製</button><button class="mini danger" onclick="delFlow(\''+f.id+'\')">刪</button></div>';}).join('');
 }
-function newFlow(){cur={id:'',name:'',platform:'messenger',category:'',keywords:[],cooldownHours:24,enabled:true,startNode:'n1',nodes:{n1:{text:'',buttons:[]}}};renderEditor();renderTree();}
-function editFlow(id){cur=JSON.parse(JSON.stringify(FLOWS.find(f=>f.id===id)));if(!cur.nodes||!Object.keys(cur.nodes).length){cur.nodes={n1:{text:'',buttons:[]}};cur.startNode='n1';}renderEditor();renderTree();}
+function newFlow(){cur={id:'',name:'',platform:'messenger',category:'',keywords:[],cooldownHours:24,enabled:true,startNode:'n1',nodes:{n1:{text:'',buttons:[]}}};renderEditor();renderTree();try{document.getElementById('editor').scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}}
+function editFlow(id){cur=JSON.parse(JSON.stringify(FLOWS.find(f=>f.id===id)));if(!cur.nodes||!Object.keys(cur.nodes).length){cur.nodes={n1:{text:'',buttons:[]}};cur.startNode='n1';}renderEditor();renderTree();try{document.getElementById('editor').scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}}
 async function delFlow(id){if(!confirm('確定刪除這個流程？'))return;await fetch('/api/flows/'+id,{method:'DELETE'});loadList();}
 function nodeIds(){return Object.keys(cur.nodes);}
 function nextNodeName(){let i=1;while(cur.nodes['n'+i])i++;return 'n'+i;}
