@@ -139,6 +139,7 @@ async function generateCaption({ platform, context }) {
 }
 
 async function generateAndQueueDrafts() {
+  try { if (!require('./automation').isEnabled('auto_publish')) { console.log('[auto-publish] 已由自動化主控台關閉,跳過'); return { ok: false, disabled: true }; } } catch {}
   if (!process.env.ANTHROPIC_API_KEY) {
     console.warn('[auto-publish] ANTHROPIC_API_KEY not set, skip');
     return { ok: false, reason: 'no api key' };
