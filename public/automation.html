@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🚨 自動化主控 · 溫點 WarmPlace</title>
+<style>
+:root{--burgundy:#6D2E46;--burgundy-d:#4A1D2E;--gold:#B08D57;--ivory:#FCF6F5;--dark:#1C1213;--dark2:#241619;--green:#3FB27F;--muted:#9A8790}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Microsoft JhengHei",-apple-system,sans-serif;background:var(--dark);color:var(--ivory);line-height:1.6;padding:24px 16px;max-width:720px;margin:0 auto}
+a{color:var(--gold);text-decoration:none}
+h1{font-size:24px;color:var(--gold);margin:0 0 4px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.saved{position:fixed;top:14px;right:14px;background:var(--green);color:#04240f;padding:6px 12px;border-radius:20px;font-size:13px;font-weight:700;opacity:0;transition:opacity .3s}
+.saved.show{opacity:1}
+.card{background:var(--dark2);border:1px solid var(--burgundy-d);border-radius:12px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px}
+.card.master{border-color:var(--gold);background:linear-gradient(90deg,rgba(176,141,87,.12),transparent)}
+.card .txt{flex:1}
+.card .label{font-weight:700;font-size:15px}
+.card.master .label{color:var(--gold)}
+.card .desc{color:var(--muted);font-size:12.5px;margin-top:2px}
+.sw{position:relative;width:52px;height:30px;flex:none;cursor:pointer}
+.sw input{opacity:0;width:0;height:0;position:absolute}
+.track{position:absolute;inset:0;background:#3a2b30;border-radius:30px;transition:.2s}
+.thumb{position:absolute;top:3px;left:3px;width:24px;height:24px;background:#fff;border-radius:50%;transition:.2s}
+.sw input:checked+.track{background:var(--green)}
+.sw input:checked+.track+.thumb{transform:translateX(22px)}
+.sw.off-all .track{background:#5a2130}
+.foot{color:var(--muted);font-size:12px;margin-top:18px;text-align:center}
+.err{color:#e88;font-size:13px}
+</style></head><body>
+<div class="saved" id="saved">✓ 已存</div>
+<a href="/">← 返回辦公室</a>
+<h1>🚨 自動化主控</h1>
+<div class="sub">所有自動化的開關。主開關關掉＝全部停。Cron／發送前都會檢查這裡的狀態。設定即時存到 <code>data/automation_settings.json</code>。</div>
+<div id="list">載入中…</div>
+<div class="foot" id="foot"></div>
+<script>
+const listEl=document.getElementById('list');
+const savedEl=document.getElementById('saved');
+let REG=[],S={};
+function toast(){savedEl.classList.add('show');setTimeout(()=>savedEl.classList.remove('show'),1200);}
+async function loadAll(){
+  try{
+    const r=await fetch('/api/automation/settings');
+    const j=await r.json();
+    REG=j.registry||[];S=j.settings||{};
+    render();
+  }catch(e){ listEl.innerHTML='<div class="err">載入失敗：'+e.message+'</div>'; }
+}
+function render(){
+  const masterOff=S.master===false;
+  listEl.innerHTML=REG.map(it=>{
+    const on=S[it.key]!==false;
+    const isMaster=it.key==='master';
+    const dim=(!isMaster&&masterOff)?'opacity:.45':'';
+    return '<div class="card'+(isMaster?' master':'')+'" style="'+dim+'">'
+      +'<div class="txt"><div class="label">'+it.label+'</div><div class="desc">'+it.desc+(!isMaster&&masterOff?'（主開關已關，此項不會執行）':'')+'</div></div>'
+      +'<label class="sw'+(isMaster?' off-all':'')+'"><input type="checkbox" data-key="'+it.key+'" '+(on?'checked':'')+'><span class="track"></span><span class="thumb"></span></label>'
+      +'</div>';
+  }).join('');
+  listEl.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change',async()=>{
+      const key=cb.dataset.key, value=cb.checked;
+      cb.disabled=true;
+      try{
+        const r=await fetch('/api/automation/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value})});
+        const j=await r.json();
+        if(j.ok){S=j.settings;toast();render();}
+      }catch(e){cb.checked=!value;}
+      cb.disabled=false;
+    });
+  });
+}
+loadAll();
+</script>
+</body></html>
