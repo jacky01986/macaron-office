@@ -280,6 +280,12 @@ function htmlToPlain(s) {
   return x;
 }
 
+
+// send-time rebrand sanitizer (guarantee no legacy terms in posted captions)
+const _rbTerms=[['韓系精品高端禮贈','台南在地真人手作精品禮贈'],['#韓系馬卡龍','#台南手工胖卡龍'],['#韓系','#台南手工'],['韓系','台南手工職人'],['韓式','台南手工職人'],['韓國','台南'],['馬卡龍','胖卡龍']];
+function rebrandClean(s){s=String(s==null?'':s);for(const t of _rbTerms)s=s.split(t[0]).join(t[1]);return s;}
+try{if(typeof htmlToPlain==='function'){const _htp=htmlToPlain;htmlToPlain=function(x){return rebrandClean(_htp(x));};}}catch(e){}
+
 async function publishFB(caption) {
   const pageId = process.env.META_FB_PAGE_ID;
   if (!pageId) throw new Error('META_FB_PAGE_ID not set');
