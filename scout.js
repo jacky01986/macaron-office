@@ -27,14 +27,14 @@ const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 30000;
 
 const SERVICES = [
-  { id: 'macaron_gift_box', name: '馬卡龍禮盒', search_terms: '馬卡龍 6入 12入 法式 精品' },
+  { id: 'macaron_gift_box', name: '胖卡龍禮盒', search_terms: '胖卡龍 6入 12入 法式 精品' },
   { id: 'financier_gift_box', name: '費南雪禮盒', search_terms: '費南雪 financier 法式 杏仁小蛋糕 禮盒' },
-  { id: 'combo_gift', name: '馬卡龍+費南雪 綜合禮盒', search_terms: '馬卡龍 費南雪 綜合禮盒 雙主力' },
-  { id: 'custom_gift', name: '客製禮盒', search_terms: '馬卡龍 費南雪 客製禮盒 婚禮 企業' },
-  { id: 'wedding_gift', name: '婚禮小物', search_terms: '婚禮 馬卡龍 費南雪 喜餅 小物' },
+  { id: 'combo_gift', name: '胖卡龍+費南雪 綜合禮盒', search_terms: '胖卡龍 費南雪 綜合禮盒 雙主力' },
+  { id: 'custom_gift', name: '客製禮盒', search_terms: '胖卡龍 費南雪 客製禮盒 婚禮 企業' },
+  { id: 'wedding_gift', name: '婚禮小物', search_terms: '婚禮 胖卡龍 費南雪 喜餅 小物' },
   { id: 'corporate_gift', name: '企業禮贈', search_terms: '企業禮贈 高端甜點 客戶禮' },
   { id: 'french_competitor', name: '法式品牌競品', search_terms: '法朋 亞尼克 Paul Ladurée Pierre Hermé 法式甜點 費南雪' },
-  { id: 'luxury_brand', name: '高端品牌策略', search_terms: '精品法式甜點 馬卡龍 費南雪 品牌策略' },
+  { id: 'luxury_brand', name: '高端品牌策略', search_terms: '精品法式甜點 胖卡龍 費南雪 品牌策略' },
 ];
 
 function ensureDir() {
@@ -85,7 +85,7 @@ const DISTILL_SYSTEM = BUSINESS_CONTEXT + '\n\n' + `你是 溫點 WarmPlace 的�
 - new_techniques（陣列 2-3 個）— 新技術/工具/詞彙，含 { name, desc, who_using }
 - differentiation_opportunities（陣列 3-5 個）— 溫點 WarmPlace 可切入的差異化角度
 - content_angles（陣列 5-8 個）— CAMILLE 可用的 IG/FB 內容角度（具體！）
-- pricing_recommendations（物件）— 溫點 WarmPlace 雙主力 (馬卡龍+費南雪) 商品的建議定價（依競品中位數）
+- pricing_recommendations（物件）— 溫點 WarmPlace 雙主力 (胖卡龍+費南雪) 商品的建議定價（依競品中位數）
 - threats_to_watch（陣列 2-3 個）
 - action_items（陣列 3-5 個）— 給 VICTOR 的具體執行項
 - vocabulary_updates（陣列）— 業界新詞彙，所有 AI prompt 應該知道
@@ -119,7 +119,7 @@ async function callScoutWithSearch(serviceName, searchTerms) {
 
   const userPrompt = '請對「' + serviceName + '」做一輪全球市場調查（搜尋詞：' + searchTerms + '）。' +
     '至少使用 web_search 5 次（不同關鍵字組合 / 不同地區），蒐集 5-8 個精選競品（重質不重量），輸出結構化 JSON 報告。' +
-    '記得搜全球,包含台灣、法國、日本、韓國、歐美的法式精品馬卡龍 / 高端禮盒品牌。';
+    '記得搜全球,包含台灣、法國、日本、台南、歐美的法式精品胖卡龍 / 高端禮盒品牌。';
 
   const response = await callWithRetry(client, {
     model: SCOUT_MODEL,
