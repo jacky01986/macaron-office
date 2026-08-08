@@ -394,7 +394,7 @@ async function processNow() {
 async function testImage() {
   toast('🎨 測試生圖中…(30 秒)');
   try {
-    const r = await api('POST', '/api/image-gen/test', { brief: '法式精品馬卡龍 12 入禮盒,玫瑰花瓣與絲帶' });
+    const r = await api('POST', '/api/image-gen/test', { brief: '法式精品胖卡龍 12 入禮盒,玫瑰花瓣與絲帶' });
     if (r.ok) {
       toast('✅ 生圖成功', 'ok');
       showModal(r.publicUrl);
