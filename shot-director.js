@@ -65,7 +65,7 @@ function frame(w, h, ratio) {
   return s;
 }
 function macaron_top(cx, cy, r, color) {
-  // scalloped 腳邊（環狀小圓點，模擬馬卡龍標誌性的「腳」）
+  // scalloped 腳邊（環狀小圓點，模擬胖卡龍標誌性的「腳」）
   let feet = '';
   const n = 14;
   for (let i = 0; i < n; i++) {
@@ -162,7 +162,7 @@ function box_top(cx, cy, w, h, state = 'closed', rows = 2, cols = 3, paletteName
       const ly = cy - h/2 + 8 + ch*r;
       s += `<line x1="${cx-w/2+5}" y1="${ly}" x2="${cx+w/2-5}" y2="${ly}" stroke="${C.SOFT_LINE}" stroke-width="0.4" opacity="0.4"/>`;
     }
-    // 馬卡龍 (用精緻版)
+    // 胖卡龍 (用精緻版)
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
       const cxx = cx - w/2 + 8 + cw*(c+0.5);
       const cyy = cy - h/2 + 8 + ch*(r+0.5);
@@ -420,13 +420,13 @@ function scoutTail() {
 
 // ───── AI prompt ─────
 const DIRECTOR_PROMPT = `你是 溫點 WarmPlace 的 AI 拍攝指導 (Shot Director)。
-品牌：精品馬卡龍 + 費南雪韓系禮贈，主力 6 入 NT$880 / 12 入 NT$1,580。風格：韓系精品、溫柔得體、片刻儀式感、給選擇不壓迫。
+品牌：精品胖卡龍 + 費南雪台南手工職人禮贈，主力 6 入 NT$880 / 12 入 NT$1,580。風格：台南手工職人精品、溫柔得體、片刻儀式感、給選擇不壓迫。
 
 你的任務：讀使用者給你的文案或腳本，設計拍攝清單。每一個鏡頭都要對應到文案的某個重點/情緒/場景。**畫面內容、角度、光線必須跟文案的氣口走** — 母親節用柔順光＋玫瑰調，企業送禮用平拍＋深色背景，開箱 Reels 用半開蓋＋手入鏡。
 
 **只能用下列元素類型**組成畫面（其他都不行）：
-- macaron_top {cx, cy, r, color}          // 馬卡龍俯視 (color 用十六進制色碼)
-- macaron_side {cx, cy, w, h, color}      // 馬卡龍側面
+- macaron_top {cx, cy, r, color}          // 胖卡龍俯視 (color 用十六進制色碼)
+- macaron_side {cx, cy, w, h, color}      // 胖卡龍側面
 - financier_top {cx, cy, w, h}            // 費南雪俯視（金黃）
 - box_top {cx, cy, w, h, state, rows, cols, palette}  // state: closed/half/open  palette: classic/rose/spring/pastel/earthy/vivid/pistachio_focus
 - box_side {cx, cy, w, h}                 // 禮盒側面
