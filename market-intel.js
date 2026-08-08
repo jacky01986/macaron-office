@@ -1,10 +1,10 @@
 // ============================================================
 // 溫點 WarmPlace · 市場情報系統
-// 每天爬全台網路馬卡龍/費南雪數據 → 注入 VICTOR + 整個 AI 團隊
+// 每天爬全台網路胖卡龍/費南雪數據 → 注入 VICTOR + 整個 AI 團隊
 // ============================================================
 //
 // 來源:
-//   1. Google News RSS (馬卡龍 / 費南雪 / 韓系甜點)
+//   1. Google News RSS (胖卡龍 / 費南雪 / 台南手工職人甜點)
 //   2. FB Ads Library (對手在跑什麼廣告)
 //   3. 對手品牌動態 (法朋、亞尼克、Paul、Ladurée、Pierre Hermé)
 //
@@ -19,11 +19,11 @@ const path = require('path');
 
 const DATA_DIR = process.env.RENDER_DISK_MOUNT_PATH || path.join(__dirname, 'data');
 
-// 馬卡龍 / 費南雪相關核心關鍵字(用來搜新聞)
+// 胖卡龍 / 費南雪相關核心關鍵字(用來搜新聞)
 const NEWS_KEYWORDS = [
-  '馬卡龍',
+  '胖卡龍',
   '費南雪',
-  '韓系甜點 禮盒',
+  '台南手工職人甜點 禮盒',
   '婚禮 小物 甜點',
   '企業 送禮',
 ];
@@ -284,7 +284,7 @@ function getMarketIntelContext({ compact = true } = {}) {
   const lines = [];
   lines.push(`【最新市場情報 · ${intel.date}】`);
 
-  // 馬卡龍 / 費南雪 新聞 (top 2 per keyword)
+  // 胖卡龍 / 費南雪 新聞 (top 2 per keyword)
   for (const kw of NEWS_KEYWORDS) {
     const items = intel.google_news[kw];
     if (!Array.isArray(items) || items.length === 0) continue;
@@ -366,7 +366,7 @@ async function compareWithWarmplace({ anthropic, model = 'claude-sonnet-4-6' } =
   const user =
     '=== 今天的台灣市場情報 ===\n' +
     JSON.stringify(intel).slice(0, 8000) +
-    '\n\n=== 我們是 ===\n溫點 WarmPlace精品馬卡龍+費南雪禮贈品牌\nIG 32K / FB 118 / 4 家門店\n\n請以「溫點 vs 對手」角度,告訴我:\n1. 對手在做什麼,我們漏掉了\n2. 哪些 hook 我們可以複製\n3. 哪些角度可以反差打\n4. 3 件本週要做的事(指名員工 CAMILLE/NOVA/ARIA/...)';
+    '\n\n=== 我們是 ===\n溫點 WarmPlace精品胖卡龍+費南雪禮贈品牌\nIG 32K / FB 118 / 4 家門店\n\n請以「溫點 vs 對手」角度,告訴我:\n1. 對手在做什麼,我們漏掉了\n2. 哪些 hook 我們可以複製\n3. 哪些角度可以反差打\n4. 3 件本週要做的事(指名員工 CAMILLE/NOVA/ARIA/...)';
 
   try {
     const resp = await anthropic.messages.create({
