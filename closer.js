@@ -49,7 +49,7 @@ function setSettings(s) { s.updated_at = new Date().toISOString(); saveJSON(SETT
 // ── 成交 playbook (學來的風格 + 有效成交策略) ──
 function getPlaybook() {
   return loadJSON(PLAYBOOK_FILE, {
-    style_notes: '(尚未學習。預設：韓系精品、溫柔有禮、不逼迫、不報 CP 值。)',
+    style_notes: '(尚未學習。預設：台南手工職人精品、溫柔有禮、不逼迫、不報 CP 值。)',
     winning_tactics: [],
     common_objections: [],
     learned_at: null,
@@ -149,15 +149,15 @@ async function buildBoard({ days = 14, limit = 30 } = {}) {
 // ── HANA 人設 prompt ──
 function hanaPrompt(playbook) {
   return `你是 HANA — 溫點 WarmPlace 的 AI 私訊成交客服顧問。
-你不是「客服機器人」，你是把「冷掉的詢問」變成「結單」的成交高手，同時保有韓系精品品牌的溫柔得體。
-品牌：精品馬卡龍 + 費南雪韓系禮贈。禮盒 NT$480–2,280，主力 6 入 NT$880 / 12 入 NT$1,580。
+你不是「客服機器人」，你是把「冷掉的詢問」變成「結單」的成交高手，同時保有台南手工職人精品品牌的溫柔得體。
+品牌：精品胖卡龍 + 費南雪台南手工職人禮贈。禮盒 NT$480–2,280，主力 6 入 NT$880 / 12 入 NT$1,580。
 四家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2。
 
 【你的成交信念】
 1. 每一通的目標是「推進到下一步」：問價→給價並引導下單；猶豫→消除疑慮給台階；已熱→直接給訂購方式臨門一腳。
 2. 不逼迫、不轟炸、不報「CP值/限時搶購/秒殺」。用從容、有溫度、給選擇的語氣。
 3. 報價要明確、附上「怎麼下一步」(下單連結/到店/私訊確認)，不要只回價格就句點。
-4. 疑慮要對症：嫌貴→講價值與場景不講折扣；過敏/保存→給專業具體答案；比較→講溫點獨有的雙主力與韓系定位。
+4. 疑慮要對症：嫌貴→講價值與場景不講折扣；過敏/保存→給專業具體答案；比較→講溫點獨有的雙主力與台南手工職人定位。
 
 【你學到的「老闆風格 + 有效成交策略」(請務必模仿這個語氣)】
 ${JSON.stringify(playbook, null, 1).slice(0, 2500)}
@@ -165,7 +165,7 @@ ${JSON.stringify(playbook, null, 1).slice(0, 2500)}
 【輸出格式 (HTML 片段)】
 <div><strong>🎯 成交判斷：</strong>[這通現在卡在哪、下一步要把他推到哪]</div>
 <div><strong>💬 建議回覆草稿：</strong></div>
-<blockquote>[可直接複製貼上給客人的話，繁體中文，韓系溫柔語氣，明確且有下一步]</blockquote>
+<blockquote>[可直接複製貼上給客人的話，繁體中文，台南手工職人溫柔語氣，明確且有下一步]</blockquote>
 <div><strong>🧠 為什麼這樣回：</strong>[一句話策略說明 + 若客人接著問什麼可以怎麼接]</div>
 
 【禁止】罐頭語氣、報 CP 值/限時搶購、只回價格不給下一步、過度熱情驚嘆號。`;
@@ -201,7 +201,7 @@ async function webSearchClosingTactics(c) {
       messages: [{
         role: 'user',
         content: '請用 web_search 調查【精品禮贈品牌的 IG/FB DM 私訊漏斗成交策略】, 主要研究：\n'
-          + '1. 精品甜點/烘焙/禮盒類品牌 (尤其韓系/法式) 的 DM 成交常見話術\n'
+          + '1. 精品甜點/烘焙/禮盒類品牌 (尤其台南手工職人/法式) 的 DM 成交常見話術\n'
           + '2. 高轉換的 DM 開場句、嫌貴破解、企業送禮接單模板\n'
           + '3. 2026 年最新 IG/Meta DM 成交漏斗最佳實踐\n'
           + '4. 台灣消費者偏好的私訊溝通風格 (PingFang 客服風)\n\n'
@@ -209,7 +209,7 @@ async function webSearchClosingTactics(c) {
           + '{\n  "industry_best_practices": ["全網觀察到的 5-8 條私訊成交黃金法則"],\n'
           + '  "winning_opening_lines": ["3-5 個高轉換 DM 開場句範例 (中文)"],\n'
           + '  "objection_breakers": ["3-5 個嫌貴/猶豫破解話術"],\n'
-          + '  "brand_fit_advice": "針對精品馬卡龍+費南雪品牌, 該選哪種風格 (溫度 vs 專業 vs 顧問式)"\n}'
+          + '  "brand_fit_advice": "針對精品胖卡龍+費南雪品牌, 該選哪種風格 (溫度 vs 專業 vs 顧問式)"\n}'
       }]
     });
     let text = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
@@ -238,7 +238,7 @@ async function selfOptimize({ days = 3, sample = 25 } = {}) {
   console.log('[closer] step 2/2: combine + playbook...');
 
   // 融合 prompt: 自家對話 + 全網調查 → 量身訂做的 playbook
-  let prompt = '你是 HANA 的自我優化引擎。融合 [自家對話樣本] + [全網成交策略] 產出最適合溫點 WarmPlace (精品馬卡龍+費南雪) 的成交 playbook。\n\n'
+  let prompt = '你是 HANA 的自我優化引擎。融合 [自家對話樣本] + [全網成交策略] 產出最適合溫點 WarmPlace (精品胖卡龍+費南雪) 的成交 playbook。\n\n'
     + '請用 JSON 回覆 (只回 JSON, 不要 markdown):\n'
     + '{\n'
     + '  "style_notes": "綜合風格描述 — 結合自家既有口吻 + 全網最佳實踐, 寫出 HANA 該如何回客戶 (具體可模仿)",\n'
