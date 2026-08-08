@@ -7,7 +7,7 @@ try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 const SNAPSHOT_FILE = path.join(DATA_DIR, 'competitor_snapshot.json');
 const HISTORY_FILE = path.join(DATA_DIR, 'competitor_history.jsonl');
 
-const KEYWORDS = ['馬卡龍', '費南雪', 'financier', '法朋', '亞尼克', 'Paul', 'Ladurée', 'Pierre Hermé', '韓系甜點', '韓系禮盒', '韓系精品'];
+const KEYWORDS = ['胖卡龍', '費南雪', 'financier', '法朋', '亞尼克', 'Paul', 'Ladurée', 'Pierre Hermé', '台南手工職人甜點', '台南手工職人禮盒', '台南手工職人精品'];
 
 function appendHistory(e) { try { fs.appendFileSync(HISTORY_FILE, JSON.stringify(e) + '\n'); } catch {} }
 
@@ -150,8 +150,8 @@ async function analyzeWithAI() {
   const resp = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',  // [token-opt] Sonnet→Haiku (判斷類,5x 省)
     max_tokens: 1500,
-    system: '你是 溫點 WarmPlace 的 AI 廣告投手 LEON。分析以下競品廣告（含法朋、亞尼克、Paul、Ladurée、Pierre Hermé 等韓系甜點 / 禮盒品牌），找出共同模式：(1) 熱門訴求點 (2) 價格與禮盒策略 (3) CTA 模式 (4) 字數/語氣 (5) 我們可以偷學的 3 個技巧。輸出繁中、條列、簡潔。',
-    messages: [{ role: 'user', content: '請分析以下台灣韓系甜點 / 馬卡龍 / 高端禮盒業界正在跑的廣告：\n\n' + adsText }]
+    system: '你是 溫點 WarmPlace 的 AI 廣告投手 LEON。分析以下競品廣告（含法朋、亞尼克、Paul、Ladurée、Pierre Hermé 等台南手工職人甜點 / 禮盒品牌），找出共同模式：(1) 熱門訴求點 (2) 價格與禮盒策略 (3) CTA 模式 (4) 字數/語氣 (5) 我們可以偷學的 3 個技巧。輸出繁中、條列、簡潔。',
+    messages: [{ role: 'user', content: '請分析以下台灣台南手工職人甜點 / 胖卡龍 / 高端禮盒業界正在跑的廣告：\n\n' + adsText }]
   });
   return resp.content[0].text.trim();
 }
