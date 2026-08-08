@@ -43,10 +43,10 @@ const TYPES = {
 function solaPrompt(intelText) {
   return `你是 溫點 WarmPlace 的 AI 官網營運專員，代號 SOLA (E-commerce Ops)。
 你不是文案小編，你是把「流量變成訂單」的電商轉換專家，懂商品頁心理學與 SEO。
-品牌：精品馬卡龍 + 費南雪韓系禮贈。禮盒 NT$480–2,280，主力 6 入 NT$880 / 12 入 NT$1,580。官網平台：SHOPLINE。
+品牌：精品胖卡龍 + 費南雪台南手工職人禮贈。禮盒 NT$480–2,280，主力 6 入 NT$880 / 12 入 NT$1,580。官網平台：SHOPLINE。
 四家門店：台南本店、新光西門/中港/南西 B2。
 
-【品牌核心風格】韓系精品、溫柔得體、片刻儀式感、給選擇不壓迫。
+【品牌核心風格】台南手工職人精品、溫柔得體、片刻儀式感、給選擇不壓迫。
 禁用詞：超讚 / 必吃 / CP值 / 限時搶購 / 秒殺 / 親民。
 
 【你給任何電商內容前，請優先參考 SCOUT 全球市場調查 + 行動建議】
@@ -54,7 +54,7 @@ ${intelText}
 
 【鐵則】
 1. 所有文案以「轉換(下單)」為目標，不是只求好看 — 每段都要推進到下一步。
-2. 緊扣雙主力(馬卡龍+費南雪)與送禮場景(婚禮喜餅/企業/犒賞自己)，呼應 SCOUT 本週重點。
+2. 緊扣雙主力(胖卡龍+費南雪)與送禮場景(婚禮喜餅/企業/犒賞自己)，呼應 SCOUT 本週重點。
 3. SEO 專注電商頁面(商品頁/活動頁)，不重複 CAMILLE/GIA 的部落格。
 4. 文案要能直接貼到 SHOPLINE，標清楚哪段放哪裡。
 用繁體中文，HTML 片段輸出(<h4>/<p>/<ul>/<ol>/<table class="data">/<blockquote>)。`;
@@ -65,12 +65,12 @@ async function generate({ type = 'product', product = '', brief = '' } = {}) {
   if (!c) throw new Error('ANTHROPIC_API_KEY 未設');
   const t = TYPES[type] || TYPES.product;
   const intel = scoutTail();
-  const user = (t.needProduct ? '針對商品/禮盒：' + (product || '6 入馬卡龍禮盒 NT$880') + '\n\n' : '')
+  const user = (t.needProduct ? '針對商品/禮盒：' + (product || '6 入胖卡龍禮盒 NT$880') + '\n\n' : '')
     + t.ask + (brief ? '\n\n額外要求：' + brief.slice(0, 400) : '');
   const r = await c.messages.create({ model: MODEL, max_tokens: 3200, system: solaPrompt(intel.text), messages: [{ role: 'user', content: user }] });
   const html = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
-  try { const H = require('./history'); H.record({ fn:'SOLA', title: t.label + (t.needProduct?' · '+(product||'6 入馬卡龍禮盒'):''), html, text: html.replace(/<[^>]+>/g,' ').slice(0,2000), meta:{ type, scout_run: intel.run } }); } catch(e) { console.error('[history sola]', e.message); }
-  return { ok: true, type, type_label: t.label, product: t.needProduct ? (product || '6 入馬卡龍禮盒') : null, html, based_on_scout: intel.has, scout_run: intel.run };
+  try { const H = require('./history'); H.record({ fn:'SOLA', title: t.label + (t.needProduct?' · '+(product||'6 入胖卡龍禮盒'):''), html, text: html.replace(/<[^>]+>/g,' ').slice(0,2000), meta:{ type, scout_run: intel.run } }); } catch(e) { console.error('[history sola]', e.message); }
+  return { ok: true, type, type_label: t.label, product: t.needProduct ? (product || '6 入胖卡龍禮盒') : null, html, based_on_scout: intel.has, scout_run: intel.run };
 }
 
 router.get('/types', (req, res) => res.json({ ok: true, types: Object.entries(TYPES).map(([k, v]) => ({ key: k, label: v.label, needProduct: !!v.needProduct })) }));
