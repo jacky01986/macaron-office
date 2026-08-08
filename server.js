@@ -668,7 +668,7 @@ Brief：${brief}
 要求：
 - 回傳 JSON 陣列格式：[{"style":"風格名","caption":"內容"}, ...]
 - 每個草稿的 style 標題要不同（例如：情感型、功能型、好奇心型、情境型）
-- caption 要符合 溫點 WarmPlace 品牌語調（精品、韓式、內斂、不農場標題）
+- caption 要符合 溫點 WarmPlace 品牌語調（精品、台南手工職人、內斂、不農場標題）
 - FB 貼文 150-300 字，IG 貼文 80-150 字 + 3-5 個 hashtag
 - 直接回 JSON 陣列，不要任何前後綴或 markdown`;
 
@@ -1689,7 +1689,7 @@ app.post('/api/image-gen/test', express.json(), async (req, res) => {
   try {
     const r = await imageGen.generateImage({
       caption: req.body.caption || '',
-      brief: req.body.brief || '韓系精品馬卡龍 12 入禮盒',
+      brief: req.body.brief || '台南手工職人精品胖卡龍 12 入禮盒',
       platform: req.body.platform || 'IG',
       slug: req.body.slug || 'test'
     });
@@ -1838,7 +1838,7 @@ cron.schedule("*/30 * * * *", async () => {
   }
 }, { timezone: CRON_TZ });
 
-// 每天 09:00 (Asia/Taipei) 自動發 1 篇 Medium 草稿（GIA 自動輪流 9 馬卡龍主題 + 6 費南雪主題）
+// 每天 09:00 (Asia/Taipei) 自動發 1 篇 Medium 草稿（GIA 自動輪流 9 胖卡龍主題 + 6 費南雪主題）
 cron.schedule('0 9 * * *', async () => {
   console.log('[GIA] daily auto-publish starting...');
   try {
@@ -2761,7 +2761,7 @@ app.post("/api/customers/:userId/analyze", async (req, res) => {
     if (!c) return res.status(404).json({ error: "customer not found" });
 
     const history = c.messages.slice(0, 30).reverse().map(m => `[${m.intent}] ${m.text}${m.replyText ? " → 店回覆：" + m.replyText.slice(0,60) : ""}`).join("\n");
-    const systemPrompt = `你是 溫點 WarmPlace 的客人分析師。根據客人與品牌客服的 LINE 對話紀錄，推測客人畫像並給出具體行動建議。品牌主打韓系精品馬卡龍禮盒（6 入 NT$880 / 12 入 NT$1,580 / 客製禮盒 NT$1,580-2,280，婚禮 / 企業 / 自送三種場景），4 家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2。
+    const systemPrompt = `你是 溫點 WarmPlace 的客人分析師。根據客人與品牌客服的 LINE 對話紀錄，推測客人畫像並給出具體行動建議。品牌主打台南手工職人精品胖卡龍禮盒（6 入 NT$880 / 12 入 NT$1,580 / 客製禮盒 NT$1,580-2,280，婚禮 / 企業 / 自送三種場景），4 家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2。
 
 回覆 JSON：
 {
@@ -4619,14 +4619,14 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
 
     const dataLine = fmtSummary.join('\n') + '\n\n' + scoutCtx + '\n\n' + marketCtx;
 
-    const systemPrompt = `今天日期: ${new Date().toLocaleDateString('zh-TW', {timeZone:'Asia/Taipei', year:'numeric', month:'long', day:'numeric', weekday:'long'})} (台北時區)。\n\n你是 VICTOR — 溫點 WarmPlace 的 AI 行銷總監兼整個 AI 團隊的大腦。\n\n品牌:精品馬卡龍與費南雪禮贈品牌,4 家門店(台南本店、新光西門 B2、新光中港 B2、新光南西 B2)。月度預算 NT$60,000。\nIG @warmplace.here 粉絲 32K,FB 粉專 118 粉絲(主戰場在 IG)。\nLINE Bot @110ypqki, SaleSmartly 對話追蹤已開。\n\n你帶領團隊:LEON(廣告投手)、CAMILLE(內容主筆,負責文案+部落格 SEO)、ARIA(視覺指導)、DEX(數據分析)、NOVA(品牌經理,負責社群+公關)、MILO(KOL)。
+    const systemPrompt = `今天日期: ${new Date().toLocaleDateString('zh-TW', {timeZone:'Asia/Taipei', year:'numeric', month:'long', day:'numeric', weekday:'long'})} (台北時區)。\n\n你是 VICTOR — 溫點 WarmPlace 的 AI 行銷總監兼整個 AI 團隊的大腦。\n\n品牌:精品胖卡龍與費南雪禮贈品牌,4 家門店(台南本店、新光西門 B2、新光中港 B2、新光南西 B2)。月度預算 NT$60,000。\nIG @warmplace.here 粉絲 32K,FB 粉專 118 粉絲(主戰場在 IG)。\nLINE Bot @110ypqki, SaleSmartly 對話追蹤已開。\n\n你帶領團隊:LEON(廣告投手)、CAMILLE(內容主筆,負責文案+部落格 SEO)、ARIA(視覺指導)、DEX(數據分析)、NOVA(品牌經理,負責社群+公關)、MILO(KOL)。
 
 【你能看到的資產(實時注入到 prompt 末尾的 [目前 即時數據] block)】
 1. SaleSmartly 客戶對話:Meta Messenger / IG DM / LINE 訊息統一,過去 7 天對話統計 + Top 10 客戶問題 + 最新 5 通對話的完整訊息內容
 2. Meta 廣告數據:過去 7 天花費 + IG/FB 最新 5 篇貼文表現(讚數、留言數)
 3. 客戶分群:VIP / 活躍 / 新客 / 流失風險 各幾人
 4. 決策歷史:最近 8 件 Sam 拍板 + 5 件待決策
-5. 市場情報:全台馬卡龍 / 費南雪新聞 + 對手最新廣告(法朋、亞尼克、Paul、Ladurée、Pierre Hermé)
+5. 市場情報:全台胖卡龍 / 費南雪新聞 + 對手最新廣告(法朋、亞尼克、Paul、Ladurée、Pierre Hermé)
 
 當 Sam 問「分析對話 / 為什麼沒成交 / 客人在問什麼 / 流失客人多少」這類問題,**第一優先看 meta_inbox_fb 跟 meta_inbox_ig 兩個欄位** (從 Meta Graph API 直接讀回的 FB Messenger + IG DM 真實對話, 不是 placeholder)。引用具體客戶名 + 客戶說的原句當證據。**絕對禁止說「我無法存取 Meta 對話」「請把對話貼給我」這類話 — 你已經能讀到了**。如果 meta_inbox_fb 是空陣列, 才能說「目前沒有客戶對話可分析」。\n\n【你的工作模式 — 你是 AI Agent,不是建議生成器】\n你的目標是【幫 Sam 解決問題、產出可立即使用的交付物】,不是給「建議」。\n\n**判斷請求類型,直接給對應交付物:**\n\n① 問題型 → 給【今天做 / 本週做 / 本月做】三層具體行動 + 指名負責員工\n② 內容型(寫文案/Reels 腳本) → 【直接產 3-5 版可立即複製貼上的成品】,不要先講想法再寫\n③ 規劃型(行事曆) → 【直接出表格】:日期 / 平台 / 主題 / 文案 / 視覺需求\n④ 分析型(現在數據怎樣?) → 引用即時數據,3 個觀察 + 1 個關鍵問題給 Sam 拍板\n⑤ 決策型(該不該做 X?) → 直接給【做 / 不做】+ 量化理由(預估金額、leads、GMV)+ 風險\n\n**你有對話記憶** — 你看得到過去的對話,延續討論,不要重複問已經回答的問題。\n**遇資料不足** — 直接告訴 Sam 缺什麼數據 + 怎麼補上,不要瞎掰。\n\n【絕對禁止】\n- 廣告投放細節(老闆要求,只談客戶經營/內容/門店/品牌)\n- 課程、報名、學員、教學、紋繡、美容(這些是舊業態)\n- 「以下幾個建議供參考」「希望對你有幫助」這類客套話\n- 給範圍式建議(「可以考慮...」)應改成決策建議(「建議做 X,不要做 Y,因為 ...」)\n\n回答用繁體中文,可用 emoji 但不要太多。`;
 
@@ -4676,7 +4676,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
       },
       {
         name: 'run_market_intel_scan',
-        description: '立即觸發市場情報掃描 (Google News 馬卡龍/費南雪新聞 + FB Ads Library 對手廣告). 用於 Sam 想立刻看最新對手動態, 不等明早 06:00 cron.',
+        description: '立即觸發市場情報掃描 (Google News 胖卡龍/費南雪新聞 + FB Ads Library 對手廣告). 用於 Sam 想立刻看最新對手動態, 不等明早 06:00 cron.',
         input_schema: { type: 'object', properties: {} }
       },
       {
@@ -4694,7 +4694,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
       },
       {
         name: 'web_search',
-        description: '搜索網路即時資訊 (用 Google News 後台). 用於 Sam 問新聞、節慶、流行話題、競品最近動態這類即時資訊. 自動帶馬卡龍 / 費南雪 / 韓系甜點 相關背景做篩選.',
+        description: '搜索網路即時資訊 (用 Google News 後台). 用於 Sam 問新聞、節慶、流行話題、競品最近動態這類即時資訊. 自動帶胖卡龍 / 費南雪 / 台南手工職人甜點 相關背景做篩選.',
         input_schema: {
           type: 'object',
           properties: {
