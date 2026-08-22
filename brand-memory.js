@@ -217,7 +217,7 @@ function register(app) {
       { topic: '文案調性', content: '對內分析報告要去掉「教練式廢話」,直接講重點,壞數據就說壞,敢說真話', priority: 'high', source: 'seed' },
       { topic: '門市', content: '4 家店:台南西門、台南樹林、台北南西新光三越、台中中港新光。巨蛋未開', priority: 'high', source: 'seed' },
       { topic: '數據', content: '老闆很在意數字精準,要求對到第 1 元才算精準。寫文案/分析時引用的數字必須準確,不能編造', priority: 'high', source: 'seed' },
-      { topic: '產品', content: '主打杜拜巧克力胖卡龍、費南雪。商品線:禮盒 NT$480–2,280,核心主力是 6 入 NT$880 與 12 入 NT$1,580', priority: 'medium', source: 'seed' },
+      { topic: '產品', content: '主打杜拜巧克力胖卡龍。商品線:禮盒 NT$480–2,280,核心主力是 6 入 NT$880 與 12 入 NT$1,580', priority: 'medium', source: 'seed' },
       { topic: '管道', content: 'LINE 官方帳號要斷,改走 SaleSmartly + Meta(FB/IG)。客服 / CRM 走 SaleSmartly 不走 LINE 官方', priority: 'medium', source: 'seed' },
       { topic: '策略', content: '線下門店是最大資產,線上廣告策略要服務「導客到店」,不是純電商轉換', priority: 'medium', source: 'seed' }
     ];
