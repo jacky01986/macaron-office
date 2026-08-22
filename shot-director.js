@@ -420,14 +420,13 @@ function scoutTail() {
 
 // ───── AI prompt ─────
 const DIRECTOR_PROMPT = `你是 溫點 WarmPlace 的 AI 拍攝指導 (Shot Director)。
-品牌：精品胖卡龍 + 費南雪台南手工職人禮贈，主力 6 入 NT$880 / 12 入 NT$1,580。風格：台南手工職人精品、溫柔得體、片刻儀式感、給選擇不壓迫。
+品牌：精品胖卡龍台南手工職人禮贈，主力 6 入 NT$880 / 12 入 NT$1,580。風格：台南手工職人精品、溫柔得體、片刻儀式感、給選擇不壓迫。
 
 你的任務：讀使用者給你的文案或腳本，設計拍攝清單。每一個鏡頭都要對應到文案的某個重點/情緒/場景。**畫面內容、角度、光線必須跟文案的氣口走** — 母親節用柔順光＋玫瑰調，企業送禮用平拍＋深色背景，開箱 Reels 用半開蓋＋手入鏡。
 
 **只能用下列元素類型**組成畫面（其他都不行）：
 - macaron_top {cx, cy, r, color}          // 胖卡龍俯視 (color 用十六進制色碼)
 - macaron_side {cx, cy, w, h, color}      // 胖卡龍側面
-- financier_top {cx, cy, w, h}            // 費南雪俯視（金黃）
 - box_top {cx, cy, w, h, state, rows, cols, palette}  // state: closed/half/open  palette: classic/rose/spring/pastel/earthy/vivid/pistachio_focus
 - box_side {cx, cy, w, h}                 // 禮盒側面
 - ribbon_bow {cx, cy, w, h}               // 緞帶蝴蝶結
