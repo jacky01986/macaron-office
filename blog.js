@@ -105,7 +105,7 @@ function renderPostPage(post) {
   return '<!DOCTYPE html>\n<html lang="zh-Hant"><head>\n' +
     '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">\n' +
     '<title>' + escapeHtml(post.title) + ' | 溫點 WarmPlace</title>\n' +
-    '<meta name="description" content="' + escapeHtml(post.title) + ' — 溫點 WarmPlace 台南手工職人精品胖卡龍與費南雪 / 禮贈禮盒">\n' +
+    '<meta name="description" content="' + escapeHtml(post.title) + ' — 溫點 WarmPlace 台南手工職人精品胖卡龍 / 禮贈禮盒">\n' +
     '<meta name="keywords" content="' + escapeHtml((post.tags || []).join(',')) + '">\n' +
     '<link rel="canonical" href="' + post.url + '">\n' +
     '<meta property="og:title" content="' + escapeHtml(post.title) + '">\n' +
@@ -117,19 +117,19 @@ function renderPostPage(post) {
     '</head><body>\n' +
     '<header><a href="/blog">← 溫點 WarmPlace 部落格</a></header>\n' +
     '<article>\n' +
-    '<div class="meta">' + new Date(post.ts).toLocaleDateString('zh-TW') + ' · ' + (post.type === 'course' ? '🍬 胖卡龍' : '🍰 費南雪') + ' · ' + escapeHtml(post.subject || '') + '</div>\n' +
+    '<div class="meta">' + new Date(post.ts).toLocaleDateString('zh-TW') + ' · ' + (post.type === 'course' ? '🍬 胖卡龍' : '') + ' · ' + escapeHtml(post.subject || '') + '</div>\n' +
     body + '\n' +
     '<div class="cta"><p><strong>對 ' + escapeHtml(post.subject || '') + ' 有興趣？</strong></p><p>📲 加 LINE 諮詢：<a href="https://line.me/R/ti/p/@110ypqki" target="_blank">@110ypqki</a></p><p>🌐 溫點 WarmPlace 官網：<a href="' + SITE_URL + '" target="_blank">' + SITE_URL + '</a></p></div>\n' +
     tagsHtml + '\n' +
     '</article>\n' +
-    '<footer>© 溫點 WarmPlace · 台南手工職人精品胖卡龍與費南雪 + 高端禮贈<br>FB: <a href="https://www.facebook.com/WarmPlace">溫點 WarmPlace</a> · IG: <a href="https://www.instagram.com/warmplace.here/">@warmplace.here</a></footer>\n' +
+    '<footer>© 溫點 WarmPlace · 台南手工職人精品胖卡龍 + 高端禮贈<br>FB: <a href="https://www.facebook.com/WarmPlace">溫點 WarmPlace</a> · IG: <a href="https://www.instagram.com/warmplace.here/">@warmplace.here</a></footer>\n' +
     '</body></html>';
 }
 
 function renderIndexPage() {
   const posts = listPosts(200);
   const list = posts.map(function(p){
-    return '<li><div style="font-size:13px;color:#A37849">' + new Date(p.ts).toLocaleDateString('zh-TW') + ' · ' + (p.type === 'course' ? '🍬 胖卡龍' : '🍰 費南雪') + ' · ' + escapeHtml(p.subject || '') + '</div><a href="/blog/' + p.slug + '">' + escapeHtml(p.title) + '</a></li>';
+    return '<li><div style="font-size:13px;color:#A37849">' + new Date(p.ts).toLocaleDateString('zh-TW') + ' · ' + (p.type === 'course' ? '🍬 胖卡龍' : '') + ' · ' + escapeHtml(p.subject || '') + '</div><a href="/blog/' + p.slug + '">' + escapeHtml(p.title) + '</a></li>';
   }).join('');
   const orgSchema = {
     '@context': 'https://schema.org',
@@ -146,7 +146,7 @@ function renderIndexPage() {
     '<script type="application/ld+json">' + JSON.stringify(orgSchema) + '</script>' +
     '<style>:root{--burgundy:#8E3D4B;--gold:#A37849;--ivory:#F8F3EB}body{font-family:"Microsoft JhengHei",sans-serif;max-width:880px;margin:0 auto;padding:30px 20px;background:var(--ivory);color:#2E1E14;line-height:1.7}h1{color:var(--burgundy);font-size:32px;border-bottom:3px solid var(--gold);padding-bottom:12px}ul{list-style:none;padding:0}li{padding:14px 0;border-bottom:1px solid #EDDDC1}li a{color:var(--burgundy);font-weight:bold;font-size:18px;text-decoration:none}li a:hover{color:var(--gold)}.intro{background:#FDF7EE;padding:18px;border-left:4px solid var(--gold);border-radius:6px;margin-bottom:24px}</style></head><body>' +
     '<h1>📚 溫點 WarmPlace 部落格</h1>' +
-    '<div class="intro"><strong>台南手工職人精品胖卡龍與費南雪 + 高端禮贈品牌</strong>。每週更新關於胖卡龍口味、禮盒搭配、婚禮企業禮贈、品牌故事等內容。<br>📲 LINE 諮詢：<a href="https://line.me/R/ti/p/@110ypqki">@110ypqki</a></div>' +
+    '<div class="intro"><strong>台南手工職人精品胖卡龍 + 高端禮贈品牌</strong>。每週更新關於胖卡龍口味、禮盒搭配、婚禮企業禮贈、品牌故事等內容。<br>📲 LINE 諮詢：<a href="https://line.me/R/ti/p/@110ypqki">@110ypqki</a></div>' +
     '<ul>' + (list || '<li><i>尚未發文</i></li>') + '</ul></body></html>';
 }
 
