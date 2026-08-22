@@ -150,14 +150,14 @@ async function buildBoard({ days = 14, limit = 30 } = {}) {
 function hanaPrompt(playbook) {
   return `你是 HANA — 溫點 WarmPlace 的 AI 私訊成交客服顧問。
 你不是「客服機器人」，你是把「冷掉的詢問」變成「結單」的成交高手，同時保有台南手工職人精品品牌的溫柔得體。
-品牌：精品胖卡龍 + 費南雪台南手工職人禮贈。禮盒 NT$480–2,280，主力 6 入 NT$880 / 12 入 NT$1,580。
+品牌：精品胖卡龍台南手工職人禮贈。禮盒 NT$480–2,280，主力 6 入 NT$880 / 12 入 NT$1,580。
 四家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2。
 
 【你的成交信念】
 1. 每一通的目標是「推進到下一步」：問價→給價並引導下單；猶豫→消除疑慮給台階；已熱→直接給訂購方式臨門一腳。
 2. 不逼迫、不轟炸、不報「CP值/限時搶購/秒殺」。用從容、有溫度、給選擇的語氣。
 3. 報價要明確、附上「怎麼下一步」(下單連結/到店/私訊確認)，不要只回價格就句點。
-4. 疑慮要對症：嫌貴→講價值與場景不講折扣；過敏/保存→給專業具體答案；比較→講溫點獨有的雙主力與台南手工職人定位。
+4. 疑慮要對症：嫌貴→講價值與場景不講折扣；過敏/保存→給專業具體答案；比較→講溫點獨有的主力與台南手工職人定位。
 
 【你學到的「老闆風格 + 有效成交策略」(請務必模仿這個語氣)】
 ${JSON.stringify(playbook, null, 1).slice(0, 2500)}
@@ -209,7 +209,7 @@ async function webSearchClosingTactics(c) {
           + '{\n  "industry_best_practices": ["全網觀察到的 5-8 條私訊成交黃金法則"],\n'
           + '  "winning_opening_lines": ["3-5 個高轉換 DM 開場句範例 (中文)"],\n'
           + '  "objection_breakers": ["3-5 個嫌貴/猶豫破解話術"],\n'
-          + '  "brand_fit_advice": "針對精品胖卡龍+費南雪品牌, 該選哪種風格 (溫度 vs 專業 vs 顧問式)"\n}'
+          + '  "brand_fit_advice": "針對精品胖卡龍品牌, 該選哪種風格 (溫度 vs 專業 vs 顧問式)"\n}'
       }]
     });
     let text = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
@@ -238,7 +238,7 @@ async function selfOptimize({ days = 3, sample = 25 } = {}) {
   console.log('[closer] step 2/2: combine + playbook...');
 
   // 融合 prompt: 自家對話 + 全網調查 → 量身訂做的 playbook
-  let prompt = '你是 HANA 的自我優化引擎。融合 [自家對話樣本] + [全網成交策略] 產出最適合溫點 WarmPlace (精品胖卡龍+費南雪) 的成交 playbook。\n\n'
+  let prompt = '你是 HANA 的自我優化引擎。融合 [自家對話樣本] + [全網成交策略] 產出最適合溫點 WarmPlace (精品胖卡龍) 的成交 playbook。\n\n'
     + '請用 JSON 回覆 (只回 JSON, 不要 markdown):\n'
     + '{\n'
     + '  "style_notes": "綜合風格描述 — 結合自家既有口吻 + 全網最佳實踐, 寫出 HANA 該如何回客戶 (具體可模仿)",\n'
