@@ -335,7 +335,7 @@ async function rioWriteShootingScript(monthKey) {
 // === MIKA 客戶社群輔導 — 答疑 + 週話題 ===
 async function mikaAnswerStudent(question, studentName) {
   if (!question) return { ok: false, reason: 'question required' };
-  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 MIKA,溫點 WarmPlace 客戶社群輔導員。溫暖、專業、耐心。回答關於胖卡龍/費南雪/禮盒/送禮的問題並鼓勵客戶。如果問題超出範圍,引導他們看商品介紹或請教主理人。回答 200-400 字，給可實作的建議。';
+  const sys = BUSINESS_CONTEXT + (scout ? '\n\n' + scout.getContextForOtherAgents() : '') + '\n\n' + '你是 MIKA,溫點 WarmPlace 客戶社群輔導員。溫暖、專業、耐心。回答關於胖卡龍/禮盒/送禮的問題並鼓勵客戶。如果問題超出範圍,引導他們看商品介紹或請教主理人。回答 200-400 字，給可實作的建議。';
   const userReq = (studentName ? '客戶：' + studentName + '\n' : '') + '問題：' + question;
   const text = await callClaude(YUKI_MODEL, sys, userReq, 1500);
   if (!text || typeof text !== 'string') return { ok: false, reason: 'no response' };
