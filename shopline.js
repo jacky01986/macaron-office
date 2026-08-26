@@ -189,7 +189,7 @@ async function getCustomersWithLTV({ limit = 100 } = {}) {
     const or = await openApiCall(withMid('/v1/orders?per_page=200'));
     const orders = or.items || or.data || [];
     const ltv = {};
-    for (const o of orders) {
+    for (const o of scoped) {
       const cid = o.customer_id; if (!cid) continue;
       const total = (o.total && typeof o.total === 'object') ? (o.total.dollars || 0) : (parseFloat(o.total) || 0);
       if (!ltv[cid]) ltv[cid] = { total: 0, count: 0, last_order: null };
@@ -332,11 +332,14 @@ async function getOrdersSummary({ days = 1, monthToDate = false } = {}) {
       page++;
     } while (page <= totalPages && page <= 100);
     // 加總：銷售額只算 paid/confirmed/completed，排除 cancelled
+    // API 端 created_at 篩選失效，改在程式端依當地時間篩期間
+    const fromMs = new Date(from + 'T00:00:00+08:00').getTime();
+    const scoped = orders.filter(o => { const c = o.created_at || o.created_time || o.order_created_at; return c && new Date(c).getTime() >= fromMs; });
     const PAID = ['paid', 'confirmed', 'completed'];
-    const count = orders.length;
+    const count = scoped.length;
     let grossRevenue = 0, paidRevenue = 0, qty = 0, paidCount = 0, cancelledCount = 0;
     const skuQty = {}, byStatus = {};
-    for (const o of orders) {
+    for (const o of scoped) {
       const t = o.total;
       const total = (t && typeof t === 'object') ? (t.dollars != null ? Number(t.dollars) : (t.cents != null ? Number(t.cents) : 0)) : (parseFloat(t) || 0);
       const status = o.status || 'unknown';
