@@ -332,7 +332,7 @@ async function getOrdersSummary({ days = 1, monthToDate = false } = {}) {
       if (!items.length) break;
       page++;
     } while (page <= totalPages && page <= 100);
-    // 加總：銷售額只算 paid/confirmed/completed，排除 cancelled
+    // 銷售額 = 付款完成(payment_status completed)；排除 cancelled/failed/refunded
     // API 端 created_at 篩選失效，改在程式端依當地時間篩期間
     const fromMs = new Date(from + 'T00:00:00+08:00').getTime();
     const scoped = orders.filter(o => { const c = o.created_at || o.created_time || o.order_created_at; return c && new Date(c).getTime() >= fromMs; });
@@ -347,7 +347,8 @@ async function getOrdersSummary({ days = 1, monthToDate = false } = {}) {
       byStatus[status] = (byStatus[status] || 0) + 1;
       if (status === 'cancelled') { cancelledCount++; continue; }
       grossRevenue += total;
-      if (PAID.includes(status)) {
+      const paymentStatus = o.payment_status || (o.order_payment && o.order_payment.status) || '';
+      if (paymentStatus === 'completed') {
         paidCount++; paidRevenue += total;
         for (const li of (o.subtotal_items || o.line_items || o.items || [])) {
           const itemData = li.item_data || {};
