@@ -4638,6 +4638,11 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     // ─────────────────────────────────────────────────────
     const VICTOR_TOOLS = [
       {
+        name: 'get_shopline_data',
+        description: '查詢 Shopline 商店真實數據：銷售額/營收/訂單數/熱賣商品/客戶分群。當 Sam 問到營收、業績、賣了多少、本月/今日訂單、熱賣商品、客戶時，一定要用這個工具真的去查，不要說沒接API或做不到。',
+        input_schema: { type: 'object', properties: { scope: { type: 'string', enum: ['sales','products','customers'], description: 'sales=銷售額營收訂單, products=熱賣商品, customers=客戶' }, period: { type: 'string', enum: ['today','month'], description: 'today=今日, month=本月(預設)' } }, required: ['scope'] }
+      },
+      {
         name: 'delegate_to_employee',
         description: '指派任務給 AI 團隊成員 (CAMILLE 寫文案/CAMILLE 寫部落格/ARIA 視覺方向/DEX 數據分析/NOVA 品牌策略/MILO KOL 合作). 員工會用自己的 system prompt 完整產出, 你拿到後可整合回應給 Sam.',
         input_schema: {
@@ -4719,9 +4724,26 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     ];
 
     // 執行單一工具
+    function htmlToTelegram(s){ s = String(s == null ? '' : s); s = s.split('<br>').join('\n').split('<br/>').join('\n').split('<br />').join('\n'); s = s.split('</p>').join('\n').split('</div>').join('\n').split('</li>').join('\n').split('</h1>').join('\n').split('</h2>').join('\n').split('</h3>').join('\n').split('</h4>').join('\n'); s = s.split('<li>').join('• '); s = s.replace(/<[^>]+>/g, ''); s = s.split('&nbsp;').join(' ').split('&amp;').join('&').split('&lt;').join('<').split('&gt;').join('>').split('&#39;').join(String.fromCharCode(39)).split('&quot;').join(String.fromCharCode(34)); s = s.replace(/\n{3,}/g, '\n\n'); return s.trim(); }
     async function executeVictorTool(name, input) {
       try {
         switch (name) {
+          case 'get_shopline_data': {
+            const sl = (() => { try { return require('./shopline'); } catch (e) { return null; } })();
+            if (!sl || !sl.getOrdersSummary) return { error: 'shopline module not loaded' };
+            const period = input.period === 'today' ? 'today' : 'month';
+            const opts = period === 'today' ? { days: 1 } : { monthToDate: true };
+            if (input.scope === 'customers') {
+              try {
+                const c = sl.getCustomersWithLTV ? await sl.getCustomersWithLTV({ limit: 50 }) : (sl.getCustomers ? await sl.getCustomers({ limit: 50 }) : null);
+                return c || { note: '客戶查詢目前不可用' };
+              } catch (e) { return { error: 'customers: ' + e.message }; }
+            }
+            const sum = await sl.getOrdersSummary(opts);
+            if (!sum || sum.ok === false) return { error: 'shopline 查詢失敗', detail: sum && sum.error };
+            if (input.scope === 'products') return { period, from: sum.from, top_skus: sum.top_skus, total_qty: sum.total_qty };
+            return { period, from: sum.from, orders: sum.count, cancelled: sum.cancelled_count, sales_paid: sum.total_revenue, gross_revenue: sum.gross_revenue, paid_orders: sum.paid_count, top_skus: sum.top_skus, status_breakdown: sum.status_breakdown, currency: 'TWD', note: 'sales_paid=已付款銷售額' };
+          }
           case 'delegate_to_employee': {
             const empMod = (() => { try { return require('./employees'); } catch { return null; } })();
             if (!empMod || !empMod.EMPLOYEES) return { error: 'employees module not loaded' };
@@ -4897,6 +4919,7 @@ app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, re
     }
 
     if (!reply) reply = '抱歉,VICTOR 沒有回應。';
+    reply = htmlToTelegram(reply);
 
     // Save to history (truncate at 12 turns to prevent context overflow)
     history.push({ role: 'assistant', content: reply });
