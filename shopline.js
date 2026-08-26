@@ -307,32 +307,66 @@ async function deleteBlogPost(postId, { confirmed = false } = {}) {
 }
 
 // ─────────── DEX 訂單分析輔助 (拿到 token 後 plug-and-play) ───────────
-async function getOrdersSummary({ days = 1 } = {}) {
+async function getOrdersSummary({ days = 1, monthToDate = false } = {}) {
   if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token yet' };
   try {
-    const from = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
-    const r = await openApiCall(withMid('/v1/orders?per_page=200&created_at_gte=' + from));
-    const orders = r.items || r.data || (Array.isArray(r) ? r : []);
-    let revenue = 0, count = orders.length, qty = 0;
-    let paidCount = 0, paidRevenue = 0;
-    const skuQty = {};
-    const byStatus = {};
+    // 日期區間：monthToDate=本月 1 號(台灣時間)到現在；否則滾動 days 天
+    let from, period;
+    if (monthToDate) {
+      const tw = new Date(Date.now() + 8 * 3600000);
+      from = tw.getUTCFullYear() + '-' + String(tw.getUTCMonth() + 1).padStart(2, '0') + '-01';
+      period = 'month_to_date';
+    } else {
+      from = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+      period = days + 'd';
+    }
+    // 分頁抓滿所有訂單 (API 單頁上限 250)
+    const orders = [];
+    let page = 1, totalPages = 1;
+    do {
+      const r = await openApiCall(withMid('/v1/orders?per_page=250&page=' + page + '&created_at_gte=' + from));
+      const items = r.items || r.data || (Array.isArray(r) ? r : []);
+      orders.push(...items);
+      totalPages = (r.pagination && r.pagination.total_pages) || 1;
+      if (!items.length) break;
+      page++;
+    } while (page <= totalPages && page <= 100);
+    // 加總：銷售額只算 paid/confirmed/completed，排除 cancelled
+    const PAID = ['paid', 'confirmed', 'completed'];
+    const count = orders.length;
+    let grossRevenue = 0, paidRevenue = 0, qty = 0, paidCount = 0, cancelledCount = 0;
+    const skuQty = {}, byStatus = {};
     for (const o of orders) {
-      const total = (o.total && typeof o.total === 'object') ? (o.total.dollars || (o.total.cents / 100) || 0) : (parseFloat(o.total) || 0);
-      revenue += total;
+      const t = o.total;
+      const total = (t && typeof t === 'object') ? (t.dollars != null ? Number(t.dollars) : (t.cents != null ? Number(t.cents) : 0)) : (parseFloat(t) || 0);
       const status = o.status || 'unknown';
       byStatus[status] = (byStatus[status] || 0) + 1;
-      if (['paid','confirmed','completed'].includes(status)) { paidCount++; paidRevenue += total; }
-      for (const li of (o.subtotal_items || o.line_items || o.items || [])) {
-        const itemData = li.item_data || {};
-        const title = (li.title_translations && (li.title_translations['zh-hant'] || li.title_translations['zh-Hant'] || li.title_translations.en)) || itemData.title || li.title || li.item_id || 'unknown';
-        const q = itemData.quantity || li.quantity || 1;
-        skuQty[title] = (skuQty[title] || 0) + q;
-        qty += q;
+      if (status === 'cancelled') { cancelledCount++; continue; }
+      grossRevenue += total;
+      if (PAID.includes(status)) {
+        paidCount++; paidRevenue += total;
+        for (const li of (o.subtotal_items || o.line_items || o.items || [])) {
+          const itemData = li.item_data || {};
+          const title = (li.title_translations && (li.title_translations['zh-hant'] || li.title_translations['zh-Hant'] || li.title_translations.en)) || itemData.title || li.title || li.item_id || 'unknown';
+          const q = itemData.quantity || li.quantity || 1;
+          skuQty[title] = (skuQty[title] || 0) + q;
+          qty += q;
+        }
       }
     }
     const top = Object.entries(skuQty).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([sku, q]) => ({ sku, q }));
-    return { ok: true, days, count, status_breakdown: byStatus, total_revenue: Math.round(revenue), paid_count: paidCount, paid_revenue: Math.round(paidRevenue), aov_all: count ? Math.round(revenue / count) : 0, aov_paid: paidCount ? Math.round(paidRevenue / paidCount) : 0, total_qty: qty, top_skus: top };
+    const netCount = count - cancelledCount;
+    return {
+      ok: true, period, from, days,
+      count, cancelled_count: cancelledCount,
+      status_breakdown: byStatus,
+      total_revenue: Math.round(paidRevenue),
+      gross_revenue: Math.round(grossRevenue),
+      paid_count: paidCount, paid_revenue: Math.round(paidRevenue),
+      aov_all: netCount ? Math.round(grossRevenue / netCount) : 0,
+      aov_paid: paidCount ? Math.round(paidRevenue / paidCount) : 0,
+      total_qty: qty, top_skus: top
+    };
   } catch (e) { return { ok: false, error: e.message }; }
 }
 
@@ -499,13 +533,13 @@ async function sendShoplineDigestToTelegram() {
   if (!OPEN_API_TOKEN) return { ok: false, reason: 'no shopline token' };
   try {
     const s = await getOrdersSummary({ days: 1 });
-    const w = await getOrdersSummary({ days: 7 });
+    const w = await getOrdersSummary({ monthToDate: true });
     const text = '🛒 Shopline 早報 (昨日)\n'
       + '────────────────\n'
       + '訂單: ' + (s.count || 0) + ' 筆 | 營收 NT$' + (s.total_revenue || 0) + ' | AOV NT$' + (s.aov_all || 0) + '\n'
       + '已付: ' + (s.paid_count || 0) + ' 筆 NT$' + (s.paid_revenue || 0) + '\n'
       + '熱賣: ' + (s.top_skus || []).slice(0, 3).map(t => t.sku + '×' + t.q).join(' / ') + '\n\n'
-      + '📊 過去 7 天\n'
+      + '📊 本月\n'
       + '訂單 ' + (w.count || 0) + ' 筆 | 營收 NT$' + (w.total_revenue || 0) + ' | AOV NT$' + (w.aov_all || 0);
     const r = await fetch('https://api.telegram.org/bot' + tgToken + '/sendMessage', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
