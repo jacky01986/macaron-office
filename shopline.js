@@ -174,7 +174,7 @@ async function openApiCall(endpoint, opts = {}) {
 
 function withMid(qs) { return qs + (qs.includes('?') ? '&' : '?') + 'merchant_id=' + MERCHANT_ID; }
 async function getOrders({ from, to, limit = 50 } = {}) {
-  return openApiCall(withMid(`/v1/orders?per_page=${limit}${from ? '&created_at_gte=' + encodeURIComponent(from) : ''}${to ? '&created_at_lte=' + encodeURIComponent(to) : ''}`));
+  return openApiCall(withMid(`/v1/orders/search?per_page=${limit}${from ? '&created_after=' + encodeURIComponent(from) : ''}${to ? '&created_before=' + encodeURIComponent(to) : ''}`));
 }
 async function getCustomers({ limit = 50 } = {}) { return openApiCall(withMid('/v1/customers?per_page=' + limit)); }
 async function getCheckouts({ limit = 50 } = {}) { return openApiCall(withMid('/v1/checkouts?per_page=' + limit)); }
@@ -186,7 +186,7 @@ async function getCustomersWithLTV({ limit = 100 } = {}) {
     const cr = await openApiCall(withMid('/v1/customers?per_page=' + limit));
     const customers = cr.items || cr.data || [];
     // 一次拉所有訂單,按 customer_id 匯總
-    const or = await openApiCall(withMid('/v1/orders?per_page=200'));
+    const or = await openApiCall(withMid('/v1/orders/search?per_page=200'));
     const orders = or.items || or.data || [];
     const ltv = {};
     for (const o of scoped) {
@@ -324,7 +324,8 @@ async function getOrdersSummary({ days = 1, monthToDate = false } = {}) {
     const orders = [];
     let page = 1, totalPages = 1;
     do {
-      const r = await openApiCall(withMid('/v1/orders?per_page=250&page=' + page + '&created_at_gte=' + from));
+      const createdAfter = new Date(from + 'T00:00:00+08:00').toISOString().replace('T', ' ').slice(0, 19);
+      const r = await openApiCall(withMid('/v1/orders/search?per_page=250&page=' + page + '&created_after=' + encodeURIComponent(createdAfter)));
       const items = r.items || r.data || (Array.isArray(r) ? r : []);
       orders.push(...items);
       totalPages = (r.pagination && r.pagination.total_pages) || 1;
@@ -409,7 +410,7 @@ router.get('/_debug_probe', async (req, res) => {
   const base = 'https://open.shopline.io';
   const mq = '?merchant_id=' + MERCHANT_ID;
   const paths = [
-    '/v1/orders?per_page=1' + '&merchant_id=' + MERCHANT_ID,
+    '/v1/orders/search?per_page=1' + '&merchant_id=' + MERCHANT_ID,
     '/v1/products?per_page=1' + '&merchant_id=' + MERCHANT_ID,
     '/v1/customers?per_page=1' + '&merchant_id=' + MERCHANT_ID,
     '/v1/checkouts?per_page=1' + '&merchant_id=' + MERCHANT_ID,
