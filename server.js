@@ -302,6 +302,15 @@ app.get("/api/meta/inbox", async (req, res) => {
 // /api/meta/assets — 列出 user 所有 FB Pages / IG Business / Ad Accounts（for switcher）
 app.get("/api/salesmartly/webhook/recent", (req, res) => { res.json({ count: __webhookHits.length, hits: __webhookHits.slice(-20) }); });
 
+app.post('/api/salesmartly/relay', express.json({ limit: '2mb' }), (req, res) => {
+  res.json({ ok: true });
+  try {
+    const _fs = require('fs'), _p = require('path');
+    const _D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
+    _fs.appendFileSync(_p.join(_D, 'salesmartly-inbox.jsonl'), JSON.stringify({ t: Date.now(), body: req.body, via: 'relay' }) + String.fromCharCode(10));
+  } catch (e) { console.error('[SS relay]', e.message); }
+});
+
 app.post("/api/salesmartly/webhook", express.json({ limit: "1mb" }), async (req, res) => {
   try {
     const rawBody = req.body || {};
