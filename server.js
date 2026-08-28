@@ -4438,6 +4438,15 @@ app.get('/api/admin/peek-context', async (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message, stack: e.stack && e.stack.slice(0,500) }); }
 });
 
+app.post('/api/salesmartly/webhook', express.json({ limit: '2mb' }), (req, res) => {
+  res.json({ ok: true });
+  try {
+    const _fs = require('fs'), _p = require('path');
+    const D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
+    _fs.appendFileSync(_p.join(D, 'salesmartly-inbox.jsonl'), JSON.stringify({ t: Date.now(), body: req.body }) + '\n');
+  } catch (e) { console.error('[SS webhook]', e.message); }
+});
+
 app.post('/api/telegram/webhook', express.json({ limit: '1mb' }), async (req, res) => {
   res.json({ ok: true }); // ack immediately so Telegram doesn't retry
   try {
