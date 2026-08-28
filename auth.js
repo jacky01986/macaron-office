@@ -105,6 +105,7 @@ module.exports = function attachAuth(app) {
     /^\/api\/auth\/status$/,
     /^\/api\/telegram\/webhook$/,
     /^\/api\/salesmartly\/webhook$/,
+    /^\/api\/salesmartly\/relay$/,
     /^\/api\/line\/webhook$/,
     /^\/api\/health$/,
     /^\/favicon/,
