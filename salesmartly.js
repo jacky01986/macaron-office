@@ -367,5 +367,61 @@ async function listMessagesNormalized(chat_user_id, opts) {
   })).filter(m => m.text && m.text.length > 0 && !m.text.startsWith('{"channel_info"'));
 }
 
-module.exports = { signParams, apiCall, listRecentConversations, listMessages, listMessagesNormalized, extractTopQuestions, getCustomerInsights, formatBriefingSection, probeAll, getVisitorInfo, getCustomerProfiles,
+
+async function buildDailyInboxAnalysis({ anthropic, hours = 24 } = {}) {
+  const fs = require('fs'), path = require('path');
+  const D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
+  const f = path.join(D, 'salesmartly-inbox.jsonl');
+  let raw = '';
+  try { raw = fs.readFileSync(f, 'utf8'); } catch (e) {
+    return '📥 溫點 SS 每日對話彙整：目前尚無資料（webhook 尚未收到訊息或未設定）。';
+  }
+  const since = Date.now() - hours * 3600 * 1000;
+  const events = [];
+  for (const ln of raw.split('\n')) {
+    if (!ln) continue;
+    try { const o = JSON.parse(ln); if ((o.t || 0) >= since) events.push(o); } catch (e) {}
+  }
+  if (!events.length) return '📥 溫點 SS 每日對話彙整：過去 ' + hours + ' 小時無新訊息。';
+  const msgs = [];
+  for (const e of events) {
+    const b = (e && e.body) || {};
+    let data = b.data;
+    if (typeof data === 'string') { try { data = JSON.parse(data); } catch (x) { data = {}; } }
+    data = data || {};
+    const content = data.content || data.message || data.text || data.msg ||
+      (data.messages && data.messages[0] && (data.messages[0].content || data.messages[0].text)) || '';
+    const channel = data.channel || data.source || data.channel_type || b.channel || '';
+    const user = data.chat_user_id || data.contact_id || data.visitor_id || data.from || data.user_id || '';
+    const dir = String(data.direction || data.msg_type || data.type || '');
+    const fromCustomer = dir ? /in|customer|visitor|user|1/i.test(dir) : true;
+    const txt = String(content).replace(/\s+/g, ' ').trim().slice(0, 300);
+    if (txt) msgs.push({ channel: channel || '未知', user, txt, fromCustomer });
+  }
+  const chCount = {};
+  msgs.forEach(m => { chCount[m.channel] = (chCount[m.channel] || 0) + 1; });
+  const chLine = Object.entries(chCount).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ':' + v).join('  ') || '無';
+  if (!msgs.length) return '📥 溫點 SS 每日對話彙整：收到 ' + events.length + ' 筆事件但無可解析文字（結構待確認）。';
+  if (!anthropic) {
+    return '📥 溫點 SS 每日對話彙整（' + msgs.length + ' 則）\n渠道量：' + chLine;
+  }
+  const sample = msgs.slice(0, 120).map(m => (m.fromCustomer ? '客' : '客服') + '[' + m.channel + ']: ' + m.txt).join('\n');
+  const prompt = '以下是溫點 WarmPlace（台南手工胖卡龍）過去一天客服對話（每行一則，客＝客人、客服＝我方）。請用繁體中文做「每日客服彙整」，400 字內，純文字不要 markdown 不要星號或井字號，分五段：\n1) 常見問題 TOP3\n2) 成交機會：列出想買或詢價的客人（用渠道＋片語代稱）並標熱／溫／冷\n3) 漏回提醒：有問但看起來沒被回的\n4) 情緒／滿意度：點出不滿或抱怨\n5) 渠道量：' + chLine + '\n\n對話：\n' + sample;
+  let out = '';
+  try {
+    const resp = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-latest',
+      max_tokens: 900,
+      messages: [{ role: 'user', content: prompt }]
+    });
+    out = (resp && resp.content && resp.content[0] && resp.content[0].text) || '';
+  } catch (e) {
+    return '📥 溫點 SS 每日彙整：分析失敗（' + e.message + '）。訊息數：' + msgs.length + '，渠道：' + chLine;
+  }
+  return '📥 溫點 SS 每日對話彙整（' + msgs.length + ' 則）\n\n' + out.trim();
+}
+
+
+module.exports = {
+  buildDailyInboxAnalysis, signParams, apiCall, listRecentConversations, listMessages, listMessagesNormalized, extractTopQuestions, getCustomerInsights, formatBriefingSection, probeAll, getVisitorInfo, getCustomerProfiles,
 };
