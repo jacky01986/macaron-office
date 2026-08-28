@@ -1814,6 +1814,19 @@ cron.schedule("0 17 * * 5", () => {
 // ============================================================
 // 主動推播：每日 09:00 早安簡報 + 每 30 分鐘事件監控
 // ============================================================
+
+// [SS] 每日 09:00 (Asia/Taipei) SaleSmartly 對話彙整推播到 Telegram
+cron.schedule('0 9 * * *', async () => {
+  try {
+    const chat = process.env.TELEGRAM_CHAT_ID;
+    if (chat && salesmartly && salesmartly.buildDailyInboxAnalysis) {
+      const txt = await salesmartly.buildDailyInboxAnalysis({ anthropic });
+      if (txt) sendTelegram(chat, txt);
+      console.log('[SS digest] sent, len=' + (txt ? txt.length : 0));
+    }
+  } catch (e) { console.error('[SS digest]', e.message); }
+}, { timezone: 'Asia/Taipei' });
+
 cron.schedule("0 9 * * *", async () => {
   console.log("[alerts] running daily briefing...");
   try {
