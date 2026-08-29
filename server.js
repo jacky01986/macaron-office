@@ -1826,6 +1826,19 @@ cron.schedule("0 17 * * 5", () => {
 // 主動推播：每日 09:00 早安簡報 + 每 30 分鐘事件監控
 // ============================================================
 
+
+// [SS] 每週一 09:30 (Asia/Taipei) SaleSmartly 每週深度診斷推播到 Telegram
+cron.schedule('30 9 * * 1', async () => {
+  try {
+    const chat = process.env.TELEGRAM_CHAT_ID;
+    if (chat && salesmartly && salesmartly.buildWeeklyDeepAnalysis) {
+      const txt = await salesmartly.buildWeeklyDeepAnalysis({ anthropic });
+      if (txt) sendTelegram(chat, txt);
+      console.log('[SS weekly] sent, len=' + (txt ? txt.length : 0));
+    }
+  } catch (e) { console.error('[SS weekly]', e.message); }
+}, { timezone: 'Asia/Taipei' });
+
 // [SS] 每日 09:00 (Asia/Taipei) SaleSmartly 對話彙整推播到 Telegram
 cron.schedule('0 9 * * *', async () => {
   try {
