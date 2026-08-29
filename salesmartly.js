@@ -376,6 +376,7 @@ async function buildDailyInboxAnalysis({ anthropic, hours = 24 } = {}) {
   try { raw = fs.readFileSync(f, 'utf8'); } catch (e) {
     return '📥 溫點 SS 每日對話彙整：目前尚無資料（webhook 尚未收到訊息或未設定）。';
   }
+  const brandRe = new RegExp(process.env.SS_BRAND_MATCH || '溫點|warmplace|胖卡龍', 'i');
   const since = Date.now() - hours * 3600 * 1000;
   const events = [];
   for (const ln of raw.split('\n')) {
@@ -384,36 +385,34 @@ async function buildDailyInboxAnalysis({ anthropic, hours = 24 } = {}) {
   }
   if (!events.length) return '📥 溫點 SS 每日對話彙整：過去 ' + hours + ' 小時無新訊息。';
   const msgs = [];
+  let skipped = 0;
   for (const e of events) {
     const b = (e && e.body) || {};
     let data = b.data;
     if (typeof data === 'string') { try { data = JSON.parse(data); } catch (x) { data = {}; } }
     data = data || {};
+    const cname = String(data.channel_name || data.channel || '未知');
+    if (!brandRe.test(cname)) { skipped++; continue; }
     let content = data.msg || data.content || data.message || data.text || '';
     if (content && typeof content === 'object') content = content.text || content.content || JSON.stringify(content);
-    const channel = data.channel_name || data.channel || '未知';
     const st = String(data.sender_type || data.senderType || '');
     const fromCustomer = st === '2' ? false : true;
     const txt = String(content).replace(/\s+/g, ' ').trim().slice(0, 300);
-    if (txt) msgs.push({ channel: String(channel), txt, fromCustomer });
+    if (txt) msgs.push({ channel: cname, txt, fromCustomer });
   }
   const chCount = {};
   msgs.forEach(m => { chCount[m.channel] = (chCount[m.channel] || 0) + 1; });
   const chLine = Object.entries(chCount).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ':' + v).join('  ') || '無';
-  if (!msgs.length) return '📥 溫點 SS 每日對話彙整：收到 ' + events.length + ' 筆事件但無可解析文字。';
+  if (!msgs.length) return '📥 溫點 SS 每日對話彙整：過去 ' + hours + ' 小時無溫點／胖卡龍訊息（已略過其他品牌 ' + skipped + ' 則）。';
   if (!anthropic) {
-    return '📥 溫點 SS 每日對話彙整（' + msgs.length + ' 則）\n渠道量：' + chLine;
+    return '📥 溫點 SS 每日對話彙整（' + msgs.length + ' 則，已排除他牌 ' + skipped + ' 則）\n渠道量：' + chLine;
   }
   const sample = msgs.slice(0, 150).map(m => (m.fromCustomer ? '客' : '客服') + '[' + m.channel + ']: ' + m.txt).join('\n');
   const prompt = '以下是溫點 WarmPlace（台南手工胖卡龍）過去一天客服對話（每行一則，客＝客人、客服＝我方）。請用繁體中文做「每日客服彙整」，400 字內，純文字不要 markdown 不要星號或井字號，分五段：\n1) 常見問題 TOP3\n2) 成交機會：列出想買或詢價的客人（用渠道＋片語代稱）並標熱／溫／冷\n3) 漏回提醒：有問但看起來沒被回的\n4) 情緒／滿意度：點出不滿或抱怨\n5) 渠道量：' + chLine + '\n\n對話：\n' + sample;
   const model = process.env.SS_DIGEST_MODEL || process.env.CLAUDE_MODEL || 'claude-opus-4-8';
   let out = '';
   try {
-    const resp = await anthropic.messages.create({
-      model: model,
-      max_tokens: 1200,
-      messages: [{ role: 'user', content: prompt }]
-    });
+    const resp = await anthropic.messages.create({ model: model, max_tokens: 1200, messages: [{ role: 'user', content: prompt }] });
     out = (resp && resp.content && resp.content[0] && resp.content[0].text) || '';
   } catch (e) {
     return '📥 溫點 SS 每日彙整（' + msgs.length + ' 則，分析暫時失敗）\n渠道量：' + chLine + '\n' + String(e.message).slice(0, 100);
