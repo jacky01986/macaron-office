@@ -303,6 +303,8 @@ app.get("/api/meta/inbox", async (req, res) => {
 app.get("/api/salesmartly/webhook/recent", (req, res) => { res.json({ count: __webhookHits.length, hits: __webhookHits.slice(-20) }); });
 
 app.post('/api/salesmartly/relay', express.json({ limit: '2mb' }), (req, res) => {
+  const _rk = process.env.RELAY_SECRET;
+  if (_rk && req.get('x-relay-key') !== _rk) { return res.status(401).json({ error: 'bad relay key' }); }
   res.json({ ok: true });
   try {
     const _fs = require('fs'), _p = require('path');
