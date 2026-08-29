@@ -408,11 +408,11 @@ async function buildDailyInboxAnalysis({ anthropic, hours = 24 } = {}) {
     return '📥 溫點 SS 每日對話彙整（' + msgs.length + ' 則，已排除他牌 ' + skipped + ' 則）\n渠道量：' + chLine;
   }
   const sample = msgs.slice(0, 150).map(m => (m.fromCustomer ? '客' : '客服') + '[' + m.channel + ']: ' + m.txt).join('\n');
-  const prompt = '以下是溫點 WarmPlace（台南手工胖卡龍）過去一天客服對話（每行一則，客＝客人、客服＝我方）。請用繁體中文做「每日客服彙整」，400 字內，純文字不要 markdown 不要星號或井字號，分五段：\n1) 常見問題 TOP3\n2) 成交機會：列出想買或詢價的客人（用渠道＋片語代稱）並標熱／溫／冷\n3) 漏回提醒：有問但看起來沒被回的\n4) 情緒／滿意度：點出不滿或抱怨\n5) 渠道量：' + chLine + '\n\n對話：\n' + sample;
+  const prompt = '以下是溫點 WarmPlace（台南手工胖卡龍）過去一天客服對話（每行一則，客＝客人、客服＝我方）。請用繁體中文做「每日客服彙整」，純文字不要 markdown 不要星號或井字號，分六段：\n1) 常見問題 TOP3\n2) 成交機會：列出想買或詢價的客人（用渠道＋片語代稱）並標熱／溫／冷\n3) 漏回提醒：有問但看起來沒被回的\n4) 情緒／滿意度：點出不滿或抱怨\n5) 渠道量：' + chLine + '\n6) 今日核心問題與行動：挑最多3個當日最關鍵的問題，每個一行寫「問題→根因→今日建議動作」\n\n對話：\n' + sample;
   const model = process.env.SS_DIGEST_MODEL || process.env.CLAUDE_MODEL || 'claude-opus-4-8';
   let out = '';
   try {
-    const resp = await anthropic.messages.create({ model: model, max_tokens: 1200, messages: [{ role: 'user', content: prompt }] });
+    const resp = await anthropic.messages.create({ model: model, max_tokens: 1500, messages: [{ role: 'user', content: prompt }] });
     out = (resp && resp.content && resp.content[0] && resp.content[0].text) || '';
   } catch (e) {
     return '📥 溫點 SS 每日彙整（' + msgs.length + ' 則，分析暫時失敗）\n渠道量：' + chLine + '\n' + String(e.message).slice(0, 100);
@@ -420,6 +420,55 @@ async function buildDailyInboxAnalysis({ anthropic, hours = 24 } = {}) {
   return '📥 溫點 SS 每日對話彙整（' + msgs.length + ' 則）\n\n' + out.trim();
 }
 
+async function buildWeeklyDeepAnalysis({ anthropic, days = 7 } = {}) {
+  const fs = require('fs'), path = require('path');
+  const D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
+  const f = path.join(D, 'salesmartly-inbox.jsonl');
+  let raw = '';
+  try { raw = fs.readFileSync(f, 'utf8'); } catch (e) {
+    return '📊 溫點 SS 每週深度診斷：目前尚無資料。';
+  }
+  const brandRe = new RegExp(process.env.SS_BRAND_MATCH || '溫點|warmplace|胖卡龍', 'i');
+  const since = Date.now() - days * 24 * 3600 * 1000;
+  const msgs = [];
+  const chCount = {};
+  for (const ln of raw.split('\n')) {
+    if (!ln) continue;
+    let o; try { o = JSON.parse(ln); } catch (e) { continue; }
+    if ((o.t || 0) < since) continue;
+    let data = (o.body || {}).data;
+    if (typeof data === 'string') { try { data = JSON.parse(data); } catch (x) { data = {}; } }
+    data = data || {};
+    const cname = String(data.channel_name || data.channel || '未知');
+    if (!brandRe.test(cname)) continue;
+    let content = data.msg || data.content || data.message || data.text || '';
+    if (content && typeof content === 'object') content = content.text || content.content || JSON.stringify(content);
+    const st = String(data.sender_type || data.senderType || '');
+    const fromCustomer = st === '2' ? false : true;
+    const txt = String(content).replace(/\s+/g, ' ').trim().slice(0, 300);
+    if (!txt) continue;
+    chCount[cname] = (chCount[cname] || 0) + 1;
+    msgs.push({ channel: cname, txt, fromCustomer });
+  }
+  if (!msgs.length) return '📊 溫點 SS 每週深度診斷：過去 ' + days + ' 天無溫點／胖卡龍訊息。';
+  const chLine = Object.entries(chCount).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ':' + v).join('  ');
+  if (!anthropic) return '📊 溫點 SS 每週概況（' + msgs.length + ' 則）\n渠道量：' + chLine;
+  const step = Math.max(1, Math.floor(msgs.length / 250));
+  const picked = msgs.filter((_, i) => i % step === 0).slice(0, 250);
+  const sample = picked.map(m => (m.fromCustomer ? '客' : '客服') + '[' + m.channel + ']: ' + m.txt).join('\n');
+  const prompt = '你是溫點 WarmPlace（台南手工胖卡龍）的行銷與客服顧問。以下是過去 ' + days + ' 天的客服對話抽樣（客＝客人、客服＝我方）。請用繁體中文做「每週深度診斷」，純文字不要 markdown 不要星號或井字號，900 字內，分四大段：\n一、一週概況：訊息量、主要渠道、看得出的成交機會數與漏回情形\n二、核心問題（3至5個，依重要性排序）：每個寫【問題】與【根因】\n三、解決方案：對應每一個核心問題，給【建議話術或SOP】與【流程／定價／跟進機制建議】\n四、本週優先行動（3至5條，可執行、排序）\n\n本週訊息量：' + msgs.length + '　渠道量：' + chLine + '\n\n對話抽樣：\n' + sample;
+  const model = process.env.SS_DIGEST_MODEL || process.env.CLAUDE_MODEL || 'claude-opus-4-8';
+  let out = '';
+  try {
+    const resp = await anthropic.messages.create({ model: model, max_tokens: 2000, messages: [{ role: 'user', content: prompt }] });
+    out = (resp && resp.content && resp.content[0] && resp.content[0].text) || '';
+  } catch (e) {
+    return '📊 溫點 SS 每週深度診斷（' + msgs.length + ' 則，分析暫時失敗）\n渠道量：' + chLine + '\n' + String(e.message).slice(0, 100);
+  }
+  return '📊 溫點 SS 每週深度診斷（近 ' + days + ' 天 ' + msgs.length + ' 則）\n\n' + out.trim();
+}
+
 module.exports = {
+  buildWeeklyDeepAnalysis,
   buildDailyInboxAnalysis, signParams, apiCall, listRecentConversations, listMessages, listMessagesNormalized, extractTopQuestions, getCustomerInsights, formatBriefingSection, probeAll, getVisitorInfo, getCustomerProfiles,
 };
