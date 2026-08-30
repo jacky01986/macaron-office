@@ -1869,8 +1869,8 @@ cron.schedule('0 9 1 * *', async () => {
 cron.schedule('0 10 * * *', async () => {
   try {
     const chat = process.env.TELEGRAM_CHAT_ID;
-    if (chat && salesmartly && salesmartly.getNewAnomaliesText) {
-      const t = await salesmartly.getNewAnomaliesText();
+    if (chat && salesmartly && salesmartly.getWenAnomaliesText) {
+      const t = await salesmartly.getWenAnomaliesText();
       if (t) { sendTelegram(chat, t); console.log('[SS anomaly] pushed'); }
     }
   } catch (e) { console.error('[SS anomaly]', e.message); }
