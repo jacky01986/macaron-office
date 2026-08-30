@@ -550,6 +550,7 @@ async function getNewAnomaliesText() {
   let last = 0;
   try { last = parseInt(fs.readFileSync(stateF, 'utf8'), 10) || 0; } catch (e) {}
   const findings = [];
+  const anomBrandRe = new RegExp(process.env.SS_BRAND_MATCH || '溫點|warmplace|胖卡龍', 'i');
   let maxT = last;
   for (const ln of raw.split('\n')) {
     if (!ln) continue;
@@ -557,7 +558,7 @@ async function getNewAnomaliesText() {
     const t = Date.parse(o.t) || 0;
     if (t <= last) continue;
     if (t > maxT) maxT = t;
-    (o.findings || []).forEach(fd => { if (fd && fd.message) findings.push((fd.severity === 'high' ? '🔴' : '🟡') + ' ' + fd.message); });
+    (o.findings || []).forEach(fd => { if (fd && fd.message && anomBrandRe.test((fd.branch || '') + ' ' + fd.message)) findings.push((fd.severity === 'high' ? '🔴' : '🟡') + ' ' + fd.message); });
   }
   try { fs.writeFileSync(stateF, String(maxT)); } catch (e) {}
   if (!findings.length) return null;
