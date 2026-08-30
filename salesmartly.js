@@ -565,7 +565,52 @@ async function getNewAnomaliesText() {
   return '⚠️ 溫點系統異樣通報（' + findings.length + ' 則' + (findings.length > 40 ? '，顯示最新 40' : '') + '）\n\n' + shown.join('\n');
 }
 
+
+async function runQuarterlyReportToDrive({ anthropic } = {}) {
+  const fs = require('fs'), path = require('path');
+  const d = new Date();
+  const q = Math.floor(d.getMonth() / 3);
+  const py = q === 0 ? d.getFullYear() - 1 : d.getFullYear();
+  const pq = q === 0 ? 4 : q;
+  const title = '溫點 WarmPlace 季報（' + py + ' Q' + pq + '）';
+  let shopBody = '（無法取得銷售資料）';
+  try {
+    const sl = require('./shopline');
+    const r = await sl.getOrdersSummary({ days: 92 });
+    if (r && r.ok !== false) {
+      shopBody = '近 92 天已付營收：NT$' + Number(r.total_revenue || 0).toLocaleString() +
+        '\n訂單數：' + (r.count || 0) + '（已付 ' + (r.paid_count || 0) + '）' +
+        '\n客單價 AOV：NT$' + Number(r.aov_paid || 0).toLocaleString() +
+        '\n售出件數：' + (r.total_qty || 0);
+      if (r.top_skus && r.top_skus.length) shopBody += '\n\n熱銷 TOP5：\n' + r.top_skus.slice(0, 5).map((s, i) => (i + 1) + '. ' + (s.sku || s.name || '?') + ' × ' + (s.q || s.qty || 0)).join('\n');
+    }
+  } catch (e) { shopBody = '銷售資料讀取失敗：' + e.message; }
+  let ssBody = '（無客服資料）';
+  try { ssBody = await buildWeeklyDeepAnalysis({ anthropic: anthropic, days: 92 }); } catch (e) { ssBody = '客服分析失敗：' + e.message; }
+  ssBody = String(ssBody).replace(/^📊[^\n]*\n+/, '');
+  const sections = [
+    { heading: '一、季銷售概況（Shopline・近 92 天）', body: shopBody },
+    { heading: '二、客服對話深度診斷（SaleSmartly・僅溫點）', body: ssBody },
+    { heading: '三、備註', body: '本季報由系統每季首月 1 日自動產生，涵蓋上一季概況並上傳雲端。外部競品市場分析需另行手動更新。' }
+  ];
+  const files = require('./files');
+  const pdf = await files.generatePdf({ title: title, sections: sections });
+  if (!pdf || !pdf.ok) throw new Error('pdf fail: ' + JSON.stringify(pdf).slice(0, 150));
+  const D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
+  const buf = fs.readFileSync(path.join(D, 'exports', pdf.filename));
+  const folderId = process.env.GDRIVE_REPORT_FOLDER_ID || process.env.GDRIVE_FOLDER_ID;
+  let driveId = null, driveErr = null;
+  try { if (!folderId) throw new Error('未設定 GDRIVE_FOLDER_ID'); driveId = await uploadPdfToDrive(pdf.filename, buf, folderId); } catch (e) { driveErr = e.message; }
+  const base = process.env.PUBLIC_BASE_URL || 'https://macaron-office.onrender.com';
+  let text = '📈 溫點季報已產生：' + title + '\n檔案：' + pdf.filename + '（' + pdf.bytes + ' bytes）';
+  if (driveId) text += '\n☁️ 已上傳 Google Drive（file id: ' + driveId + '）';
+  else text += '\n⚠️ 雲端上傳失敗：' + driveErr;
+  text += '\n🔗 下載：' + (String(pdf.url).startsWith('http') ? pdf.url : base + pdf.url);
+  return { ok: true, text: text, filename: pdf.filename, driveId: driveId };
+}
+
 module.exports = {
+  runQuarterlyReportToDrive,
   runMonthlyReportToDrive,
   getNewAnomaliesText,
   buildMonthlyReportSections,
