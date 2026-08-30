@@ -536,7 +536,7 @@ async function runMonthlyReportToDrive({ anthropic } = {}) {
   let text = '📄 溫點月報已產生：' + built.title + '\n檔案：' + pdf.filename + '（' + pdf.bytes + ' bytes）';
   if (driveId) text += '\n☁️ 已上傳 Google Drive（file id: ' + driveId + '）';
   else text += '\n⚠️ 雲端上傳失敗：' + driveErr;
-  text += '\n🔗 下載：' + base + pdf.url;
+  text += '\n🔗 下載：' + (String(pdf.url).startsWith('http') ? pdf.url : base + pdf.url);
   return { ok: true, text: text, filename: pdf.filename, driveId: driveId };
 }
 
