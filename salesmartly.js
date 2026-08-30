@@ -468,7 +468,107 @@ async function buildWeeklyDeepAnalysis({ anthropic, days = 7 } = {}) {
   return '📊 溫點 SS 每週深度診斷（近 ' + days + ' 天 ' + msgs.length + ' 則）\n\n' + out.trim();
 }
 
+
+async function uploadPdfToDrive(name, buffer, folderId) {
+  const dp = require('./daily-progress');
+  const token = await dp.getAccessToken();
+  const boundary = '----macaronPdf' + Math.random().toString(36).slice(2);
+  const meta = { name: name, parents: [folderId], mimeType: 'application/pdf' };
+  const pre = Buffer.from('--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(meta) + '\r\n--' + boundary + '\r\nContent-Type: application/pdf\r\n\r\n', 'utf8');
+  const post = Buffer.from('\r\n--' + boundary + '--', 'utf8');
+  const body = Buffer.concat([pre, buffer, post]);
+  const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'multipart/related; boundary=' + boundary },
+    body: body
+  });
+  const d = await r.json();
+  if (!d.id) throw new Error('drive upload fail: ' + JSON.stringify(d).slice(0, 200));
+  return d.id;
+}
+
+async function buildMonthlyReportSections({ anthropic } = {}) {
+  const d = new Date();
+  const prev = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+  const ym = prev.getFullYear() + '-' + String(prev.getMonth() + 1).padStart(2, '0');
+  let shopBody = '（無法取得銷售資料）';
+  try {
+    const sl = require('./shopline');
+    const r = await sl.getOrdersSummary({ days: 31 });
+    if (r && r.ok !== false) {
+      shopBody = '近 31 天已付營收：NT$' + Number(r.total_revenue || 0).toLocaleString() +
+        '\n訂單數：' + (r.count || 0) + '（已付 ' + (r.paid_count || 0) + '）' +
+        '\n客單價 AOV：NT$' + Number(r.aov_paid || 0).toLocaleString() +
+        '\n售出件數：' + (r.total_qty || 0);
+      if (r.top_skus && r.top_skus.length) {
+        shopBody += '\n\n熱銷 TOP5：\n' + r.top_skus.slice(0, 5).map((s, i) => (i + 1) + '. ' + (s.sku || s.name || '?') + ' × ' + (s.q || s.qty || 0)).join('\n');
+      }
+    }
+  } catch (e) { shopBody = '銷售資料讀取失敗：' + e.message; }
+  let ssBody = '（無客服資料）';
+  try { ssBody = await buildWeeklyDeepAnalysis({ anthropic: anthropic, days: 31 }); } catch (e) { ssBody = '客服分析失敗：' + e.message; }
+  ssBody = String(ssBody).replace(/^📊[^\n]*\n+/, '');
+  return {
+    title: '溫點 WarmPlace 月報（' + ym + '）',
+    sections: [
+      { heading: '一、銷售概況（Shopline・近 31 天）', body: shopBody },
+      { heading: '二、客服對話深度診斷（SaleSmartly・僅溫點）', body: ssBody },
+      { heading: '三、備註', body: '本報告由系統每月 1 日自動產生，涵蓋上月概況並上傳雲端。外部競品市場分析需另行手動更新。' }
+    ]
+  };
+}
+
+async function runMonthlyReportToDrive({ anthropic } = {}) {
+  const fs = require('fs'), path = require('path');
+  const built = await buildMonthlyReportSections({ anthropic: anthropic });
+  const files = require('./files');
+  const pdf = await files.generatePdf({ title: built.title, sections: built.sections });
+  if (!pdf || !pdf.ok) throw new Error('pdf fail: ' + JSON.stringify(pdf).slice(0, 150));
+  const D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
+  const buf = fs.readFileSync(path.join(D, 'exports', pdf.filename));
+  const folderId = process.env.GDRIVE_REPORT_FOLDER_ID || process.env.GDRIVE_FOLDER_ID;
+  let driveId = null, driveErr = null;
+  try {
+    if (!folderId) throw new Error('未設定 GDRIVE_FOLDER_ID');
+    driveId = await uploadPdfToDrive(pdf.filename, buf, folderId);
+  } catch (e) { driveErr = e.message; }
+  const base = process.env.PUBLIC_BASE_URL || 'https://macaron-office.onrender.com';
+  let text = '📄 溫點月報已產生：' + built.title + '\n檔案：' + pdf.filename + '（' + pdf.bytes + ' bytes）';
+  if (driveId) text += '\n☁️ 已上傳 Google Drive（file id: ' + driveId + '）';
+  else text += '\n⚠️ 雲端上傳失敗：' + driveErr;
+  text += '\n🔗 下載：' + base + pdf.url;
+  return { ok: true, text: text, filename: pdf.filename, driveId: driveId };
+}
+
+async function getNewAnomaliesText() {
+  const fs = require('fs'), path = require('path');
+  const D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
+  const f = path.join(D, 'anomalies.jsonl');
+  const stateF = path.join(D, '.anom-last-push');
+  let raw = '';
+  try { raw = fs.readFileSync(f, 'utf8'); } catch (e) { return null; }
+  let last = 0;
+  try { last = parseInt(fs.readFileSync(stateF, 'utf8'), 10) || 0; } catch (e) {}
+  const findings = [];
+  let maxT = last;
+  for (const ln of raw.split('\n')) {
+    if (!ln) continue;
+    let o; try { o = JSON.parse(ln); } catch (e) { continue; }
+    const t = Date.parse(o.t) || 0;
+    if (t <= last) continue;
+    if (t > maxT) maxT = t;
+    (o.findings || []).forEach(fd => { if (fd && fd.message) findings.push((fd.severity === 'high' ? '🔴' : '🟡') + ' ' + fd.message); });
+  }
+  try { fs.writeFileSync(stateF, String(maxT)); } catch (e) {}
+  if (!findings.length) return null;
+  const shown = findings.slice(-40);
+  return '⚠️ 溫點系統異樣通報（' + findings.length + ' 則' + (findings.length > 40 ? '，顯示最新 40' : '') + '）\n\n' + shown.join('\n');
+}
+
 module.exports = {
+  runMonthlyReportToDrive,
+  getNewAnomaliesText,
+  buildMonthlyReportSections,
   buildWeeklyDeepAnalysis,
   buildDailyInboxAnalysis, signParams, apiCall, listRecentConversations, listMessages, listMessagesNormalized, extractTopQuestions, getCustomerInsights, formatBriefingSection, probeAll, getVisitorInfo, getCustomerProfiles,
 };
