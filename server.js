@@ -1840,6 +1840,19 @@ cron.schedule('30 9 * * 1', async () => {
 }, { timezone: 'Asia/Taipei' });
 
 
+
+// [SS] 每季首月(1/4/7/10) 1 號 09:15 (Asia/Taipei) 季報 PDF → Google Drive → Telegram
+cron.schedule('15 9 1 1,4,7,10 *', async () => {
+  try {
+    const chat = process.env.TELEGRAM_CHAT_ID;
+    if (chat && salesmartly && salesmartly.runQuarterlyReportToDrive) {
+      const r = await salesmartly.runQuarterlyReportToDrive({ anthropic });
+      if (r && r.text) sendTelegram(chat, r.text);
+      console.log('[SS quarterly] ' + (r && r.filename));
+    }
+  } catch (e) { console.error('[SS quarterly]', e.message); }
+}, { timezone: 'Asia/Taipei' });
+
 // [SS] 每月 1 號 09:00 (Asia/Taipei) 月報 PDF → Google Drive → Telegram
 cron.schedule('0 9 1 * *', async () => {
   try {
