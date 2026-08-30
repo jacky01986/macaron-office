@@ -1839,6 +1839,30 @@ cron.schedule('30 9 * * 1', async () => {
   } catch (e) { console.error('[SS weekly]', e.message); }
 }, { timezone: 'Asia/Taipei' });
 
+
+// [SS] 每月 1 號 09:00 (Asia/Taipei) 月報 PDF → Google Drive → Telegram
+cron.schedule('0 9 1 * *', async () => {
+  try {
+    const chat = process.env.TELEGRAM_CHAT_ID;
+    if (chat && salesmartly && salesmartly.runMonthlyReportToDrive) {
+      const r = await salesmartly.runMonthlyReportToDrive({ anthropic });
+      if (r && r.text) sendTelegram(chat, r.text);
+      console.log('[SS monthly] ' + (r && r.filename));
+    }
+  } catch (e) { console.error('[SS monthly]', e.message); }
+}, { timezone: 'Asia/Taipei' });
+
+// [SS] 每日 10:00 (Asia/Taipei) 異樣通報 → Telegram
+cron.schedule('0 10 * * *', async () => {
+  try {
+    const chat = process.env.TELEGRAM_CHAT_ID;
+    if (chat && salesmartly && salesmartly.getNewAnomaliesText) {
+      const t = await salesmartly.getNewAnomaliesText();
+      if (t) { sendTelegram(chat, t); console.log('[SS anomaly] pushed'); }
+    }
+  } catch (e) { console.error('[SS anomaly]', e.message); }
+}, { timezone: 'Asia/Taipei' });
+
 // [SS] 每日 09:00 (Asia/Taipei) SaleSmartly 對話彙整推播到 Telegram
 cron.schedule('0 9 * * *', async () => {
   try {
