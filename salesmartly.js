@@ -610,7 +610,59 @@ async function runQuarterlyReportToDrive({ anthropic } = {}) {
   return { ok: true, text: text, filename: pdf.filename, driveId: driveId };
 }
 
+
+async function getWenAnomaliesText() {
+  const fs = require('fs'), path = require('path');
+  const D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
+  const brandRe = new RegExp(process.env.SS_BRAND_MATCH || '溫點|warmplace|胖卡龍', 'i');
+  const alerts = [];
+  // 1) SS 溫點訊息量（今日 vs 近7日日均）
+  try {
+    const raw = fs.readFileSync(path.join(D, 'salesmartly-inbox.jsonl'), 'utf8');
+    const now = Date.now(), dayMs = 86400000;
+    const counts = new Array(8).fill(0);
+    for (const ln of raw.split('\n')) {
+      if (!ln) continue;
+      let o; try { o = JSON.parse(ln); } catch (e) { continue; }
+      const t = o.t || 0;
+      const ageDays = Math.floor((now - t) / dayMs);
+      if (ageDays < 0 || ageDays > 7) continue;
+      let data = (o.body || {}).data;
+      if (typeof data === 'string') { try { data = JSON.parse(data); } catch (x) { data = {}; } }
+      data = data || {};
+      const cn = String(data.channel_name || data.channel || '');
+      if (!brandRe.test(cn)) continue;
+      counts[ageDays]++;
+    }
+    const today = counts[0];
+    const avg = counts.slice(1).reduce((a, b) => a + b, 0) / 7;
+    if (avg >= 1) {
+      if (today >= Math.max(10, 2 * avg)) alerts.push('🔴 溫點 SS 訊息量暴增：今日 ' + today + ' 則，近7日均 ' + avg.toFixed(1) + ' 則（' + Math.round(today / avg * 100) + '%）');
+      else if (avg >= 5 && today <= 0.3 * avg) alerts.push('🟡 溫點 SS 訊息量驟降：今日 ' + today + ' 則，近7日均 ' + avg.toFixed(1) + ' 則');
+    }
+  } catch (e) {}
+  // 2) 溫點 Shopline 營收（近7天 vs 週均基準）
+  try {
+    const sl = require('./shopline');
+    const r7 = await sl.getOrdersSummary({ days: 7 });
+    const r28 = await sl.getOrdersSummary({ days: 28 });
+    const wk = Number((r7 && r7.total_revenue) || 0);
+    const base = Number((r28 && r28.total_revenue) || 0) / 4;
+    if (base >= 1000) {
+      if (wk < 0.5 * base) alerts.push('🔴 溫點營收下滑：近7天 NT$' + wk.toLocaleString() + '，週均基準 NT$' + Math.round(base).toLocaleString() + '（' + Math.round(wk / base * 100) + '%）');
+      else if (wk > 1.8 * base) alerts.push('🟢 溫點營收暴增：近7天 NT$' + wk.toLocaleString() + '，週均基準 NT$' + Math.round(base).toLocaleString() + '（' + Math.round(wk / base * 100) + '%）');
+    }
+  } catch (e) {}
+  if (!alerts.length) return null;
+  const stateF = path.join(D, '.wen-anom-last');
+  const sig = alerts.map(a => a.split('：')[0]).join('||');
+  try { if (fs.readFileSync(stateF, 'utf8') === sig) return null; } catch (e) {}
+  try { fs.writeFileSync(stateF, sig); } catch (e) {}
+  return '⚠️ 溫點異樣通報\n\n' + alerts.join('\n');
+}
+
 module.exports = {
+  getWenAnomaliesText,
   runQuarterlyReportToDrive,
   runMonthlyReportToDrive,
   getNewAnomaliesText,
