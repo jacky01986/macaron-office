@@ -368,6 +368,19 @@ async function listMessagesNormalized(chat_user_id, opts) {
 }
 
 
+function stripHtml(s) {
+  return String(s)
+    .replace(/<\s*li\s*>/gi, '・')
+    .replace(/<\s*\/\s*li\s*>/gi, '')
+    .replace(/<\s*br\s*\/?\s*>/gi, '\n')
+    .replace(/<\s*\/(p|div|ul|ol)\s*>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 async function buildDailyInboxAnalysis({ anthropic, hours = 24 } = {}) {
   const fs = require('fs'), path = require('path');
   const D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
@@ -414,6 +427,7 @@ async function buildDailyInboxAnalysis({ anthropic, hours = 24 } = {}) {
   try {
     const resp = await anthropic.messages.create({ model: model, max_tokens: 1500, messages: [{ role: 'user', content: prompt }] });
     out = (resp && resp.content && resp.content[0] && resp.content[0].text) || '';
+    out = stripHtml(out);
   } catch (e) {
     return '📥 溫點 SS 每日彙整（' + msgs.length + ' 則，分析暫時失敗）\n渠道量：' + chLine + '\n' + String(e.message).slice(0, 100);
   }
@@ -462,6 +476,7 @@ async function buildWeeklyDeepAnalysis({ anthropic, days = 7 } = {}) {
   try {
     const resp = await anthropic.messages.create({ model: model, max_tokens: 2000, messages: [{ role: 'user', content: prompt }] });
     out = (resp && resp.content && resp.content[0] && resp.content[0].text) || '';
+    out = stripHtml(out);
   } catch (e) {
     return '📊 溫點 SS 每週深度診斷（' + msgs.length + ' 則，分析暫時失敗）\n渠道量：' + chLine + '\n' + String(e.message).slice(0, 100);
   }
