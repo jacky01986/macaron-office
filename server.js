@@ -4366,7 +4366,7 @@ function tgSaveHistory(chatId, history) {
 }
 function tgClearHistory(chatId) { try { require('fs').unlinkSync(tgHistoryFile(chatId)); } catch {} }
 
-async async function sendTgDocument(chatId, filePath, caption) {
+async function sendTgDocument(chatId, filePath, caption) {
   try {
     const fs = require('fs'), path = require('path');
     const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -4383,7 +4383,7 @@ async async function sendTgDocument(chatId, filePath, caption) {
   } catch (e) { console.error('[sendTgDocument]', e.message); return false; }
 }
 
-function sendTelegram(chatId, text) {
+async function sendTelegram(chatId, text) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) return;
   const chunks = [];
