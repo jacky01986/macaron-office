@@ -552,7 +552,7 @@ async function runMonthlyReportToDrive({ anthropic } = {}) {
   if (driveId) text += '\n☁️ 已上傳 Google Drive（file id: ' + driveId + '）';
   else text += '\n⚠️ 雲端上傳失敗：' + driveErr;
   text += '\n🔗 下載：' + (String(pdf.url).startsWith('http') ? pdf.url : base + pdf.url);
-  return { ok: true, text: text, filename: pdf.filename, driveId: driveId };
+  return { ok: true, text: text, filename: pdf.filename, driveId: driveId, pdfPath: path.join(D, 'exports', pdf.filename) };
 }
 
 async function getNewAnomaliesText() {
@@ -622,7 +622,7 @@ async function runQuarterlyReportToDrive({ anthropic } = {}) {
   if (driveId) text += '\n☁️ 已上傳 Google Drive（file id: ' + driveId + '）';
   else text += '\n⚠️ 雲端上傳失敗：' + driveErr;
   text += '\n🔗 下載：' + (String(pdf.url).startsWith('http') ? pdf.url : base + pdf.url);
-  return { ok: true, text: text, filename: pdf.filename, driveId: driveId };
+  return { ok: true, text: text, filename: pdf.filename, driveId: driveId, pdfPath: path.join(D, 'exports', pdf.filename) };
 }
 
 
