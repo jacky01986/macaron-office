@@ -1701,7 +1701,7 @@ app.post('/api/image-gen/test', express.json(), async (req, res) => {
   try {
     const r = await imageGen.generateImage({
       caption: req.body.caption || '',
-      brief: req.body.brief || '台南手工職人精品胖卡龍 12 入禮盒',
+      brief: req.body.brief || '台南手工韓式胖卡龍 6入/9入禮盒',
       platform: req.body.platform || 'IG',
       slug: req.body.slug || 'test'
     });
@@ -2149,7 +2149,7 @@ async function handleLineEvent(event) {
 
 品牌資訊（用來回答）：
 - 4 家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2
-- 主力商品：6 入禮盒 NT$880 / 12 入禮盒 NT$1,580 / 客製禮盒 NT$1,580-2,280 / 單顆 NT$80-100
+- 主力商品：胖卡龍禮盒 6 入 NT$599 起 / 9 入 NT$850-899（經典口味 6 入 NT$599、9 入 NT$850；烤布蕾/海鹽香草 6 入 NT$620）；603 費南雪禮盒 6 入 NT$599 / 9 入 NT$899；節慶限定另有檔期價；企業大量訂購走「禮盒專案」另報價
 - 保存期限:常溫 6 小時、冷藏 3 天、冷凍 7 天(建議盡早食用)
 - 不含防腐劑，每日現做
 
@@ -2836,7 +2836,7 @@ app.post("/api/customers/:userId/analyze", async (req, res) => {
     if (!c) return res.status(404).json({ error: "customer not found" });
 
     const history = c.messages.slice(0, 30).reverse().map(m => `[${m.intent}] ${m.text}${m.replyText ? " → 店回覆：" + m.replyText.slice(0,60) : ""}`).join("\n");
-    const systemPrompt = `你是 溫點 WarmPlace 的客人分析師。根據客人與品牌客服的 LINE 對話紀錄，推測客人畫像並給出具體行動建議。品牌主打台南手工職人精品胖卡龍禮盒（6 入 NT$880 / 12 入 NT$1,580 / 客製禮盒 NT$1,580-2,280，婚禮 / 企業 / 自送三種場景），4 家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2。
+    const systemPrompt = `你是 溫點 WarmPlace 的客人分析師。根據客人與品牌客服的 LINE 對話紀錄，推測客人畫像並給出具體行動建議。品牌主打台南手工職人精品胖卡龍禮盒（6 入 NT$599 起 / 9 入 NT$850-899（另有 603 費南雪禮盒與節慶限定禮盒），婚禮 / 企業 / 自送三種場景），4 家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2。
 
 回覆 JSON：
 {
