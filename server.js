@@ -1847,7 +1847,7 @@ cron.schedule('15 9 1 1,4,7,10 *', async () => {
     const chat = process.env.TELEGRAM_CHAT_ID;
     if (chat && salesmartly && salesmartly.runQuarterlyReportToDrive) {
       const r = await salesmartly.runQuarterlyReportToDrive({ anthropic });
-      if (r && r.text) sendTelegram(chat, r.text);
+      if (r && r.pdfPath) { sendTgDocument(chat, r.pdfPath, r.text); } else if (r && r.text) { sendTelegram(chat, r.text); }
       console.log('[SS quarterly] ' + (r && r.filename));
     }
   } catch (e) { console.error('[SS quarterly]', e.message); }
@@ -1859,7 +1859,7 @@ cron.schedule('0 9 1 * *', async () => {
     const chat = process.env.TELEGRAM_CHAT_ID;
     if (chat && salesmartly && salesmartly.runMonthlyReportToDrive) {
       const r = await salesmartly.runMonthlyReportToDrive({ anthropic });
-      if (r && r.text) sendTelegram(chat, r.text);
+      if (r && r.pdfPath) { sendTgDocument(chat, r.pdfPath, r.text); } else if (r && r.text) { sendTelegram(chat, r.text); }
       console.log('[SS monthly] ' + (r && r.filename));
     }
   } catch (e) { console.error('[SS monthly]', e.message); }
@@ -4366,7 +4366,24 @@ function tgSaveHistory(chatId, history) {
 }
 function tgClearHistory(chatId) { try { require('fs').unlinkSync(tgHistoryFile(chatId)); } catch {} }
 
-async function sendTelegram(chatId, text) {
+async async function sendTgDocument(chatId, filePath, caption) {
+  try {
+    const fs = require('fs'), path = require('path');
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) return false;
+    const buf = fs.readFileSync(filePath);
+    const fd = new FormData();
+    fd.append('chat_id', String(chatId));
+    if (caption) fd.append('caption', String(caption).slice(0, 1000));
+    fd.append('document', new Blob([buf], { type: 'application/pdf' }), path.basename(filePath));
+    const r = await fetch('https://api.telegram.org/bot' + token + '/sendDocument', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.ok) console.error('[sendTgDocument]', JSON.stringify(d).slice(0, 200));
+    return !!d.ok;
+  } catch (e) { console.error('[sendTgDocument]', e.message); return false; }
+}
+
+function sendTelegram(chatId, text) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) return;
   const chunks = [];
