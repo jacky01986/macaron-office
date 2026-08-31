@@ -681,14 +681,14 @@ async function getWenAnomaliesText() {
     for (const ln of raw.split('\n')) {
       if (!ln) continue;
       let o; try { o = JSON.parse(ln); } catch (e) { continue; }
-      const t = Date.parse(o.t) || 0;
+      const t = Date.parse(o.ts) || 0;
       if (t <= last) continue;
       if (t > maxT) maxT = t;
       (o.findings || []).forEach(f => { if (f && f.message) branch.push((f.severity === 'high' ? '🔴' : '🟡') + ' 溫點門市 ' + f.message); });
     }
     if (branch.length) { try { fs.writeFileSync(bstate, String(maxT)); } catch (e) {} }
   } catch (e) {}
-  const all = metricSend.concat(branch.slice(-30));
+  const all = metricSend.concat([...new Set(branch)].slice(-30));
   if (!all.length) return null;
   return '⚠️ 溫點異樣通報\n\n' + all.join('\n');
 }
