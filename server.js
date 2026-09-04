@@ -327,6 +327,17 @@ app.post('/api/report/run', express.json({ limit: '12mb' }), async (req, res) =>
     return res.json({ ok: true, sent: sent, filename: r && r.filename, text: r && r.text });
   } catch (e) { console.error('[report/run]', e.message); return res.status(500).json({ ok: false, error: e.message }); }
 });
+app.get('/api/dashboard/metrics', async (req, res) => {
+  const fs = require('fs'), pth = require('path');
+  const D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
+  const out = { ok: true, updatedAt: new Date().toISOString() };
+  try { const s = require('./offline-reports').buildSummaryForAI(); out.stores = { by_branch: s.by_branch, by_month_all_stores: s.by_month_all_stores, total_revenue: s.total_revenue, all_branches: s.all_branches, all_months: s.all_months }; } catch (e) { out.storesErr = e.message; }
+  try { const sl = require('./shopline'); out.shopline = await sl.getOrdersSummary({ days: 31 }); } catch (e) { out.shoplineErr = e.message; }
+  try { const f = pth.join(D, 'salesmartly-inbox.jsonl'); let d24 = 0, d7 = 0, tot = 0; if (fs.existsSync(f)) { const now = Date.now(); fs.readFileSync(f, 'utf8').trim().split(String.fromCharCode(10)).forEach(function(l){ if (!l) return; tot++; try { const o = JSON.parse(l); const t = o.t || 0; if (now - t <= 86400000) d24++; if (now - t <= 604800000) d7++; } catch (_e) {} }); } out.ss = { inbox_24h: d24, inbox_7d: d7, inbox_total: tot }; } catch (e) { out.ssErr = e.message; }
+  try { const f = pth.join(D, 'anomalies.jsonl'); if (fs.existsSync(f)) { const L = fs.readFileSync(f, 'utf8').trim().split(String.fromCharCode(10)); const last = JSON.parse(L[L.length - 1]); out.anomalies = { ts: last.ts, findings: (last.findings || []).slice(0, 20) }; } } catch (e) { out.anomErr = e.message; }
+  try { const f = pth.join(D, 'ops-latest.json'); if (fs.existsSync(f)) out.ops = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) {}
+  res.json(out);
+});
 app.post("/api/salesmartly/webhook", express.json({ limit: "1mb" }), async (req, res) => {
   try {
     const rawBody = req.body || {};
