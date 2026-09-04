@@ -313,6 +313,20 @@ app.post('/api/salesmartly/relay', express.json({ limit: '2mb' }), (req, res) =>
   } catch (e) { console.error('[SS relay]', e.message); }
 });
 
+app.post('/api/report/run', express.json({ limit: '12mb' }), async (req, res) => {
+  try {
+    if (!process.env.REPORT_TOKEN || req.header('x-report-token') !== process.env.REPORT_TOKEN) return res.status(403).json({ ok: false, error: 'forbidden' });
+    const period = (req.body && req.body.period) || 'month';
+    const opsSections = (req.body && Array.isArray(req.body.opsSections)) ? req.body.opsSections : [];
+    const chat = process.env.TELEGRAM_CHAT_ID;
+    let r;
+    if (period === 'quarter') { r = await salesmartly.runQuarterlyReportToDrive({ anthropic, opsSections }); }
+    else { r = await salesmartly.runMonthlyReportToDrive({ anthropic, opsSections }); }
+    let sent = false;
+    if (chat && r && r.pdfPath) { sent = await sendTgDocument(chat, r.pdfPath, r.text); }
+    return res.json({ ok: true, sent: sent, filename: r && r.filename, text: r && r.text });
+  } catch (e) { console.error('[report/run]', e.message); return res.status(500).json({ ok: false, error: e.message }); }
+});
 app.post("/api/salesmartly/webhook", express.json({ limit: "1mb" }), async (req, res) => {
   try {
     const rawBody = req.body || {};
@@ -1846,7 +1860,7 @@ cron.schedule('15 9 1 1,4,7,10 *', async () => {
   try {
     const chat = process.env.TELEGRAM_CHAT_ID;
     if (chat && salesmartly && salesmartly.runQuarterlyReportToDrive) {
-      const r = await salesmartly.runQuarterlyReportToDrive({ anthropic });
+      const r = { skip: true }; // disabled: merged report via POST /api/report/run
       if (r && r.pdfPath) { sendTgDocument(chat, r.pdfPath, r.text); } else if (r && r.text) { sendTelegram(chat, r.text); }
       console.log('[SS quarterly] ' + (r && r.filename));
     }
@@ -1858,7 +1872,7 @@ cron.schedule('0 9 1 * *', async () => {
   try {
     const chat = process.env.TELEGRAM_CHAT_ID;
     if (chat && salesmartly && salesmartly.runMonthlyReportToDrive) {
-      const r = await salesmartly.runMonthlyReportToDrive({ anthropic });
+      const r = { skip: true }; // disabled: merged report via POST /api/report/run
       if (r && r.pdfPath) { sendTgDocument(chat, r.pdfPath, r.text); } else if (r && r.text) { sendTelegram(chat, r.text); }
       console.log('[SS monthly] ' + (r && r.filename));
     }
