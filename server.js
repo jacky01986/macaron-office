@@ -327,6 +327,16 @@ app.post('/api/report/run', express.json({ limit: '12mb' }), async (req, res) =>
     return res.json({ ok: true, sent: sent, filename: r && r.filename, text: r && r.text });
   } catch (e) { console.error('[report/run]', e.message); return res.status(500).json({ ok: false, error: e.message }); }
 });
+app.post('/api/dashboard/ops-sync', express.json({ limit: '2mb' }), (req, res) => {
+  try {
+    if (!process.env.REPORT_TOKEN || req.header('x-report-token') !== process.env.REPORT_TOKEN) return res.status(403).json({ ok: false, error: 'forbidden' });
+    const fs = require('fs'), pth = require('path');
+    const D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
+    const data = Object.assign({}, req.body || {}, { syncedAt: new Date().toISOString() });
+    fs.writeFileSync(pth.join(D, 'ops-latest.json'), JSON.stringify(data));
+    return res.json({ ok: true, syncedAt: data.syncedAt });
+  } catch (e) { return res.status(500).json({ ok: false, error: e.message }); }
+});
 app.get('/api/dashboard/metrics', async (req, res) => {
   const fs = require('fs'), pth = require('path');
   const D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
