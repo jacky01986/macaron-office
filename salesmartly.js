@@ -502,7 +502,7 @@ async function uploadPdfToDrive(name, buffer, folderId) {
   return d.id;
 }
 
-async function buildMonthlyReportSections({ anthropic } = {}) {
+async function buildMonthlyReportSections({ anthropic, opsSections } = {}) {
   const d = new Date();
   const prev = new Date(d.getFullYear(), d.getMonth() - 1, 1);
   const ym = prev.getFullYear() + '-' + String(prev.getMonth() + 1).padStart(2, '0');
@@ -528,14 +528,15 @@ async function buildMonthlyReportSections({ anthropic } = {}) {
     sections: [
       { heading: '一、銷售概況（Shopline・近 31 天）', body: shopBody },
       { heading: '二、客服對話深度診斷（SaleSmartly・僅溫點）', body: ssBody },
-      { heading: '三、備註', body: '本報告由系統每月 1 日自動產生，涵蓋上月概況並上傳雲端。外部競品市場分析需另行手動更新。' }
+      ...(Array.isArray(opsSections) ? opsSections.map(function(s){return { heading: String(s.heading||''), body: String(s.body||'') };}) : []),
+        { heading: '三、備註', body: '本報告由系統每月 1 日自動產生，涵蓋上月概況並上傳雲端。外部競品市場分析需另行手動更新。' }
     ]
   };
 }
 
-async function runMonthlyReportToDrive({ anthropic } = {}) {
+async function runMonthlyReportToDrive({ anthropic, opsSections } = {}) {
   const fs = require('fs'), path = require('path');
-  const built = await buildMonthlyReportSections({ anthropic: anthropic });
+  const built = await buildMonthlyReportSections({ anthropic: anthropic, opsSections: opsSections });
   const files = require('./files');
   const pdf = await files.generatePdf({ title: built.title, sections: built.sections });
   if (!pdf || !pdf.ok) throw new Error('pdf fail: ' + JSON.stringify(pdf).slice(0, 150));
