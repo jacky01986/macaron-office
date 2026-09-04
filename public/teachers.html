@@ -14,11 +14,12 @@ header h1{font-size:18px;margin:0}.upd{font-size:12px;opacity:.9}
 .kpi .lab{font-size:12px;color:var(--grey)}.kpi .val{font-size:23px;font-weight:700;margin-top:4px;color:var(--o)}.kpi .sub{font-size:11px;color:var(--grey);margin-top:2px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:800px){.grid{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px}.card h2{font-size:14px;margin:0 0 10px}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}th{color:var(--grey);font-weight:600}td.num{text-align:right}
-.anom{color:var(--red)}.muted{color:var(--grey);font-size:12px}.err{color:var(--red);font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}th{color:var(--grey);font-weight:600}td.num,th.num{text-align:right}
+.up{color:var(--green)}.down{color:var(--red)}.anom{color:var(--red)}.muted{color:var(--grey);font-size:12px}.err{color:var(--red);font-size:12px}
 </style></head><body>
 <header><h1>溫點 WarmPlace ｜ 營運即時儀表板</h1><div class="upd" id="upd">載入中…</div></header>
 <div class="wrap"><div class="kpis" id="kpis"></div>
+<div class="card"><h2>各店營收明細（本月 / 上月 / 變化）</h2><div id="storetbl"></div></div>
 <div class="grid"><div class="card"><h2>各店本月營收</h2><canvas id="branchChart" height="200"></canvas></div>
 <div class="card"><h2>Shopline 線上・近31天</h2><div id="shopline"></div></div></div>
 <div class="grid"><div class="card"><h2>門市營運異樣</h2><div id="anom"></div></div>
@@ -27,12 +28,17 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 var chart=null;
 function nt(n){n=Number(n)||0;return "NT$"+n.toLocaleString();}
 function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
-function latestMonth(bm){if(!bm||!bm.length)return null;var m=bm.slice().sort(function(a,b){return String(a.month).localeCompare(String(b.month));});return m[m.length-1];}
+function sortMonths(bm){if(!bm||!bm.length)return [];return bm.slice().sort(function(a,b){return String(a.month).localeCompare(String(b.month));});}
 async function load(){try{var r=await fetch("/api/dashboard/metrics",{credentials:"same-origin"});var ct=r.headers.get("content-type")||"";if(ct.indexOf("application/json")<0){document.getElementById("upd").textContent="請先登入後再檢視";return;}var d=await r.json();render(d);document.getElementById("upd").textContent="更新："+new Date(d.updatedAt).toLocaleString("zh-TW");}catch(e){document.getElementById("upd").textContent="讀取失敗："+e.message;}}
-function render(d){var lm=d.stores?latestMonth(d.stores.by_month_all_stores):null;var storeMonthTotal=lm?lm.total_revenue:0;var sl=d.shopline||{};var ss=d.ss||{};var an=d.anomalies||{findings:[]};
+function render(d){var ms=d.stores?sortMonths(d.stores.by_month_all_stores):[];var lm=ms.length?ms[ms.length-1]:null;var pm=ms.length>1?ms[ms.length-2]:null;var storeMonthTotal=lm?lm.total_revenue:0;var sl=d.shopline||{};var ss=d.ss||{};var an=d.anomalies||{findings:[]};
 var kp=[{lab:"各店本月營收("+((lm&&lm.month)||"-")+")",val:nt(storeMonthTotal),sub:"實體門市加總"},{lab:"Shopline已付營收(31天)",val:nt(sl.total_revenue||0),sub:"訂單 "+(sl.paid_count||sl.count||0)},{lab:"Shopline客單價",val:nt(sl.aov_paid||0),sub:"售出 "+(sl.total_qty||0)+" 件"},{lab:"客服詢問(24h)",val:(ss.inbox_24h!=null?ss.inbox_24h:"-"),sub:"近7天 "+(ss.inbox_7d!=null?ss.inbox_7d:"-")},{lab:"門市異樣",val:(an.findings?an.findings.length:0)+" 項",sub:(an.ts?String(an.ts).slice(0,10):"-")}];
 document.getElementById("kpis").innerHTML=kp.map(function(k){return "<div class=\"kpi\"><div class=\"lab\">"+esc(k.lab)+"</div><div class=\"val\">"+esc(k.val)+"</div><div class=\"sub\">"+esc(k.sub)+"</div></div>";}).join("");
-if(lm&&lm.by_branch){var names=Object.keys(lm.by_branch);var vals=names.map(function(n){return lm.by_branch[n].revenue||0;});var ctx=document.getElementById("branchChart").getContext("2d");if(chart)chart.destroy();chart=new Chart(ctx,{type:"bar",data:{labels:names,datasets:[{label:"營收",data:vals,backgroundColor:"#C65D2E"}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return (v/1000)+"k";}}}}}});}
+var names=[];if(lm&&lm.by_branch)names=Object.keys(lm.by_branch);if(pm&&pm.by_branch){Object.keys(pm.by_branch).forEach(function(n){if(names.indexOf(n)<0)names.push(n);});}
+var st="<table><tr><th>門市</th><th class=\"num\">本月("+((lm&&lm.month)||"-")+")</th><th class=\"num\">上月("+((pm&&pm.month)||"-")+")</th><th class=\"num\">變化</th></tr>";
+names.forEach(function(n){var cur=(lm&&lm.by_branch&&lm.by_branch[n])?lm.by_branch[n].revenue||0:0;var prev=(pm&&pm.by_branch&&pm.by_branch[n])?pm.by_branch[n].revenue||0:0;var chg=prev>0?((cur-prev)/prev*100):null;var cls=chg==null?"":(chg>=0?"up":"down");var chgs=chg==null?"—":((chg>=0?"+":"")+chg.toFixed(1)+"%");st+="<tr><td>"+esc(n)+"</td><td class=\"num\">"+nt(cur)+"</td><td class=\"num\">"+nt(prev)+"</td><td class=\"num "+cls+"\">"+chgs+"</td></tr>";});
+st+="<tr><td><b>合計</b></td><td class=\"num\"><b>"+nt(storeMonthTotal)+"</b></td><td class=\"num\">"+nt(pm?pm.total_revenue:0)+"</td><td class=\"num\"></td></tr></table>";
+if(d.storesErr)st+="<div class=\"err\">stores: "+esc(d.storesErr)+"</div>";document.getElementById("storetbl").innerHTML=st;
+if(lm&&lm.by_branch){var bn=Object.keys(lm.by_branch);var bv=bn.map(function(n){return lm.by_branch[n].revenue||0;});var ctx=document.getElementById("branchChart").getContext("2d");if(chart)chart.destroy();chart=new Chart(ctx,{type:"bar",data:{labels:bn,datasets:[{label:"營收",data:bv,backgroundColor:"#C65D2E"}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(x){return (x/1000)+"k";}}}}}});}
 var sh="<table><tr><th>指標</th><td class=\"num\">值</td></tr><tr><td>已付營收</td><td class=\"num\">"+nt(sl.total_revenue||0)+"</td></tr><tr><td>訂單(已付)</td><td class=\"num\">"+(sl.count||0)+" ("+(sl.paid_count||0)+")</td></tr><tr><td>客單價</td><td class=\"num\">"+nt(sl.aov_paid||0)+"</td></tr></table>";
 if(sl.top_skus&&sl.top_skus.length){sh+="<div class=\"muted\" style=\"margin-top:8px\">熱銷 TOP5</div><table>";sl.top_skus.slice(0,5).forEach(function(s,i){sh+="<tr><td>"+(i+1)+". "+esc(s.sku||s.name||"?")+"</td><td class=\"num\">"+(s.q||s.qty||0)+"</td></tr>";});sh+="</table>";}
 if(d.shoplineErr)sh+="<div class=\"err\">Shopline: "+esc(d.shoplineErr)+"</div>";document.getElementById("shopline").innerHTML=sh;
