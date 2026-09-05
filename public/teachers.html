@@ -35,7 +35,7 @@ canvas{max-height:280px}
   <div class="card">
     <h2>各店營收明細 <span class="tag" id="mtdNote"></span></h2>
     <table id="storeTbl"><thead><tr>
-      <th>門店</th><th>本月至今</th><th>上月同期</th><th>變化</th><th>月目標</th><th>達成率</th>
+      <th>門店</th><th>本月至今</th><th>上月同期</th><th>變化</th><th>月目標</th><th>達成率</th><th>資料更新至</th>
     </tr></thead><tbody></tbody></table>
     <div class="muted" id="storeErr"></div>
   </div>
@@ -91,16 +91,17 @@ async function load(){
     sumCur+=cur; sumPrev+=prev; if(target)sumTarget+=target;
     chartLabels.push(b); chartVals.push(cur);
     var dcls=delta>=0?"pos":"neg";
-    var dtxt=(prev? (delta>=0?"+":"")+pctTxt(dpct) : "新開");
+    var dtxt=(prev? (delta>=0?"+":"")+pctTxt(dpct) : "新開);
     var achBar = (ach!=null)? '<div class="bar"><i style="width:'+Math.min(100,ach).toFixed(0)+'%"></i></div>' : "";
+    var ld=(mtd&&mtd.by_branch&&mtd.by_branch[b]&&mtd.by_branch[b].last_date)?mtd.by_branch[b].last_date.slice(5).replace("-","/"):"—";
     rows.push("<tr><td>"+esc(b)+"</td><td>"+nf(cur)+"</td><td>"+nf(prev)+"</td>"+
       "<td class=\""+dcls+"\">"+dtxt+"<br><span style=\"font-size:11px\">"+(delta>=0?"+":"")+nf(delta)+"</span></td>"+
-      "<td>"+nf(target)+"</td><td>"+(ach!=null?pctTxt(ach):"—")+achBar+"</td></tr>");
+      "<td>"+nf(target)+"</td><td>"+(ach!=null?pctTxt(ach):"—")+achBar+"</td><td class=\"muted\">"+ld+"</td></tr>");
   });
   var totDelta=sumCur-sumPrev, totDpct=sumPrev?(sumCur/sumPrev-1)*100:null, totAch=sumTarget?(sumCur/sumTarget)*100:null;
   rows.push("<tr style=\"font-weight:700\"><td>全店合計</td><td>"+nf(sumCur)+"</td><td>"+nf(sumPrev)+"</td>"+
     "<td class=\""+(totDelta>=0?"pos":"neg")+"\">"+(sumPrev?(totDelta>=0?"+":"")+pctTxt(totDpct):"—")+"</td>"+
-    "<td>"+nf(sumTarget)+"</td><td>"+(totAch!=null?pctTxt(totAch):"—")+"</td></tr>");
+    "<td>"+nf(sumTarget)+"</td><td>"+(totAch!=null?pctTxt(totAch):"—")+"</td><td class=\"muted\">"+((mtd&&mtd.last_date)?mtd.last_date.slice(5).replace("-","/"):"—")+"</td></tr>");
   document.querySelector("#storeTbl tbody").innerHTML=rows.join("");
   document.getElementById("storeErr").textContent=stores.storesErr||o.storesErr||"";
   document.getElementById("mtdNote").textContent = mtd? ("本月至今 "+curM+" 到第"+mtd.through_day+"天 vs 上月同期") : (curM+" vs "+prevM);
