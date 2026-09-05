@@ -359,6 +359,7 @@ app.get('/api/dashboard/metrics', async (req, res) => {
           const bb = {};
           recs.forEach(function(r){ const d=mkey(r), m=d.slice(0,7), day=dayOf(d); if(day<1||day>through) return; const b=r.branch||'?'; bb[b]=bb[b]||{cur:0,prev:0}; if(m===curM) bb[b].cur+=(r.revenue||0); else if(m===prevM) bb[b].prev+=(r.revenue||0); });
           Object.keys(bb).forEach(function(b){ const o=bb[b]; o.delta=o.cur-o.prev; o.delta_pct=o.prev? Math.round((o.cur/o.prev-1)*1000)/10 : null; });
+          try { var _tf=pth.join(D,'offline-targets.json'); if(fs.existsSync(_tf)){ var _tg=JSON.parse(fs.readFileSync(_tf,'utf8')); Object.keys(bb).forEach(function(b){ var _tk=b+'|'+curM; var _tv=(_tg[_tk]&&typeof _tg[_tk].target==='number')?_tg[_tk].target:null; bb[b].target=_tv; bb[b].ach_pct=_tv?Math.round(bb[b].cur/_tv*1000)/10:null; }); } } catch(_e){}
           out.mtd = { cur_month: curM, prev_month: prevM, through_day: through, by_branch: bb };
         }
       } catch (e) { out.mtdErr = e.message; }
