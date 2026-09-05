@@ -346,6 +346,22 @@ app.get('/api/dashboard/metrics', async (req, res) => {
   try { const f = pth.join(D, 'salesmartly-inbox.jsonl'); let d24 = 0, d7 = 0, tot = 0; if (fs.existsSync(f)) { const now = Date.now(); fs.readFileSync(f, 'utf8').trim().split(String.fromCharCode(10)).forEach(function(l){ if (!l) return; tot++; try { const o = JSON.parse(l); const t = o.t || 0; if (now - t <= 86400000) d24++; if (now - t <= 604800000) d7++; } catch (_e) {} }); } out.ss = { inbox_24h: d24, inbox_7d: d7, inbox_total: tot }; } catch (e) { out.ssErr = e.message; }
   try { const f = pth.join(D, 'anomalies.jsonl'); if (fs.existsSync(f)) { const L = fs.readFileSync(f, 'utf8').trim().split(String.fromCharCode(10)); const last = JSON.parse(L[L.length - 1]); out.anomalies = { ts: last.ts, findings: (last.findings || []).slice(0, 20) }; } } catch (e) { out.anomErr = e.message; }
   try { const f = pth.join(D, 'ops-latest.json'); if (fs.existsSync(f)) out.ops = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) {}
+      try {
+        const rf = pth.join(D, 'offline-reports.jsonl');
+        if (fs.existsSync(rf)) {
+          const recs = fs.readFileSync(rf, 'utf8').trim().split(String.fromCharCode(10)).map(function(l){ try { return JSON.parse(l); } catch(_e){ return null; } }).filter(Boolean);
+          const mkey = function(r){ return (r.report_date||r.date||''); };
+          const months = Array.from(new Set(recs.map(function(r){ return mkey(r).slice(0,7); }).filter(Boolean))).sort();
+          const curM = months[months.length-1], prevM = months[months.length-2];
+          const dayOf = function(d){ return parseInt((d||'').slice(8,10),10)||0; };
+          const curDays = recs.filter(function(r){ return mkey(r).slice(0,7)===curM; }).map(function(r){ return dayOf(mkey(r)); });
+          const through = curDays.length ? Math.max.apply(null, curDays) : 0;
+          const bb = {};
+          recs.forEach(function(r){ const d=mkey(r), m=d.slice(0,7), day=dayOf(d); if(day<1||day>through) return; const b=r.branch||'?'; bb[b]=bb[b]||{cur:0,prev:0}; if(m===curM) bb[b].cur+=(r.revenue||0); else if(m===prevM) bb[b].prev+=(r.revenue||0); });
+          Object.keys(bb).forEach(function(b){ const o=bb[b]; o.delta=o.cur-o.prev; o.delta_pct=o.prev? Math.round((o.cur/o.prev-1)*1000)/10 : null; });
+          out.mtd = { cur_month: curM, prev_month: prevM, through_day: through, by_branch: bb };
+        }
+      } catch (e) { out.mtdErr = e.message; }
   res.json(out);
 });
 app.post("/api/salesmartly/webhook", express.json({ limit: "1mb" }), async (req, res) => {
