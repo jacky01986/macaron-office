@@ -83,7 +83,7 @@ async function load(){
     var cur, prev;
     if(mtd&&mtd.by_branch&&mtd.by_branch[b]){ cur=mtd.by_branch[b].cur; prev=mtd.by_branch[b].prev; }
     else { cur=(curRec.by_branch[b]||{}).revenue||0; prev=(prevRec.by_branch[b]||{}).revenue||0; }
-    var target=((curRec.by_branch[b]||{}).target);
+    var target=(mtd&&mtd.by_branch&&mtd.by_branch[b]&&mtd.by_branch[b].target!=null)?mtd.by_branch[b].target:((curRec.by_branch[b]||{}).target);
     if(target==null && curRec.by_branch[b] && curRec.by_branch[b].target===0) target=0;
     var delta=cur-prev;
     var dpct=prev? (cur/prev-1)*100 : null;
