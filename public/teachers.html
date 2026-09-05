@@ -8,41 +8,165 @@
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--dark)}
 header{background:var(--o);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
 header h1{font-size:18px;margin:0}.upd{font-size:12px;opacity:.9}
-.wrap{max-width:1200px;margin:0 auto;padding:16px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
-.kpi .lab{font-size:12px;color:var(--grey)}.kpi .val{font-size:23px;font-weight:700;margin-top:4px;color:var(--o)}.kpi .sub{font-size:11px;color:var(--grey);margin-top:2px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:800px){.grid{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px}.card h2{font-size:14px;margin:0 0 10px}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}th{color:var(--grey);font-weight:600}td.num,th.num{text-align:right}
-.up{color:var(--green)}.down{color:var(--red)}.anom{color:var(--red)}.muted{color:var(--grey);font-size:12px}.err{color:var(--red);font-size:12px}
+.kpi .lab{font-size:12px;color:var(--grey)}
+.kpi .val{font-size:22px;font-weight:700;margin-top:4px}
+.kpi .sub{font-size:11px;color:var(--grey);margin-top:3px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:18px}
+.card h2{font-size:15px;margin:0 0 12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--grey);font-weight:600;font-size:12px}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.bar{height:8px;border-radius:4px;background:#eee;overflow:hidden;margin-top:3px}
+.bar>i{display:block;height:100%;background:var(--o)}
+.muted{color:var(--grey);font-size:13px}
+.tag{display:inline-block;background:#f3e9e1;color:var(--o);border-radius:6px;padding:1px 7px;font-size:11px;margin-left:6px}
+.err{color:var(--red);font-size:12px}
+canvas{max-height:280px}
 </style></head><body>
-<header><h1>溫點 WarmPlace ｜ 營運即時儀表板</h1><div class="upd" id="upd">載入中…</div></header>
-<div class="wrap"><div class="kpis" id="kpis"></div>
-<div class="card"><h2>各店營收明細（本月 / 上月 / 變化）</h2><div id="storetbl"></div></div>
-<div class="grid"><div class="card"><h2>各店本月營收</h2><canvas id="branchChart" height="200"></canvas></div>
-<div class="card"><h2>Shopline 線上・近31天</h2><div id="shopline"></div></div></div>
-<div class="grid"><div class="card"><h2>門市營運異樣</h2><div id="anom"></div></div>
-<div class="card"><h2>營運指標（報廢/員購/調貨・最近同步）</h2><div id="ops"></div></div></div></div>
+<header><h1>溫點 WarmPlace ｜ 營運即時儀表板</h1><span class="upd" id="upd">載入中…</span></header>
+<div class="wrap">
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card">
+    <h2>各店營收明細 <span class="tag" id="mtdNote"></span></h2>
+    <table id="storeTbl"><thead><tr>
+      <th>門店</th><th>本月至今</th><th>上月同期</th><th>變化</th><th>月目標</th><th>達成率</th>
+    </tr></thead><tbody></tbody></table>
+    <div class="muted" id="storeErr"></div>
+  </div>
+
+  <div class="card"><h2>各店本月至今營收</h2><canvas id="branchChart"></canvas></div>
+
+  <div class="card"><h2>全店月營收趨勢</h2><canvas id="trendChart"></canvas></div>
+
+  <div class="card"><h2>Shopline 線上銷售（近 31 天）</h2><div id="shopline"></div></div>
+
+  <div class="card"><h2>門市異樣偵測</h2><div id="anom"></div></div>
+
+  <div class="card"><h2>最近同步（活動檔期・人事出勤・備品叫貨）</h2><div id="ops"></div></div>
+</div>
 <script>
-var chart=null;
-function nt(n){n=Number(n)||0;return "NT$"+n.toLocaleString();}
-function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
-function sortMonths(bm){if(!bm||!bm.length)return [];return bm.slice().sort(function(a,b){return String(a.month).localeCompare(String(b.month));});}
-async function load(){try{var r=await fetch("/api/dashboard/metrics",{credentials:"same-origin"});var ct=r.headers.get("content-type")||"";if(ct.indexOf("application/json")<0){document.getElementById("upd").textContent="請先登入後再檢視";return;}var d=await r.json();render(d);document.getElementById("upd").textContent="更新："+new Date(d.updatedAt).toLocaleString("zh-TW");}catch(e){document.getElementById("upd").textContent="讀取失敗："+e.message;}}
-function render(d){var ms=d.stores?sortMonths(d.stores.by_month_all_stores):[];var lm=ms.length?ms[ms.length-1]:null;var pm=ms.length>1?ms[ms.length-2]:null;var storeMonthTotal=lm?lm.total_revenue:0;var sl=d.shopline||{};var ss=d.ss||{};var an=d.anomalies||{findings:[]};
-var kp=[{lab:"各店本月營收("+((lm&&lm.month)||"-")+")",val:nt(storeMonthTotal),sub:"實體門市加總"},{lab:"Shopline已付營收(31天)",val:nt(sl.total_revenue||0),sub:"訂單 "+(sl.paid_count||sl.count||0)},{lab:"Shopline客單價",val:nt(sl.aov_paid||0),sub:"售出 "+(sl.total_qty||0)+" 件"},{lab:"客服詢問(24h)",val:(ss.inbox_24h!=null?ss.inbox_24h:"-"),sub:"近7天 "+(ss.inbox_7d!=null?ss.inbox_7d:"-")},{lab:"門市異樣",val:(an.findings?an.findings.length:0)+" 項",sub:(an.ts?String(an.ts).slice(0,10):"-")}];
-document.getElementById("kpis").innerHTML=kp.map(function(k){return "<div class=\"kpi\"><div class=\"lab\">"+esc(k.lab)+"</div><div class=\"val\">"+esc(k.val)+"</div><div class=\"sub\">"+esc(k.sub)+"</div></div>";}).join("");
-var names=[];if(lm&&lm.by_branch)names=Object.keys(lm.by_branch);if(pm&&pm.by_branch){Object.keys(pm.by_branch).forEach(function(n){if(names.indexOf(n)<0)names.push(n);});}
-var st="<table><tr><th>門市</th><th class=\"num\">本月("+((lm&&lm.month)||"-")+")</th><th class=\"num\">上月("+((pm&&pm.month)||"-")+")</th><th class=\"num\">變化</th></tr>";
-names.forEach(function(n){var cur=(lm&&lm.by_branch&&lm.by_branch[n])?lm.by_branch[n].revenue||0:0;var prev=(pm&&pm.by_branch&&pm.by_branch[n])?pm.by_branch[n].revenue||0:0;var chg=prev>0?((cur-prev)/prev*100):null;var cls=chg==null?"":(chg>=0?"up":"down");var chgs=chg==null?"—":((chg>=0?"+":"")+chg.toFixed(1)+"%");st+="<tr><td>"+esc(n)+"</td><td class=\"num\">"+nt(cur)+"</td><td class=\"num\">"+nt(prev)+"</td><td class=\"num "+cls+"\">"+chgs+"</td></tr>";});
-st+="<tr><td><b>合計</b></td><td class=\"num\"><b>"+nt(storeMonthTotal)+"</b></td><td class=\"num\">"+nt(pm?pm.total_revenue:0)+"</td><td class=\"num\"></td></tr></table>";
-if(d.storesErr)st+="<div class=\"err\">stores: "+esc(d.storesErr)+"</div>";document.getElementById("storetbl").innerHTML=st;
-if(lm&&lm.by_branch){var bn=Object.keys(lm.by_branch);var bv=bn.map(function(n){return lm.by_branch[n].revenue||0;});var ctx=document.getElementById("branchChart").getContext("2d");if(chart)chart.destroy();chart=new Chart(ctx,{type:"bar",data:{labels:bn,datasets:[{label:"營收",data:bv,backgroundColor:"#C65D2E"}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(x){return (x/1000)+"k";}}}}}});}
-var sh="<table><tr><th>指標</th><td class=\"num\">值</td></tr><tr><td>已付營收</td><td class=\"num\">"+nt(sl.total_revenue||0)+"</td></tr><tr><td>訂單(已付)</td><td class=\"num\">"+(sl.count||0)+" ("+(sl.paid_count||0)+")</td></tr><tr><td>客單價</td><td class=\"num\">"+nt(sl.aov_paid||0)+"</td></tr></table>";
-if(sl.top_skus&&sl.top_skus.length){sh+="<div class=\"muted\" style=\"margin-top:8px\">熱銷 TOP5</div><table>";sl.top_skus.slice(0,5).forEach(function(s,i){sh+="<tr><td>"+(i+1)+". "+esc(s.sku||s.name||"?")+"</td><td class=\"num\">"+(s.q||s.qty||0)+"</td></tr>";});sh+="</table>";}
-if(d.shoplineErr)sh+="<div class=\"err\">Shopline: "+esc(d.shoplineErr)+"</div>";document.getElementById("shopline").innerHTML=sh;
-var af=(an.findings||[]);document.getElementById("anom").innerHTML=af.length?("<table>"+af.map(function(f){return "<tr><td class=\"anom\">"+(f.severity==="high"?"🔴":"🟡")+" "+esc(f.message||((f.branch||"")+" "+(f.type||"")))+"</td></tr>";}).join("")+"</table>"):"<div class=\"muted\">目前無異樣</div>";
-var op=d.ops;if(op){var oh="<div class=\"muted\">最近同步："+esc(op.syncedAt||op.updatedAt||"-")+"</div><table>";Object.keys(op).forEach(function(k){if(k==="syncedAt"||k==="updatedAt")return;oh+="<tr><td>"+esc(k)+"</td><td style=\"text-align:left;white-space:pre-line\">"+esc((typeof op[k]==="object"?JSON.stringify(op[k]):String(op[k])).replace(/ \/ /g,"\n").replace(/；/g,"；\n"))+"</td></tr>";});oh+="</table>";document.getElementById("ops").innerHTML=oh;}else{document.getElementById("ops").innerHTML="<div class=\"muted\">尚未同步（報廢/員購/調貨由每月排程推送後顯示）</div>";}}
+var branchChart=null, trendChart=null;
+function nf(n){return (n==null||isNaN(n))?"—":Number(n).toLocaleString("en-US");}
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function pctTxt(p){return (p==null||isNaN(p))?"—":(p.toFixed(1)+"%");}
+
+async function load(){
+  var o;
+  try{ var r=await fetch("/api/dashboard/metrics",{cache:"no-store"}); o=await r.json(); }
+  catch(e){ document.getElementById("upd").textContent="讀取失敗"; return; }
+  document.getElementById("upd").textContent="更新：" + new Date(o.updatedAt||Date.now()).toLocaleString("zh-TW",{hour12:false});
+
+  var stores=o.stores||{}, mtd=o.mtd||null;
+  var byMonth=stores.by_month_all_stores||[];
+  var curM = mtd? mtd.cur_month : (byMonth[0]&&byMonth[0].month);
+  var prevM = mtd? mtd.prev_month : (byMonth[1]&&byMonth[1].month);
+  // sort byMonth desc
+  var bmSorted=byMonth.slice().sort(function(a,b){return a.month<b.month?1:-1;});
+  var curRec=bmSorted.find(function(x){return x.month===curM;})||bmSorted[0]||{by_branch:{}};
+  var prevRec=bmSorted.find(function(x){return x.month===prevM;})||bmSorted[1]||{by_branch:{}};
+
+  // build per-branch rows
+  var branches={};
+  Object.keys(curRec.by_branch||{}).forEach(function(b){branches[b]=1;});
+  Object.keys(prevRec.by_branch||{}).forEach(function(b){branches[b]=1;});
+  if(mtd&&mtd.by_branch)Object.keys(mtd.by_branch).forEach(function(b){branches[b]=1;});
+  var list=Object.keys(branches);
+
+  var rows=[], chartLabels=[], chartVals=[], sumCur=0,sumPrev=0,sumTarget=0;
+  list.forEach(function(b){
+    var cur, prev;
+    if(mtd&&mtd.by_branch&&mtd.by_branch[b]){ cur=mtd.by_branch[b].cur; prev=mtd.by_branch[b].prev; }
+    else { cur=(curRec.by_branch[b]||{}).revenue||0; prev=(prevRec.by_branch[b]||{}).revenue||0; }
+    var target=((curRec.by_branch[b]||{}).target);
+    if(target==null && curRec.by_branch[b] && curRec.by_branch[b].target===0) target=0;
+    var delta=cur-prev;
+    var dpct=prev? (cur/prev-1)*100 : null;
+    var ach=(target)? (cur/target)*100 : null;
+    sumCur+=cur; sumPrev+=prev; if(target)sumTarget+=target;
+    chartLabels.push(b); chartVals.push(cur);
+    var dcls=delta>=0?"pos":"neg";
+    var dtxt=(prev? (delta>=0?"+":"")+pctTxt(dpct) : "新開");
+    var achBar = (ach!=null)? '<div class="bar"><i style="width:'+Math.min(100,ach).toFixed(0)+'%"></i></div>' : "";
+    rows.push("<tr><td>"+esc(b)+"</td><td>"+nf(cur)+"</td><td>"+nf(prev)+"</td>"+
+      "<td class=\""+dcls+"\">"+dtxt+"<br><span style=\"font-size:11px\">"+(delta>=0?"+":"")+nf(delta)+"</span></td>"+
+      "<td>"+nf(target)+"</td><td>"+(ach!=null?pctTxt(ach):"—")+achBar+"</td></tr>");
+  });
+  var totDelta=sumCur-sumPrev, totDpct=sumPrev?(sumCur/sumPrev-1)*100:null, totAch=sumTarget?(sumCur/sumTarget)*100:null;
+  rows.push("<tr style=\"font-weight:700\"><td>全店合計</td><td>"+nf(sumCur)+"</td><td>"+nf(sumPrev)+"</td>"+
+    "<td class=\""+(totDelta>=0?"pos":"neg")+"\">"+(sumPrev?(totDelta>=0?"+":"")+pctTxt(totDpct):"—")+"</td>"+
+    "<td>"+nf(sumTarget)+"</td><td>"+(totAch!=null?pctTxt(totAch):"—")+"</td></tr>");
+  document.querySelector("#storeTbl tbody").innerHTML=rows.join("");
+  document.getElementById("storeErr").textContent=stores.storesErr||o.storesErr||"";
+  document.getElementById("mtdNote").textContent = mtd? ("本月至今 "+curM+" 到第"+mtd.through_day+"天 vs 上月同期") : (curM+" vs "+prevM);
+
+  // KPI cards
+  var sl=o.shopline||{}, ss=o.ss||{}, anom=o.anomalies||{};
+  var kpis=[
+    {lab:"本月至今全店營收",val:"NT$"+nf(sumCur),sub:"上月同期 NT$"+nf(sumPrev)},
+    {lab:"全店達成率",val:totAch!=null?pctTxt(totAch):"—",sub:"月目標 NT$"+nf(sumTarget)},
+    {lab:"vs 上月同期",val:(sumPrev?(totDelta>=0?"+":"")+pctTxt(totDpct):"—"),sub:(totDelta>=0?"+":"")+"NT$"+nf(totDelta)},
+    {lab:"Shopline 近31天",val:"NT$"+nf(sl.total_revenue),sub:(nf(sl.paid_count)+" 筆已付・AOV "+nf(sl.aov_paid))},
+    {lab:"客服進線",val:nf(ss.inbox_24h)+" / 24h",sub:nf(ss.inbox_7d)+" 近7天"},
+    {lab:"門市異樣",val:((anom.findings||[]).length)+" 項",sub:anom.ts?new Date(anom.ts).toLocaleDateString("zh-TW"):"—"}
+  ];
+  document.getElementById("kpis").innerHTML=kpis.map(function(k){
+    return '<div class="kpi"><div class="lab">'+esc(k.lab)+'</div><div class="val">'+k.val+'</div><div class="sub">'+esc(k.sub)+'</div></div>';
+  }).join("");
+
+  // branch chart
+  if(branchChart)branchChart.destroy();
+  branchChart=new Chart(document.getElementById("branchChart"),{type:"bar",
+    data:{labels:chartLabels,datasets:[{label:"本月至今營收",data:chartVals,backgroundColor:"#C65D2E"}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return nf(v);}}}}}});
+
+  // trend chart (total by month asc)
+  var tr=byMonth.slice().sort(function(a,b){return a.month<b.month?-1:1;});
+  if(trendChart)trendChart.destroy();
+  trendChart=new Chart(document.getElementById("trendChart"),{type:"line",
+    data:{labels:tr.map(function(x){return x.month;}),datasets:[{label:"全店月營收",data:tr.map(function(x){return x.total_revenue;}),borderColor:"#C65D2E",backgroundColor:"rgba(198,93,46,.15)",fill:true,tension:.25}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return nf(v);}}}}}});
+
+  // shopline
+  var slh="";
+  if(sl&&sl.total_revenue!=null){
+    slh='<table><tr><td>營收</td><td>NT$'+nf(sl.total_revenue)+'</td></tr>'+
+      '<tr><td>訂單</td><td>'+nf(sl.count)+'（已付 '+nf(sl.paid_count)+'）</td></tr>'+
+      '<tr><td>客單價 AOV</td><td>NT$'+nf(sl.aov_paid)+'</td></tr>'+
+      '<tr><td>銷售件數</td><td>'+nf(sl.total_qty)+'</td></tr></table>';
+    if(sl.top_skus&&sl.top_skus.length){
+      slh+='<div class="muted" style="margin-top:8px">熱銷：'+sl.top_skus.slice(0,5).map(function(s){return esc(s.name||s.sku||s.title||"")+(s.qty?"×"+s.qty:"");}).join("・")+'</div>';
+    }
+  } else { slh='<div class="err">'+esc(o.shoplineErr||"無資料")+'</div>'; }
+  document.getElementById("shopline").innerHTML=slh;
+
+  // anomalies
+  var af=(anom.findings||[]);
+  document.getElementById("anom").innerHTML = af.length
+    ? '<ul style="margin:0;padding-left:18px;font-size:13px">'+af.map(function(f){return "<li>"+esc(typeof f==="string"?f:(f.text||f.msg||JSON.stringify(f)))+"</li>";}).join("")+'</ul>'
+    : '<div class="muted">無異樣</div>';
+
+  // ops
+  var op=o.ops;
+  if(op&&Object.keys(op).length){
+    var oh='<table>';
+    Object.keys(op).forEach(function(k){
+      if(k==="syncedAt")return;
+      var v=op[k]; var vs=(typeof v==="object")?JSON.stringify(v):String(v);
+      vs=vs.replace(/ \/ /g,"\n").replace(/；/g,"；\n");
+      oh+='<tr><td style="vertical-align:top">'+esc(k)+'</td><td style="text-align:left;white-space:pre-line">'+esc(vs)+'</td></tr>';
+    });
+    oh+='</table>';
+    if(op.syncedAt)oh+='<div class="muted" style="margin-top:6px">同步時間：'+new Date(op.syncedAt).toLocaleString("zh-TW",{hour12:false})+'</div>';
+    document.getElementById("ops").innerHTML=oh;
+  } else {
+    document.getElementById("ops").innerHTML='<div class="muted">尚未同步（活動檔期／人事出勤／備品叫貨・報廢／員購／調貨由排程或 ops-sync 推送後顯示）</div>';
+  }
+}
 load();setInterval(load,60000);
 </script></body></html>
