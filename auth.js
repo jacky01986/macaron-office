@@ -108,6 +108,7 @@ module.exports = function attachAuth(app) {
     /^\/api\/salesmartly\/relay$/,
     /^\/api\/report\/run$/,
   /^\/api\/report\/run-now$/,
+  /^\/api\/ops\/sync-now$/,
     /^\/api\/dashboard\/ops-sync$/,
     /^\/api\/line\/webhook$/,
     /^\/api\/health$/,
