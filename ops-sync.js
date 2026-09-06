@@ -12,7 +12,8 @@ const SHEETS = [
   ['忘刷紀錄', '1kD7VxVhgTgeqXKYTi021AorR9g2O9mVr'],
   ['備品叫貨', '1h7wRPTNVSQEz5tS4XpNdXvrPa74jLT3S'],
   ['效期報廢', '1M_ycd2kX7BWsH9kMFOE-0ldIQYr7UioE'],
-  ['員購', '17vLnByZ5XBfwIF4Rh8guyy0wqJRI-gOe']
+  ['員購', '17vLnByZ5XBfwIF4Rh8guyy0wqJRI-gOe'],
+  ['特殊訂單', '1dZz8QkE3xudl8d1C5cY9HrZgY85MPtWfO66unUIGDXw']
 ];
 const FOLDERS = [
   ['臨時請假', '1YrqWQ7fbsFpJrUVKSGHa0_MtL_BzNAAM'],
@@ -40,6 +41,19 @@ async function listFolder(id, token, depth) {
 
 async function sheetText(fileId, token, limit) {
   try {
+    const _mu = 'https://www.googleapis.com/drive/v3/files/' + fileId + '?fields=mimeType';
+    const _mr = await fetch(_mu, { headers: { Authorization: 'Bearer ' + token } });
+    const _meta = _mr.ok ? await _mr.json() : {};
+    if (_meta.mimeType === 'application/vnd.google-apps.spreadsheet') {
+      const _eu = 'https://www.googleapis.com/drive/v3/files/' + fileId + '/export?mimeType=text%2Fcsv';
+      const _er = await fetch(_eu, { headers: { Authorization: 'Bearer ' + token } });
+      if (!_er.ok) throw new Error('export HTTP ' + _er.status);
+      const _csv = await _er.text();
+      const _lim = limit || 5000;
+      if (_csv.length <= _lim) return _csv;
+      const _head = _csv.slice(0, _csv.indexOf(String.fromCharCode(10)) + 1);
+      return _head + _csv.slice(_csv.length - _lim);
+    }
     const _u = 'https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media&supportsAllDrives=true';
     const _r = await fetch(_u, { headers: { Authorization: 'Bearer ' + token } });
     if (!_r.ok) throw new Error('HTTP ' + _r.status);
@@ -67,7 +81,7 @@ async function gather() {
   const token = await gd.getAccessToken();
   const parts = [];
   for (const pair of SHEETS) {
-    const t = await sheetText(pair[1], token, 5000);
+    const t = await sheetText(pair[1], token, pair[0] === '特殊訂單' ? 9000 : 5000);
     parts.push('=== ' + pair[0] + ' ===' + String.fromCharCode(10) + t);
   }
   for (const pair of FOLDERS) {
@@ -85,7 +99,7 @@ async function run(anthropic) {
   const bundle = await gather();
   const NLc = String.fromCharCode(10);
   const prompt = '以下是溫點 WarmPlace 的營運資料原始內容。今天是 ' + today + '。' + NLc +
-    '請整理成「一行可讀字串」的扁平 JSON，鍵固定為：更新月份, 進行中檔期, 忘刷次數, 臨時請假人次, 備品最近叫貨, 效期報廢, 員購, 調貨。' + NLc +
+    '請整理成「一行可讀字串」的扁平 JSON，鍵固定為：更新月份, 進行中檔期, 忘刷次數, 臨時請假人次, 備品最近叫貨, 效期報廢, 員購, 調貨, 特殊訂單_待付款, 特殊訂單_近7天出貨, 特殊訂單_本月合計。特殊訂單三欄請從「特殊訂單」資料判讀：待付款＝狀態為待付款的筆數與金額合計；近7天出貨＝到貨日期在今天起7天內的訂單（列客戶或品項與日期，最多3筆）；本月合計＝本月到貨的筆數與金額合計。' + NLc +
     '規則：更新月份填 ' + ym + '；進行中檔期挑開始<=今天<=結束者，並註明7天內即將開始者；忘刷次數與臨時請假人次統計本月各店；備品最近叫貨列各店最近日期；調貨統計本月筆數。' + NLc +
     '輸出規則（很重要）：每個欄位最多 40 字，不要長篇解釋。若本月沒有可用資料，該欄位直接輸出「沒有填寫」；若知道最後有資料的月份，寫成「沒有填寫（最後更新 YYYY-MM）」。有資料才列出實際數字。絕對不要編造數字。只輸出 JSON，不要任何其他文字。' + NLc + NLc + bundle;
   const msg = await anthropic.messages.create({
