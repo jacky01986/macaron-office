@@ -1,3 +1,5 @@
+let __reportLabel = '月報';
+function setReportLabel(v) { __reportLabel = v || '月報'; }
 // salesmartly.js — SaleSmartly API client + customer insight extractor
 // env: SALESMARTLY_TOKEN, SALESMARTLY_PROJECT_ID, SALESMARTLY_BASE_URL (optional)
 // V2 endpoints based on apifox doc category structure
@@ -524,7 +526,7 @@ async function buildMonthlyReportSections({ anthropic, opsSections } = {}) {
   try { ssBody = await buildWeeklyDeepAnalysis({ anthropic: anthropic, days: 31 }); } catch (e) { ssBody = '客服分析失敗：' + e.message; }
   ssBody = String(ssBody).replace(/^📊[^\n]*\n+/, '');
   return {
-    title: '溫點 WarmPlace 月報（' + ym + '）',
+    title: '溫點 WarmPlace ' + __reportLabel + '（' + ym + '）',
     sections: [
       { heading: '一、銷售概況（Shopline・近 31 天）', body: shopBody },
       { heading: '二、客服對話深度診斷（SaleSmartly・僅溫點）', body: ssBody },
@@ -549,7 +551,7 @@ async function runMonthlyReportToDrive({ anthropic, opsSections } = {}) {
     driveId = await uploadPdfToDrive(pdf.filename, buf, folderId);
   } catch (e) { driveErr = e.message; }
   const base = process.env.PUBLIC_BASE_URL || 'https://macaron-office.onrender.com';
-  let text = '📄 溫點月報已產生：' + built.title + '\n檔案：' + pdf.filename + '（' + pdf.bytes + ' bytes）';
+  let text = '📄 溫點' + __reportLabel + '已產生：' + built.title + '\n檔案：' + pdf.filename + '（' + pdf.bytes + ' bytes）';
   if (driveId) text += '\n☁️ 已上傳 Google Drive（file id: ' + driveId + '）';
   else text += '\n⚠️ 雲端上傳失敗：' + driveErr;
   text += '\n🔗 下載：' + (String(pdf.url).startsWith('http') ? pdf.url : base + pdf.url);
@@ -694,7 +696,7 @@ async function getWenAnomaliesText() {
   return '⚠️ 溫點異樣通報\n\n' + all.join('\n');
 }
 
-module.exports = {
+module.exports = { setReportLabel,
   getWenAnomaliesText,
   runQuarterlyReportToDrive,
   runMonthlyReportToDrive,
