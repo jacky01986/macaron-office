@@ -5270,6 +5270,7 @@ function _wpBuildOpsSections(mode) {
 }
 async function _wpRunReport(mode, period) {
   try {
+    try { require('./salesmartly').setReportLabel(mode === 'mtd' ? '月中進度報告' : (period === 'quarter' ? '季報' : '月報')); } catch (e) { console.error('[wp-report] setReportLabel', e.message); }
     const ops = _wpBuildOpsSections(mode);
     const port = process.env.PORT || 10000;
     const r = await fetch('http://localhost:' + port + '/api/report/run', { method: 'POST', headers: { 'content-type': 'application/json', 'x-report-token': process.env.REPORT_TOKEN || '' }, body: JSON.stringify({ period: period, opsSections: ops }) });
