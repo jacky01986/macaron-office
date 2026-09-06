@@ -62,6 +62,21 @@ async function getAccessToken() {
 
 // ============ Drive API ============
 async function listFolderFiles() {
+  // 直讀模式：設了 GDRIVE_FILE_IDS 就直接讀這些原始檔（不經資料夾/複製檔）
+  const _fids = (process.env.GDRIVE_FILE_IDS || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+  if (_fids.length) {
+    const _tok = await getAccessToken();
+    const _flds = encodeURIComponent('id,name,mimeType,size,modifiedTime,createdTime');
+    const _out = [];
+    for (const _id of _fids) {
+      try {
+        const _r = await fetch('https://www.googleapis.com/drive/v3/files/' + _id + '?supportsAllDrives=true&fields=' + _flds, { headers: { Authorization: 'Bearer ' + _tok } });
+        if (_r.ok) { _out.push(await _r.json()); }
+        else { console.error('[gdrive-sync] 讀不到檔案(可能未分享給服務帳號)', _id, _r.status); }
+      } catch (_e) { console.error('[gdrive-sync] 讀取失敗', _id, _e.message); }
+    }
+    return _out;
+  }
   const token = await getAccessToken();
   const folderId = getFolderId();
   const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
