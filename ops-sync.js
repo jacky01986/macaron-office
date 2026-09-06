@@ -38,9 +38,12 @@ async function listFolder(id, token, depth) {
   return out;
 }
 
-async function sheetText(fileId, limit) {
+async function sheetText(fileId, token, limit) {
   try {
-    const buf = await gd.downloadFile(fileId, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const _u = 'https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media&supportsAllDrives=true';
+    const _r = await fetch(_u, { headers: { Authorization: 'Bearer ' + token } });
+    if (!_r.ok) throw new Error('HTTP ' + _r.status);
+    const buf = Buffer.from(await _r.arrayBuffer());
     const ExcelJS = require('exceljs');
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(buf);
@@ -64,7 +67,7 @@ async function gather() {
   const token = await gd.getAccessToken();
   const parts = [];
   for (const pair of SHEETS) {
-    const t = await sheetText(pair[1], 5000);
+    const t = await sheetText(pair[1], token, 5000);
     parts.push('=== ' + pair[0] + ' ===' + String.fromCharCode(10) + t);
   }
   for (const pair of FOLDERS) {
@@ -104,7 +107,7 @@ function register(app, cron, anthropic) {
   app.get('/api/ops/debug', async function (req, res) {
     if ((req.headers['x-report-token'] || '') !== (process.env.REPORT_TOKEN || '__none__')) return res.status(403).json({ error: 'forbidden' });
     const out = {};
-    for (const p of SHEETS) { const t = await sheetText(p[1], 400); out[p[0]] = (t.indexOf('(讀取失敗') === 0) ? t.slice(0, 160) : ('ok len=' + t.length); }
+    for (const p of SHEETS) { const t = await sheetText(p[1], await gd.getAccessToken(), 400); out[p[0]] = (t.indexOf('(讀取失敗') === 0) ? t.slice(0, 160) : ('ok len=' + t.length); }
     res.json(out);
   });
   app.post('/api/ops/sync-now', express.json(), async function (req, res) {
