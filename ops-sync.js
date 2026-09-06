@@ -101,6 +101,12 @@ async function run(anthropic) {
 
 function register(app, cron, anthropic) {
   const express = require('express');
+  app.get('/api/ops/debug', async function (req, res) {
+    if ((req.headers['x-report-token'] || '') !== (process.env.REPORT_TOKEN || '__none__')) return res.status(403).json({ error: 'forbidden' });
+    const out = {};
+    for (const p of SHEETS) { const t = await sheetText(p[1], 400); out[p[0]] = (t.indexOf('(讀取失敗') === 0) ? t.slice(0, 160) : ('ok len=' + t.length); }
+    res.json(out);
+  });
   app.post('/api/ops/sync-now', express.json(), async function (req, res) {
     if ((req.headers['x-report-token'] || '') !== (process.env.REPORT_TOKEN || '__none__')) return res.status(403).json({ error: 'forbidden' });
     try { const o = await run(anthropic); res.json({ ok: true, keys: Object.keys(o), syncedAt: o.syncedAt }); }
