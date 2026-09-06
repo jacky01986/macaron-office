@@ -109,6 +109,7 @@ module.exports = function attachAuth(app) {
     /^\/api\/report\/run$/,
   /^\/api\/report\/run-now$/,
   /^\/api\/ops\/sync-now$/,
+  /^\/api\/ops\/debug$/,
     /^\/api\/dashboard\/ops-sync$/,
     /^\/api\/line\/webhook$/,
     /^\/api\/health$/,
