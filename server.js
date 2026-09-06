@@ -357,11 +357,11 @@ app.get('/api/dashboard/metrics', async (req, res) => {
           const curDays = recs.filter(function(r){ return mkey(r).slice(0,7)===curM; }).map(function(r){ return dayOf(mkey(r)); });
           const through = curDays.length ? Math.max.apply(null, curDays) : 0;
           const bb = {};
-          recs.forEach(function(r){ const d=mkey(r), m=d.slice(0,7), day=dayOf(d); if(day<1||day>through) return; const b=r.branch||'?'; bb[b]=bb[b]||{cur:0,prev:0}; if(m===curM) bb[b].cur+=(r.revenue||0); else if(m===prevM) bb[b].prev+=(r.revenue||0); });
+          recs.forEach(function(r){ const d=mkey(r), m=d.slice(0,7), day=dayOf(d); if(day<1||day>through) return; const b=r.branch; if(!b) return; bb[b]=bb[b]||{cur:0,prev:0}; if(m===curM) bb[b].cur+=(r.revenue||0); else if(m===prevM) bb[b].prev+=(r.revenue||0); });
           Object.keys(bb).forEach(function(b){ const o=bb[b]; o.delta=o.cur-o.prev; o.delta_pct=o.prev? Math.round((o.cur/o.prev-1)*1000)/10 : null; });
           try { var _tf=pth.join(D,'offline-targets.json'); if(fs.existsSync(_tf)){ var _tg=JSON.parse(fs.readFileSync(_tf,'utf8')); Object.keys(bb).forEach(function(b){ var _tk=b+'|'+curM; var _tv=(_tg[_tk]&&typeof _tg[_tk].target==='number')?_tg[_tk].target:null; bb[b].target=_tv; bb[b].ach_pct=_tv?Math.round(bb[b].cur/_tv*1000)/10:null; }); } } catch(_e){}
           out.mtd = { cur_month: curM, prev_month: prevM, through_day: through, by_branch: bb };
-          try { var _lb={}; recs.forEach(function(r){ var _d=(r.report_date||r.date||''); var _b=r.branch||'?'; if(_d&&(!_lb[_b]||_d>_lb[_b]))_lb[_b]=_d; }); Object.keys(bb).forEach(function(b){ bb[b].last_date=_lb[b]||null; }); var _mx=null; Object.keys(_lb).forEach(function(b){ if(!_mx||_lb[b]>_mx)_mx=_lb[b]; }); out.mtd.last_date=_mx; } catch(_e){}
+          try { var _lb={}; recs.forEach(function(r){ var _d=(r.report_date||r.date||''); var _b=r.branch; if(!_b) return; if(_d&&(!_lb[_b]||_d>_lb[_b]))_lb[_b]=_d; }); Object.keys(bb).forEach(function(b){ bb[b].last_date=_lb[b]||null; }); var _mx=null; Object.keys(_lb).forEach(function(b){ if(!_mx||_lb[b]>_mx)_mx=_lb[b]; }); out.mtd.last_date=_mx; } catch(_e){}
         }
       } catch (e) { out.mtdErr = e.message; }
   res.json(out);
