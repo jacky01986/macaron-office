@@ -92,6 +92,83 @@ async function gather() {
   return parts.join(String.fromCharCode(10) + String.fromCharCode(10));
 }
 
+const SO_ID = '1dZz8QkE3xudl8d1C5cY9HrZgY85MPtWfO66unUIGDXw';
+const SO_OUT = () => pth.join(D(), 'ops-special-orders.json');
+
+function parseCsv(t) {
+  const rows = []; let row = [], cur = '', q = false;
+  const CR = String.fromCharCode(13), LF = String.fromCharCode(10);
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) {
+      if (c === '"') { if (t[i + 1] === '"') { cur += '"'; i++; } else { q = false; } }
+      else { cur += c; }
+    } else {
+      if (c === '"') q = true;
+      else if (c === ',') { row.push(cur); cur = ''; }
+      else if (c === CR) { }
+      else if (c === LF) { row.push(cur); cur = ''; rows.push(row); row = []; }
+      else cur += c;
+    }
+  }
+  if (cur.length || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+
+function pickIdx(head, names) {
+  for (const n of names) { const i = head.findIndex(function (h) { return (h || '').trim() === n; }); if (i >= 0) return i; }
+  for (const n of names) { const i = head.findIndex(function (h) { return (h || '').indexOf(n) >= 0; }); if (i >= 0) return i; }
+  return -1;
+}
+
+function dnum(s) {
+  const m = String(s || '').match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (!m) return 0;
+  return (+m[1]) * 10000 + (+m[2]) * 100 + (+m[3]);
+}
+
+async function buildSpecialOrders(token) {
+  const url = 'https://www.googleapis.com/drive/v3/files/' + SO_ID + '/export?mimeType=text%2Fcsv';
+  const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+  if (!r.ok) throw new Error('export HTTP ' + r.status);
+  const rows = parseCsv(await r.text());
+  if (!rows.length) return [];
+  let hi = 0;
+  for (let i = 0; i < Math.min(rows.length, 5); i++) { if ((rows[i] || []).join('').indexOf('到貨') >= 0) { hi = i; break; } }
+  const head = rows[hi].map(function (h) { return (h || '').trim(); });
+  const iDate = pickIdx(head, ['到貨日期', '到貨']);
+  const iPri = pickIdx(head, ['優先順序', '優先']);
+  const iItem = pickIdx(head, ['訂單']);
+  const iCat = pickIdx(head, ['類別']);
+  const iQty = pickIdx(head, ['需求數量', '數量']);
+  const iPay = pickIdx(head, ['狀態']);
+  const iAmt = pickIdx(head, ['費用', '金額']);
+  const iWho = pickIdx(head, ['聯絡窗口', '窗口']);
+  const iBill = pickIdx(head, ['開單與否']);
+  const iMethod = pickIdx(head, ['付款方式']);
+  const out = [];
+  for (let i = hi + 1; i < rows.length; i++) {
+    const r2 = rows[i]; if (!r2 || !r2.join('').trim()) continue;
+    const g = function (ix) { return ix >= 0 ? String(r2[ix] || '').replace(/\s+/g, ' ').trim() : ''; };
+    const date = g(iDate); if (!date && !g(iItem)) continue;
+    out.push({ d: date, s: dnum(date), pri: g(iPri), item: g(iItem), cat: g(iCat), qty: g(iQty), pay: g(iPay), amt: g(iAmt), who: g(iWho).slice(0, 24), bill: g(iBill), method: g(iMethod) });
+  }
+  out.sort(function (a, b) { return b.s - a.s; });
+  const res = out.slice(0, 300);
+  const _now = new Date(Date.now() + 8 * 3600 * 1000);
+  const _ym = (+_now.toISOString().slice(0, 4)) * 10000 + (+_now.toISOString().slice(5, 7)) * 100;
+  let _mt = 0, _mc = 0;
+  res.forEach(function (r3) {
+    if (r3.s >= _ym && r3.s < _ym + 100) {
+      const n = parseInt(String(r3.amt || '').replace(/[^0-9]/g, ''), 10);
+      if (!isNaN(n)) { _mt += n; }
+      _mc++;
+    }
+  });
+  fs.writeFileSync(SO_OUT(), JSON.stringify({ updatedAt: new Date().toISOString(), count: res.length, monthTotal: _mt, monthCount: _mc, rows: res }, null, 1));
+  return res;
+}
+
 async function run(anthropic) {
   const now = new Date(Date.now() + 8 * 3600 * 1000);
   const today = now.toISOString().slice(0, 10);
@@ -111,6 +188,7 @@ async function run(anthropic) {
   const s = txt.indexOf('{'), e = txt.lastIndexOf('}');
   if (s < 0 || e < s) throw new Error('AI 回傳非 JSON');
   const obj = JSON.parse(txt.slice(s, e + 1));
+  try { await buildSpecialOrders(await gd.getAccessToken()); } catch (e) { console.error('[ops-sync] special-orders', e.message); }
   obj.syncedAt = new Date().toISOString();
   fs.writeFileSync(OUT(), JSON.stringify(obj, null, 2));
   return obj;
@@ -118,6 +196,13 @@ async function run(anthropic) {
 
 function register(app, cron, anthropic) {
   const express = require('express');
+  app.get('/api/dashboard/special-orders', function (req, res) {
+    try {
+      const f = SO_OUT();
+      if (!fs.existsSync(f)) return res.json({ ok: true, count: 0, monthTotal: 0, monthCount: 0, rows: [] });
+      res.json(JSON.parse(fs.readFileSync(f, 'utf8')));
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
   app.get('/api/ops/debug', async function (req, res) {
     if ((req.headers['x-report-token'] || '') !== (process.env.REPORT_TOKEN || '__none__')) return res.status(403).json({ error: 'forbidden' });
     const out = {};
