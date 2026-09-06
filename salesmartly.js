@@ -1,3 +1,5 @@
+let __reportYm = null;
+function setReportYm(v) { __reportYm = v || null; }
 let __reportLabel = '月報';
 function setReportLabel(v) { __reportLabel = v || '月報'; }
 // salesmartly.js — SaleSmartly API client + customer insight extractor
@@ -526,7 +528,7 @@ async function buildMonthlyReportSections({ anthropic, opsSections } = {}) {
   try { ssBody = await buildWeeklyDeepAnalysis({ anthropic: anthropic, days: 31 }); } catch (e) { ssBody = '客服分析失敗：' + e.message; }
   ssBody = String(ssBody).replace(/^📊[^\n]*\n+/, '');
   return {
-    title: '溫點 WarmPlace ' + __reportLabel + '（' + ym + '）',
+    title: '溫點 WarmPlace ' + __reportLabel + '（' + (__reportYm || ym) + '）',
     sections: [
       { heading: '一、銷售概況（Shopline・近 31 天）', body: shopBody },
       { heading: '二、客服對話深度診斷（SaleSmartly・僅溫點）', body: ssBody },
@@ -696,7 +698,7 @@ async function getWenAnomaliesText() {
   return '⚠️ 溫點異樣通報\n\n' + all.join('\n');
 }
 
-module.exports = { setReportLabel,
+module.exports = { setReportYm, setReportLabel,
   getWenAnomaliesText,
   runQuarterlyReportToDrive,
   runMonthlyReportToDrive,
