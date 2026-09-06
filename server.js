@@ -5232,6 +5232,65 @@ try {
   console.log('[stale-alert] cron registered (daily 09:30 Asia/Taipei)');
 } catch (e) { console.error('[stale-alert] register failed', e.message); }
 
+// ===== 伺服器端三份營運報告（月中/月報/季報）：不依賴本機 =====
+function _wpFmt(n) { return (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('en-US'); }
+function _wpBuildOpsSections(mode) {
+  const fs = require('fs'), pth = require('path');
+  const D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
+  const sections = [];
+  try {
+    const rf = pth.join(D, 'offline-reports.jsonl');
+    const recs = fs.existsSync(rf) ? fs.readFileSync(rf, 'utf8').trim().split(String.fromCharCode(10)).map(function (l) { try { return JSON.parse(l); } catch (e) { return null; } }).filter(Boolean) : [];
+    const tf = pth.join(D, 'offline-targets.json');
+    const targets = fs.existsSync(tf) ? JSON.parse(fs.readFileSync(tf, 'utf8')) : {};
+    const now = new Date(Date.now() + 8 * 3600 * 1000);
+    const ym = now.toISOString().slice(0, 10).slice(0, 7);
+    const prevD = new Date(Date.parse(ym + '-01T00:00:00Z') - 86400000);
+    const tym = (mode === 'lastmonth') ? prevD.toISOString().slice(0, 7) : ym;
+    const acc = {};
+    recs.forEach(function (r) { const dd = (r.report_date || r.date || ''); if (dd.slice(0, 7) !== tym) return; const b = r.branch; if (!b) return; acc[b] = acc[b] || { rev: 0, days: 0, last: '' }; acc[b].rev += (r.revenue || 0); acc[b].days++; if (dd > acc[b].last) acc[b].last = dd; });
+    const lines = []; let tot = 0, totT = 0;
+    Object.keys(acc).sort().forEach(function (b) { const o = acc[b]; const t = (targets[b + '|' + tym] || {}).target || null; tot += o.rev; if (t) totT += t; const ach = t ? Math.round(o.rev / t * 1000) / 10 : null; const avg = o.days ? Math.round(o.rev / o.days) : 0; lines.push('• ' + b + '：' + _wpFmt(o.rev) + (t ? ('／目標 ' + _wpFmt(t) + '（達成 ' + ach + '%）') : '') + '；日均 ' + _wpFmt(avg) + '；資料至 ' + (o.last || '—')); });
+    const totAch = totT ? Math.round(tot / totT * 1000) / 10 : null;
+    lines.push('• 全店合計：' + _wpFmt(tot) + (totT ? ('／目標 ' + _wpFmt(totT) + '（達成 ' + totAch + '%）') : ''));
+    const head = (mode === 'lastmonth') ? ('各店營收（' + tym + ' 全月）') : ('★ 月中進度（' + tym + ' 至今）各店營收');
+    sections.push({ heading: head, body: lines.join(String.fromCharCode(10)) });
+  } catch (e) { sections.push({ heading: '各店營收', body: '產生失敗：' + e.message }); }
+  try {
+    const of = pth.join(D, 'ops-latest.json');
+    if (fs.existsSync(of)) {
+      const op = JSON.parse(fs.readFileSync(of, 'utf8'));
+      const rows = [];
+      Object.keys(op).forEach(function (k) { if (k === 'syncedAt') return; const val = op[k]; rows.push('• ' + k + '：' + (typeof val === 'object' ? JSON.stringify(val) : String(val))); });
+      rows.push('（營運數字同步時間：' + (op.syncedAt || '—') + '）');
+      sections.push({ heading: '營運概況（活動檔期／人事出勤／備品叫貨／報廢／員購／調貨）', body: rows.join(String.fromCharCode(10)) });
+    } else { sections.push({ heading: '營運概況', body: '尚無 ops-latest 資料。' }); }
+  } catch (e) { }
+  return sections;
+}
+async function _wpRunReport(mode, period) {
+  try {
+    const ops = _wpBuildOpsSections(mode);
+    const port = process.env.PORT || 10000;
+    const r = await fetch('http://localhost:' + port + '/api/report/run', { method: 'POST', headers: { 'content-type': 'application/json', 'x-report-token': process.env.REPORT_TOKEN || '' }, body: JSON.stringify({ period: period, opsSections: ops }) });
+    const t = await r.text();
+    console.log('[wp-report] ' + mode + ' http=' + r.status + ' ' + t.slice(0, 200));
+  } catch (e) { console.error('[wp-report] ' + mode + ' failed', e.message); }
+}
+app.post('/api/report/run-now', express.json(), async (req, res) => {
+  if ((req.headers['x-report-token'] || '') !== (process.env.REPORT_TOKEN || '__none__')) return res.status(403).json({ error: 'forbidden' });
+  const mode = (req.body && req.body.mode) || 'mtd';
+  const period = (req.body && req.body.period) || 'month';
+  _wpRunReport(mode, period);
+  res.json({ ok: true, started: true, mode: mode, period: period });
+});
+try {
+  cron.schedule('0 9 15 * *', function () { _wpRunReport('mtd', 'month'); }, { timezone: 'Asia/Taipei' });
+  cron.schedule('0 9 1 * *', function () { _wpRunReport('lastmonth', 'month'); }, { timezone: 'Asia/Taipei' });
+  cron.schedule('0 10 1 1,4,7,10 *', function () { _wpRunReport('lastmonth', 'quarter'); }, { timezone: 'Asia/Taipei' });
+  console.log('[wp-report] server-side report crons registered (15th/1st/quarterly)');
+} catch (e) { console.error('[wp-report] register failed', e.message); }
+
 app.listen(PORT, () => {
   // =====================================================================
   // /api/partner-take - client polls this after /api/chat done
