@@ -153,7 +153,18 @@ async function buildSpecialOrders(token) {
     const date = g(iDate); if (!date && !g(iItem)) continue;
     out.push({ d: date, s: dnum(date), pri: g(iPri), item: g(iItem), cat: g(iCat), qty: g(iQty), pay: g(iPay), amt: g(iAmt), who: g(iWho).slice(0, 24), bill: g(iBill), method: g(iMethod) });
   }
-  out.sort(function (a, b) { return b.s - a.s; });
+  const _t = new Date(Date.now() + 8 * 3600 * 1000);
+  const _today = (+_t.toISOString().slice(0, 4)) * 10000 + (+_t.toISOString().slice(5, 7)) * 100 + (+_t.toISOString().slice(8, 10));
+  out.sort(function (a, b) {
+    if (a.s === 0 && b.s === 0) return 0;
+    if (a.s === 0) return 1;
+    if (b.s === 0) return -1;
+    const af = a.s >= _today, bf = b.s >= _today;
+    if (af && bf) return a.s - b.s;
+    if (af && !bf) return -1;
+    if (!af && bf) return 1;
+    return b.s - a.s;
+  });
   const res = out.slice(0, 300);
   const _now = new Date(Date.now() + 8 * 3600 * 1000);
   const _ym = (+_now.toISOString().slice(0, 4)) * 10000 + (+_now.toISOString().slice(5, 7)) * 100;
