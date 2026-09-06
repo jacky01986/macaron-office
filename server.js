@@ -5204,6 +5204,34 @@ app.use('/api/automation', require('./automation')); // 自動化主控台
 app.use('/api/flows', require('./flows')); // 自動回覆流程管理
 try { require('./shopline').registerCron(cron); } catch (e) { console.error('[shopline] cron failed:', e.message); }try { app.use('/api/shopline-polling', require('./shopline-polling')); console.log('[shopline-polling] mounted'); } catch (e) { console.error('[shopline-polling] mount failed:', e.message); }try { require('./shopline-polling').registerCron(cron); } catch (e) { console.error('[shopline-polling] cron failed:', e.message); } try { app.use('/api/offline-reports', require('./offline-reports')); console.log('[offline-reports] route mounted'); } catch (e) { console.error('[offline-reports] mount failed:', e.message); } try { const _offlr = require('./offline-reports'); if (_offlr.registerCron) _offlr.registerCron(cron); require('./gdrive-sync').register(app, cron); } catch (e) { console.error('[gdrive-sync] mount failed:', e.message); } try { require('./ai-enhancements').register(app, cron); } catch (e) { console.error('[ai-enhancements] mount failed:', e.message); } try { require('./offline-reports').registerCron(cron); } catch (e) { console.error('[offline-reports] cron failed:', e.message); } try { require('./personal-edm').register(app, cron); } catch (e) { console.error('[personal-edm] mount failed:', e.message); } try { require('./daily-progress').register(app, cron); } catch (e) { console.error('[daily-progress] mount failed:', e.message); }
 
+// ===== 每日檢查各店營收資料是否落後，落後就推 Telegram =====
+try {
+  cron.schedule('30 9 * * *', async () => {
+    try {
+      const _fs = require('fs'), _pth = require('path');
+      const _D = process.env.RENDER_DISK_MOUNT_PATH || '/var/data';
+      const _rf = _pth.join(_D, 'offline-reports.jsonl');
+      if (!_fs.existsSync(_rf)) return;
+      const _recs = _fs.readFileSync(_rf, 'utf8').trim().split(String.fromCharCode(10)).map(function (l) { try { return JSON.parse(l); } catch (e) { return null; } }).filter(Boolean);
+      const _last = {};
+      _recs.forEach(function (r) { const d = (r.report_date || r.date || ''); const b = r.branch; if (!b || !d) return; if (!_last[b] || d > _last[b]) _last[b] = d; });
+      const _now = new Date(Date.now() + 8 * 3600 * 1000);
+      const _today = _now.toISOString().slice(0, 10);
+      const _stale = [], _ok = [];
+      Object.keys(_last).forEach(function (b) {
+        const _diff = Math.floor((Date.parse(_today) - Date.parse(_last[b])) / 86400000);
+        if (_diff >= 2) _stale.push('• ' + b + '：只到 ' + _last[b] + '（落後 ' + _diff + ' 天）');
+        else _ok.push('• ' + b + '：' + _last[b]);
+      });
+      if (!_stale.length) return;
+      const _msg = '⚠️ 溫點門店營收資料落後提醒' + String.fromCharCode(10) + String.fromCharCode(10) + _stale.join(String.fromCharCode(10)) + (_ok.length ? (String.fromCharCode(10) + String.fromCharCode(10) + '資料正常：' + String.fromCharCode(10) + _ok.join(String.fromCharCode(10))) : '') + String.fromCharCode(10) + String.fromCharCode(10) + '請通知門店補填營收表。';
+      await tgSend(process.env.TELEGRAM_CHAT_ID, _msg);
+      console.log('[stale-alert] sent, stale=' + _stale.length);
+    } catch (e) { console.error('[stale-alert]', e.message); }
+  }, { timezone: 'Asia/Taipei' });
+  console.log('[stale-alert] cron registered (daily 09:30 Asia/Taipei)');
+} catch (e) { console.error('[stale-alert] register failed', e.message); }
+
 app.listen(PORT, () => {
   // =====================================================================
   // /api/partner-take - client polls this after /api/chat done
