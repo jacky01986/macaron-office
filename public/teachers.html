@@ -114,13 +114,12 @@ async function load(){
   // KPI cards
   var sl=o.shopline||{}, ss=o.ss||{}, anom=o.anomalies||{};
   var kpis=[
-    {lab:"本月特殊訂單",val:"NT$"+nf((soData&&soData.monthTotal)||0),sub:((soData&&soData.monthCount)||0)+" 筆"},
     {lab:"本月至今全店營收",val:"NT$"+nf(sumCur),sub:"上月同期 NT$"+nf(sumPrev)},
+    {lab:"本月特殊訂單",val:"NT$"+nf((soData&&soData.monthTotal)||0),sub:((soData&&soData.monthCount)||0)+" 筆"},
     {lab:"全店達成率",val:totAch!=null?pctTxt(totAch):"—",sub:"月目標 NT$"+nf(sumTarget)},
     {lab:"vs 上月同期",val:(sumPrev?(totDelta>=0?"+":"")+pctTxt(totDpct):"—"),sub:(totDelta>=0?"+":"")+"NT$"+nf(totDelta)},
     {lab:"Shopline 近31天",val:"NT$"+nf(sl.total_revenue),sub:(nf(sl.paid_count)+" 筆已付・AOV "+nf(sl.aov_paid))},
     {lab:"客服進線",val:nf(ss.inbox_24h)+" / 24h",sub:nf(ss.inbox_7d)+" 近7天"},
-    {lab:"門市異樣",val:((anom.findings||[]).length)+" 項",sub:anom.ts?new Date(anom.ts).toLocaleDateString("zh-TW"):"—"}
   ];
   document.getElementById("kpis").innerHTML=kpis.map(function(k){
     return '<div class="kpi"><div class="lab">'+esc(k.lab)+'</div><div class="val">'+k.val+'</div><div class="sub">'+esc(k.sub)+'</div></div>';
@@ -176,14 +175,15 @@ async function load(){
   }
 }
 var soData=null, soPage=0;
+function sv(x){ var s=(x==null?"":String(x)).trim(); return s?esc(s):"沒有填寫"; }
 function soRender(){
   var tb=document.querySelector("#soTbl tbody"); var pg=document.getElementById("soPager");
-  if(!soData||!soData.rows||!soData.rows.length){ tb.innerHTML="<tr><td colspan=\"8\" class=\"muted\">沒有資料</td></tr>"; pg.innerHTML=""; return; }
+  if(!soData||!soData.rows||!soData.rows.length){ tb.innerHTML="<tr><td colspan=\"8\" class=\"muted\">沒有填寫</td></tr>"; pg.innerHTML=""; return; }
   var rows=soData.rows, per=10, total=Math.ceil(rows.length/per);
   if(soPage>=total)soPage=total-1; if(soPage<0)soPage=0;
   var part=rows.slice(soPage*per,soPage*per+per);
   tb.innerHTML=part.map(function(r){
-    return "<tr><td>"+esc(r.d||"—")+"</td><td>"+esc(r.pri||"")+"</td><td>"+esc(r.item||"")+"</td><td>"+esc(r.cat||"")+"</td><td>"+esc(r.qty||"")+"</td><td>"+esc(r.pay||"")+"</td><td>"+esc(r.amt||"")+"</td><td>"+esc(r.who||"")+"</td></tr>";
+    return "<tr><td>"+sv(r.d)+"</td><td>"+sv(r.pri)+"</td><td>"+sv(r.item)+"</td><td>"+sv(r.cat)+"</td><td>"+sv(r.qty)+"</td><td>"+sv(r.pay)+"</td><td>"+sv(r.amt)+"</td><td>"+sv(r.who)+"</td></tr>";
   }).join("");
   pg.innerHTML="<button id=\"soPrev\">上一頁</button><span>第 "+(soPage+1)+" / "+total+" 頁（共 "+rows.length+" 筆）</span><button id=\"soNext\">下一頁</button>";
   document.getElementById("soPrev").onclick=function(){ soPage--; soRender(); };
