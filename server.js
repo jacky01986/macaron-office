@@ -5270,6 +5270,7 @@ function _wpBuildOpsSections(mode) {
 }
 async function _wpRunReport(mode, period) {
   try {
+    try { const _n = new Date(Date.now() + 8 * 3600 * 1000); require('./salesmartly').setReportYm(mode === 'mtd' ? _n.toISOString().slice(0, 7) : null); } catch (e) { console.error('[wp-report] setReportYm', e.message); }
     try { require('./salesmartly').setReportLabel(mode === 'mtd' ? '月中進度報告' : (period === 'quarter' ? '季報' : '月報')); } catch (e) { console.error('[wp-report] setReportLabel', e.message); }
     const ops = _wpBuildOpsSections(mode);
     const port = process.env.PORT || 10000;
