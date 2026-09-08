@@ -182,6 +182,7 @@ async function extractExcelHybrid(buffer, hintFilename) {
   let branch = '';
   const dailyMap = new Map();
   const monthsFound = [];
+  const declaredTotals = [];   // 每個月份分頁自己寫的「總業績」vs 逐日加總，用來抓門市檔案的公式錯
 
   wb.eachSheet(sheet => {
     const sn = sheet.name;
@@ -192,7 +193,17 @@ async function extractExcelHybrid(buffer, hintFilename) {
       const a1 = sheet.getCell(1, 1).value;
       if (a1) branch = String(typeof a1 === 'object' ? (a1.text || a1.result || '') : a1).trim().slice(0, 100);
     }
-    let monthDays = 0;
+    // 第 2 列：月目標 / 總業績 / 達成率。找到「總業績」標籤，取右邊那格當宣告值。
+    let declared = null;
+    try {
+      const row2 = sheet.getRow(2);
+      for (let c = 1; c <= 12; c++) {
+        const v = row2.getCell(c).value;
+        const txt = String(typeof v === 'object' && v ? (v.text || v.result || '') : (v == null ? '' : v));
+        if (txt.indexOf('總業績') >= 0) { declared = parseNumber(row2.getCell(c + 1).value); break; }
+      }
+    } catch (e) {}
+    let monthDays = 0, monthRevenue = 0;
     for (let r = 5; r <= sheet.rowCount; r++) {
       const row = sheet.getRow(r);
       const dVal = row.getCell(2).value; // B = 日期
@@ -209,15 +220,23 @@ async function extractExcelHybrid(buffer, hintFilename) {
       cur.orders += ord;
       dailyMap.set(date, cur);
       monthDays++;
+      monthRevenue += rev;
     }
     if (monthDays > 0) monthsFound.push({ sheet: sn, days: monthDays });
+    if (monthDays > 0 && declared != null && declared > 0) {
+      declaredTotals.push({
+        month: sn.slice(0, 4) + '-' + sn.slice(4, 6),
+        declared: declared, daily_sum: monthRevenue,
+        diff: monthRevenue - declared, days: monthDays
+      });
+    }
   });
 
   const daily = [...dailyMap.values()].sort((a, b) => a.date.localeCompare(b.date));
   if (!branch || daily.length === 0) {
     return { ok: false, reason: 'no_template_match', branch, daily_count: 0, monthsFound };
   }
-  return { ok: true, branch, daily, schema: { template: '溫點營業目標', monthsFound, total_days: daily.length, total_revenue: daily.reduce((s,d)=>s+d.revenue,0), total_orders: daily.reduce((s,d)=>s+d.orders,0) } };
+  return { ok: true, branch, daily, declaredTotals, schema: { template: '溫點營業目標', monthsFound, total_days: daily.length, total_revenue: daily.reduce((s,d)=>s+d.revenue,0), total_orders: daily.reduce((s,d)=>s+d.orders,0) } };
 }
 
 // ============ Routes ============
@@ -276,12 +295,43 @@ router.get('/uploads', (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
+const SELFCHECK_FILE = path.join(DATA_DIR, 'offline-selfcheck.json');
+// 門市檔案自檢：把每個月份分頁自己寫的「總業績」跟逐日加總比對。
+// 兩者應該相等；不等代表門市檔案的 SUM 範圍壞了（例：樹林 7、8 月漏算最後一天）。
+const SELFCHECK_TOLERANCE = 1; // 元；四捨五入誤差以外一律視為不符
+function loadSelfCheck() {
+  try { if (!fs.existsSync(SELFCHECK_FILE)) return {}; return JSON.parse(fs.readFileSync(SELFCHECK_FILE, 'utf8')); }
+  catch { return {}; }
+}
+function saveSelfCheck(branch, rows) {
+  try {
+    const all = loadSelfCheck();
+    const now = new Date().toISOString();
+    (rows || []).forEach(function (r) {
+      all[branch + '|' + r.month] = { declared: r.declared, daily_sum: r.daily_sum, diff: r.diff, days: r.days, checked_at: now };
+    });
+    fs.writeFileSync(SELFCHECK_FILE, JSON.stringify(all, null, 2));
+  } catch (e) { console.error('[offline-reports] selfcheck save:', e.message); }
+}
+// 回傳所有對不上的月份（給 API 與 09:30 示警共用）
+function selfCheckMismatches() {
+  const all = loadSelfCheck();
+  return Object.keys(all).map(function (k) {
+    const v = all[k], i = k.lastIndexOf('|');
+    return { branch: k.slice(0, i), month: k.slice(i + 1), declared: v.declared, daily_sum: v.daily_sum, diff: v.diff, days: v.days, checked_at: v.checked_at };
+  }).filter(function (r) { return Math.abs(r.diff) > SELFCHECK_TOLERANCE; })
+    .sort(function (a, b) { return (a.branch + a.month).localeCompare(b.branch + b.month); });
+}
+
 const TARGETS_FILE = path.join(DATA_DIR, 'offline-targets.json');
 function loadTargets() {
   try { if (!fs.existsSync(TARGETS_FILE)) return {}; return JSON.parse(fs.readFileSync(TARGETS_FILE, 'utf8')); }
   catch { return {}; }
 }
 function saveTargets(t) { try { fs.writeFileSync(TARGETS_FILE, JSON.stringify(t, null, 2)); } catch {} }
+router.get('/selfcheck', (req, res) => {
+  res.json({ ok: true, tolerance: SELFCHECK_TOLERANCE, mismatches: selfCheckMismatches(), all: loadSelfCheck() });
+});
 router.get('/targets', (req, res) => { res.json({ ok: true, targets: loadTargets() }); });
 router.post('/targets', (req, res) => {
   try {
@@ -705,7 +755,8 @@ async function processBuffer(buffer, opts = {}) {
         }
       }
       fs.writeFileSync(REPORTS_FILE, allRecs.map(r => JSON.stringify(r)).join('\n') + (allRecs.length ? '\n' : ''));
-      return { ok: true, mode: 'excel-hybrid-dedup', count: created.length, updated, inserted, branch: result.branch, total_revenue: created.reduce((s,r)=>s+r.revenue,0), total_orders: created.reduce((s,r)=>s+r.orders,0), schema: result.schema };
+      saveSelfCheck(result.branch, result.declaredTotals);
+      return { ok: true, mode: 'excel-hybrid-dedup', selfcheck: (result.declaredTotals || []).filter(function (x) { return Math.abs(x.diff) > SELFCHECK_TOLERANCE; }), count: created.length, updated, inserted, branch: result.branch, total_revenue: created.reduce((s,r)=>s+r.revenue,0), total_orders: created.reduce((s,r)=>s+r.orders,0), schema: result.schema };
     }
     // Excel hybrid 失敗 → 留一筆失敗 record 方便除錯
     const rec = Object.assign({ id: genId(), ts: new Date().toISOString(), report_date: todayStr, type: 'other', branch: '', author: '', revenue: 0, orders: 0, problems: '', review: '', action_items: '', notes: 'Hybrid extraction failed: ' + (result.reason || 'unknown'), summary: '' }, baseRecord);
@@ -756,6 +807,7 @@ async function processBuffer(buffer, opts = {}) {
 }
 
 module.exports = router;
+module.exports.selfCheckMismatches = selfCheckMismatches;
 module.exports.buildSummaryForAI = buildSummaryForAI;
 module.exports.sendDailyDigestToTelegram = sendDailyDigestToTelegram;
 module.exports.registerCron = registerCron;

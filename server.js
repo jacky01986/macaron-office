@@ -5224,10 +5224,24 @@ try {
         if (_diff >= 2) _stale.push('• ' + b + '：只到 ' + _last[b] + '（落後 ' + _diff + ' 天）');
         else _ok.push('• ' + b + '：' + _last[b]);
       });
-      if (!_stale.length) return;
-      const _msg = '⚠️ 溫點門店營收資料落後提醒' + String.fromCharCode(10) + String.fromCharCode(10) + _stale.join(String.fromCharCode(10)) + (_ok.length ? (String.fromCharCode(10) + String.fromCharCode(10) + '資料正常：' + String.fromCharCode(10) + _ok.join(String.fromCharCode(10))) : '') + String.fromCharCode(10) + String.fromCharCode(10) + '請通知門店補填營收表。';
+      // 門市檔案自檢：分頁自己寫的「總業績」對不上逐日加總＝該店 SUM 公式壞了
+      let _mis = [];
+      try { _mis = (require('./offline-reports').selfCheckMismatches || function () { return []; })(); } catch (e) {}
+      const _NL = String.fromCharCode(10);
+      const _fmt = function (n) { return (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('en-US'); };
+      const _misLines = _mis.map(function (m) {
+        return '• ' + m.branch + ' ' + m.month + '：檔案寫 ' + _fmt(m.declared) + '，逐日加總 ' + _fmt(m.daily_sum) + '（差 ' + (m.diff > 0 ? '+' : '') + _fmt(m.diff) + '）';
+      });
+      if (!_stale.length && !_misLines.length) return;
+      let _msg = '';
+      if (_stale.length) {
+        _msg += '⚠️ 溫點門店營收資料落後提醒' + _NL + _NL + _stale.join(_NL) + (_ok.length ? (_NL + _NL + '資料正常：' + _NL + _ok.join(_NL)) : '') + _NL + _NL + '請通知門店補填營收表。';
+      }
+      if (_misLines.length) {
+        _msg += (_msg ? (_NL + _NL) : '') + '🧮 門店報表對不上（檔案月總 vs 逐日加總）' + _NL + _NL + _misLines.join(_NL) + _NL + _NL + '多半是該月 SUM 範圍漏列，儀表板用的是逐日加總。';
+      }
       await tgSend(process.env.TELEGRAM_CHAT_ID, _msg);
-      console.log('[stale-alert] sent, stale=' + _stale.length);
+      console.log('[stale-alert] sent, stale=' + _stale.length + ' mismatch=' + _misLines.length);
     } catch (e) { console.error('[stale-alert]', e.message); }
   }, { timezone: 'Asia/Taipei' });
   console.log('[stale-alert] cron registered (daily 09:30 Asia/Taipei)');
