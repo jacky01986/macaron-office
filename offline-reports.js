@@ -156,6 +156,21 @@ function parseDate(cellValue) {
   return null;
 }
 
+// 儲存格文字：ExcelJS 對套了格式的標題會回 {richText:[...]}，
+// 只看 .text/.result 會讀成空字串，標籤就找不到。
+function cellText(v) {
+  if (v == null) return '';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number') return String(v);
+  if (typeof v === 'object') {
+    if (Array.isArray(v.richText)) return v.richText.map(function (t) { return t && t.text ? t.text : ''; }).join('');
+    if (v.text != null) return String(v.text);
+    if (v.result != null) return String(v.result);
+    if (v.hyperlink && v.text) return String(v.text);
+  }
+  return String(v);
+}
+
 function parseNumber(cellValue) {
   if (cellValue === null || cellValue === undefined || cellValue === '') return 0;
   if (typeof cellValue === 'number') return Math.round(cellValue);
@@ -191,7 +206,7 @@ async function extractExcelHybrid(buffer, hintFilename) {
     // 從 cell A1 取門市名(第一個有值的 sheet)
     if (!branch) {
       const a1 = sheet.getCell(1, 1).value;
-      if (a1) branch = String(typeof a1 === 'object' ? (a1.text || a1.result || '') : a1).trim().slice(0, 100);
+      if (a1) branch = cellText(a1).trim().slice(0, 100);
     }
     // 第 2 列：月目標 / 總業績 / 達成率。找到「總業績」標籤，取右邊那格當宣告值。
     // 值可能是公式；ExcelJS 只在有快取結果時給得出數字，讀不到就記下原因不硬猜。
@@ -202,8 +217,7 @@ async function extractExcelHybrid(buffer, hintFilename) {
       for (let r2 = 1; r2 <= 6 && labelCol < 0; r2++) {
         const rowN = sheet.getRow(r2);
         for (let c = 1; c <= 16; c++) {
-          const v = rowN.getCell(c).value;
-          const txt = String(typeof v === 'object' && v ? (v.text || v.result || '') : (v == null ? '' : v));
+          const txt = cellText(rowN.getCell(c).value);
           if (txt.indexOf('總業績') >= 0) { labelRow = r2; labelCol = c; break; }
         }
       }
