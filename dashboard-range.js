@@ -46,7 +46,8 @@ function proratedTarget(targets, branch, from, to) {
     const a = from > mStart ? from : mStart, b = to < mEnd ? to : mEnd;
     const days = daysBetween(a, b);
     const t = targets[branch + '|' + ym];
-    if (t && typeof t.target === 'number' && t.target > 0) { any = true; sum += t.target * days / dim; coveredDays += days; }
+    // 明確設 0（例如門市當月還沒開幕）算「已設定」，不是缺口；只有整個 key 不存在才算沒設目標
+    if (t && typeof t.target === 'number' && t.target >= 0) { if (t.target > 0) { any = true; sum += t.target * days / dim; } coveredDays += days; }
     else { missingDays += days; }
     cur = shiftMonth(mStart, 1);
   }
