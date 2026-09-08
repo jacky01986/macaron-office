@@ -88,11 +88,11 @@ function computeRange(opts) {
   else { pTo = addDays(from, -1); pFrom = addDays(pTo, -(len - 1)); }
 
   const recs = recsAll, targets = loadTargets();
-  const cur = sumBranches(recs, from, to), prev = sumBranches(recs, pFrom, pTo);
+  const cur = sumBranches(recs, from, to), prevFull = sumBranches(recs, pFrom, pTo);
   // 門市清單：區間內有資料的 + 目標檔裡出現過的（避免整月沒填的店消失）
   const names = {};
   Object.keys(cur).forEach(function (b) { names[b] = 1; });
-  Object.keys(prev).forEach(function (b) { names[b] = 1; });
+  Object.keys(prevFull).forEach(function (b) { names[b] = 1; });
   Object.keys(targets).forEach(function (k) { const b = k.split('|')[0]; if (b) names[b] = 1; });
   const lastAll = {};
   recs.forEach(function (r) { const d = recDate(r), b = r.branch; if (!b || !d) return; if (!lastAll[b] || d > lastAll[b]) lastAll[b] = d; });
@@ -101,11 +101,23 @@ function computeRange(opts) {
   let sumCur = 0, sumPrev = 0, sumTarget = 0, anyTarget = false, maxLast = null;
   Object.keys(names).sort().forEach(function (b) {
     const c = cur[b] || { revenue: 0, days: 0, last: null };
-    const p = prev[b] || { revenue: 0, days: 0, last: null };
-    const tg = proratedTarget(targets, b, from, to);
+    // 逐店對齊：這家店在本期只填到 X 號，前期就只比到對應的第 N 天，
+    // 否則「本期 7 天 vs 前期 8 天」會把變化率壓低。完全沒填的店不對齊，
+    // 讓前期原樣顯示，一眼看得出這家店停報了。
+    let curEnd = to, pEndB = pTo, aligned = false;
+    if (c.last && c.last < to) {
+      curEnd = c.last;
+      const off = daysBetween(from, c.last);
+      const cand = addDays(pFrom, off - 1);
+      pEndB = cand < pTo ? cand : pTo;
+      aligned = true;
+    }
+    const p = (aligned ? sumBranches(recs, pFrom, pEndB)[b] : prevFull[b]) || { revenue: 0, days: 0, last: null };
+    const tg = proratedTarget(targets, b, from, curEnd);
     const o = {
       cur: Math.round(c.revenue), prev: Math.round(p.revenue),
       cur_days: c.days, prev_days: p.days,
+      aligned: aligned, cur_through: c.last || null, prev_to: pEndB,
       delta: Math.round(c.revenue - p.revenue),
       delta_pct: p.revenue ? Math.round((c.revenue / p.revenue - 1) * 1000) / 10 : null,
       target: tg, ach_pct: tg ? Math.round(c.revenue / tg * 1000) / 10 : null,
