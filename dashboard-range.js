@@ -71,13 +71,23 @@ function computeRange(opts) {
   let to = isYmd(opts.to) ? opts.to : today;
   if (to < from) { const t = from; from = to; to = t; }
   const cmp = ['prev_period', 'prev_month', 'prev_year'].indexOf(opts.cmp) >= 0 ? opts.cmp : 'prev_period';
+
+  const recsAll = loadRecs();
+  // 資料只到某天（門市日報有落差）→ 把區間尾端夾到「最後有資料那天」，
+  // 否則本期只有 N 天真實資料、前期卻算滿 N+k 天，比較與達成率都會失真。
+  let dataLast = null;
+  recsAll.forEach(function (r) { const d = recDate(r); if (d && (!dataLast || d > dataLast)) dataLast = d; });
+  const toRequested = to;
+  let clamped = false;
+  if (dataLast && to > dataLast && dataLast >= from) { to = dataLast; clamped = true; }
+
   const len = daysBetween(from, to);
   let pFrom, pTo;
   if (cmp === 'prev_month') { pFrom = shiftMonth(from, -1); pTo = shiftMonth(to, -1); }
   else if (cmp === 'prev_year') { pFrom = shiftYear(from, -1); pTo = shiftYear(to, -1); }
   else { pTo = addDays(from, -1); pFrom = addDays(pTo, -(len - 1)); }
 
-  const recs = loadRecs(), targets = loadTargets();
+  const recs = recsAll, targets = loadTargets();
   const cur = sumBranches(recs, from, to), prev = sumBranches(recs, pFrom, pTo);
   // 門市清單：區間內有資料的 + 目標檔裡出現過的（避免整月沒填的店消失）
   const names = {};
@@ -108,6 +118,7 @@ function computeRange(opts) {
   });
   return {
     from: from, to: to, days: len, cmp: cmp, prev_from: pFrom, prev_to: pTo,
+    to_requested: toRequested, clamped: clamped, data_last: dataLast,
     by_branch: by_branch,
     total: { cur: sumCur, prev: sumPrev, delta: sumCur - sumPrev, delta_pct: sumPrev ? Math.round((sumCur / sumPrev - 1) * 1000) / 10 : null, target: anyTarget ? sumTarget : null, ach_pct: anyTarget && sumTarget ? Math.round(sumCur / sumTarget * 1000) / 10 : null },
     last_date: maxLast
