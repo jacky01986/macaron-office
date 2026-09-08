@@ -38,7 +38,7 @@ function recDate(r) { return String(r.report_date || r.date || '').slice(0, 10);
 
 // 區間內每月天數 → 目標按比例換算；月份沒目標就不算（全部沒目標回 null）
 function proratedTarget(targets, branch, from, to) {
-  let sum = 0, any = false;
+  let sum = 0, any = false, coveredDays = 0, missingDays = 0;
   let cur = from.slice(0, 7) + '-01';
   while (cur <= to) {
     const ym = cur.slice(0, 7), dim = daysInMonth(ym);
@@ -46,10 +46,13 @@ function proratedTarget(targets, branch, from, to) {
     const a = from > mStart ? from : mStart, b = to < mEnd ? to : mEnd;
     const days = daysBetween(a, b);
     const t = targets[branch + '|' + ym];
-    if (t && typeof t.target === 'number' && t.target > 0) { any = true; sum += t.target * days / dim; }
+    if (t && typeof t.target === 'number' && t.target > 0) { any = true; sum += t.target * days / dim; coveredDays += days; }
+    else { missingDays += days; }
     cur = shiftMonth(mStart, 1);
   }
-  return any ? Math.round(sum) : null;
+  // 區間裡有月份沒設目標時，目標只涵蓋一部分天數，拿全期營收去除會膨脹達成率
+  // （例：整年營收 ÷ 只有 8、9 月的目標 = 508%），所以回報缺口讓上層停用達成率。
+  return { target: any ? Math.round(sum) : null, covered_days: coveredDays, missing_days: missingDays };
 }
 
 function sumBranches(recs, from, to) {
@@ -99,6 +102,7 @@ function computeRange(opts) {
 
   const by_branch = {};
   let sumCur = 0, sumPrev = 0, sumTarget = 0, anyTarget = false, maxLast = null;
+  let anyPartial = false, anyNoTarget = false;
   Object.keys(names).sort().forEach(function (b) {
     const c = cur[b] || { revenue: 0, days: 0, last: null };
     // 逐店對齊：這家店在本期只填到 X 號，前期就只比到對應的第 N 天，
@@ -113,26 +117,38 @@ function computeRange(opts) {
       aligned = true;
     }
     const p = (aligned ? sumBranches(recs, pFrom, pEndB)[b] : prevFull[b]) || { revenue: 0, days: 0, last: null };
-    const tg = proratedTarget(targets, b, from, curEnd);
+    const tgO = proratedTarget(targets, b, from, curEnd);
+    const tg = tgO.target, tgPartial = tgO.missing_days > 0;
     const o = {
       cur: Math.round(c.revenue), prev: Math.round(p.revenue),
       cur_days: c.days, prev_days: p.days,
       aligned: aligned, cur_through: c.last || null, prev_to: pEndB,
       delta: Math.round(c.revenue - p.revenue),
       delta_pct: p.revenue ? Math.round((c.revenue / p.revenue - 1) * 1000) / 10 : null,
-      target: tg, ach_pct: tg ? Math.round(c.revenue / tg * 1000) / 10 : null,
+      target: tg, target_partial: tgPartial, target_missing_days: tgO.missing_days,
+      ach_pct: (tg && !tgPartial) ? Math.round(c.revenue / tg * 1000) / 10 : null,
       last_date: lastAll[b] || null,
       last_in_range: c.last
     };
     by_branch[b] = o;
-    sumCur += o.cur; sumPrev += o.prev; if (tg) { sumTarget += tg; anyTarget = true; }
+    sumCur += o.cur; sumPrev += o.prev;
+    if (tg) { sumTarget += tg; anyTarget = true; }
+    if (tgPartial) anyPartial = true;
+    if (!tg && o.cur) anyNoTarget = true;
     if (o.last_date && (!maxLast || o.last_date > maxLast)) maxLast = o.last_date;
   });
   return {
     from: from, to: to, days: len, cmp: cmp, prev_from: pFrom, prev_to: pTo,
     to_requested: toRequested, clamped: clamped, data_last: dataLast,
     by_branch: by_branch,
-    total: { cur: sumCur, prev: sumPrev, delta: sumCur - sumPrev, delta_pct: sumPrev ? Math.round((sumCur / sumPrev - 1) * 1000) / 10 : null, target: anyTarget ? sumTarget : null, ach_pct: anyTarget && sumTarget ? Math.round(sumCur / sumTarget * 1000) / 10 : null },
+    total: {
+      cur: sumCur, prev: sumPrev, delta: sumCur - sumPrev,
+      delta_pct: sumPrev ? Math.round((sumCur / sumPrev - 1) * 1000) / 10 : null,
+      target: anyTarget ? sumTarget : null,
+      target_partial: anyPartial || anyNoTarget,
+      // 有門市缺目標（或區間含未設目標的月份）時不給達成率：分子是全部營收、分母只有部分目標，算出來會膨脹
+      ach_pct: (anyTarget && sumTarget && !anyPartial && !anyNoTarget) ? Math.round(sumCur / sumTarget * 1000) / 10 : null
+    },
     last_date: maxLast
   };
 }
