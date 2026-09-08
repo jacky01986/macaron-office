@@ -173,6 +173,7 @@ async function load(){
   if(useRange){
     var r=rg.range;
     labCur="本期"; labPrev="前期"; labTarget=(r.from.slice(0,7)===r.to.slice(0,7)&&r.days===daysInMonth(r.from.slice(0,7)))?"月目標":"目標（按天數換算）";
+    if(r.total&&r.total.target_partial) labTarget+="＊不完整";
     noteTxt=rangeLabel({from:r.from,to:r.to})+"（"+r.days+" 天）vs "+rangeLabel({from:r.prev_from,to:r.prev_to})+"・"+cmpName(r.cmp)
       +(r.clamped?("・已對齊資料最後一天 "+fmtMD(r.data_last)+"（選到 "+fmtMD(r.to_requested)+"）"):"");
     chartTitle="各店本期營收（"+rangeLabel({from:r.from,to:r.to})+"）";
@@ -208,7 +209,9 @@ async function load(){
     }
     var delta=cur-prev;
     var dpct=prev? (cur/prev-1)*100 : null;
-    var ach=(target)? (cur/target)*100 : null;
+    var ach;
+    if(useRange){ var _x=rg.range.by_branch[b]; ach=(_x.ach_pct!=null)? _x.ach_pct : null; }
+    else { ach=(target)? (cur/target)*100 : null; }
     sumCur+=cur; sumPrev+=prev; if(target)sumTarget+=target;
     chartLabels.push(b); chartVals.push(cur);
     var dcls=delta>=0?"pos":"neg";
@@ -218,7 +221,10 @@ async function load(){
       "<td class=\""+dcls+"\">"+dtxt+"<br><span style=\"font-size:11px\">"+(delta>=0?"+":"")+nf(delta)+"</span></td>"+
       "<td>"+nf(target)+"</td><td>"+(ach!=null?pctTxt(ach):"—")+achBar+"</td><td class=\"muted\">"+ld+"</td></tr>");
   });
-  var totDelta=sumCur-sumPrev, totDpct=sumPrev?(sumCur/sumPrev-1)*100:null, totAch=sumTarget?(sumCur/sumTarget)*100:null;
+  var totDelta=sumCur-sumPrev, totDpct=sumPrev?(sumCur/sumPrev-1)*100:null;
+  var totAch = useRange ? (rg.range.total.ach_pct!=null? rg.range.total.ach_pct : null)
+                        : (sumTarget?(sumCur/sumTarget)*100:null);
+  var tgtPartial = useRange && !!rg.range.total.target_partial;
   var totLd = useRange ? (rg.range.last_date?fmtMD(rg.range.last_date):"—") : ((mtd&&mtd.last_date)?fmtMD(mtd.last_date):"—");
   rows.push("<tr style=\"font-weight:700\"><td>全店合計</td><td>"+nf(sumCur)+"</td><td>"+nf(sumPrev)+"</td>"+
     "<td class=\""+(totDelta>=0?"pos":"neg")+"\">"+(sumPrev?(totDelta>=0?"+":"")+pctTxt(totDpct):"—")+"</td>"+
@@ -233,7 +239,7 @@ async function load(){
   var kpis=[
     {lab:(useRange?"本期全店營收":"本月至今全店營收"),val:"NT$"+nf(sumCur),sub:(useRange?"前期":"上月同期")+" NT$"+nf(sumPrev)},
     {lab:(useRange?"本期特殊訂單":"本月特殊訂單"),val:"NT$"+nf(so.total),sub:so.count+" 筆"},
-    {lab:"全店達成率",val:totAch!=null?pctTxt(totAch):"—",sub:labTarget+" NT$"+nf(sumTarget)},
+    {lab:"全店達成率",val:totAch!=null?pctTxt(totAch):"—",sub:(tgtPartial?"部分期間未設目標，不計達成率・已設 ":labTarget+" ")+"NT$"+nf(sumTarget)},
     {lab:(useRange?"vs 前期":"vs 上月同期"),val:(sumPrev?(totDelta>=0?"+":"")+pctTxt(totDpct):"—"),sub:(totDelta>=0?"+":"")+"NT$"+nf(totDelta)},
     {lab:(useRange?"Shopline 本期":"Shopline 近31天"),val:"NT$"+nf(sl.total_revenue),sub:(nf(sl.paid_count)+" 筆已付・AOV "+nf(sl.aov_paid))},
     (useRange? {lab:"客服進線（本期）",val:nf(ss.inbox_range)+" 則",sub:nf(ss.inbox_24h)+" / 24h・"+nf(ss.inbox_7d)+" 近7天"}
