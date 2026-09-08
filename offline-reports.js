@@ -194,15 +194,25 @@ async function extractExcelHybrid(buffer, hintFilename) {
       if (a1) branch = String(typeof a1 === 'object' ? (a1.text || a1.result || '') : a1).trim().slice(0, 100);
     }
     // 第 2 列：月目標 / 總業績 / 達成率。找到「總業績」標籤，取右邊那格當宣告值。
-    let declared = null;
+    // 值可能是公式；ExcelJS 只在有快取結果時給得出數字，讀不到就記下原因不硬猜。
+    let declared = null, declaredNote = '';
     try {
       const row2 = sheet.getRow(2);
-      for (let c = 1; c <= 12; c++) {
+      let labelCol = -1;
+      for (let c = 1; c <= 16; c++) {
         const v = row2.getCell(c).value;
         const txt = String(typeof v === 'object' && v ? (v.text || v.result || '') : (v == null ? '' : v));
-        if (txt.indexOf('總業績') >= 0) { declared = parseNumber(row2.getCell(c + 1).value); break; }
+        if (txt.indexOf('總業績') >= 0) { labelCol = c; break; }
       }
-    } catch (e) {}
+      if (labelCol < 0) { declaredNote = 'no_label'; }
+      else {
+        const raw = row2.getCell(labelCol + 1).value;
+        const n = parseNumber(raw);
+        if (n > 0) declared = n;
+        else if (raw && typeof raw === 'object' && raw.formula) declaredNote = 'formula_no_cache:' + String(raw.formula).slice(0, 40);
+        else declaredNote = 'empty_or_zero:' + (raw == null ? 'null' : (typeof raw));
+      }
+    } catch (e) { declaredNote = 'err:' + e.message.slice(0, 40); }
     let monthDays = 0, monthRevenue = 0;
     for (let r = 5; r <= sheet.rowCount; r++) {
       const row = sheet.getRow(r);
@@ -223,11 +233,12 @@ async function extractExcelHybrid(buffer, hintFilename) {
       monthRevenue += rev;
     }
     if (monthDays > 0) monthsFound.push({ sheet: sn, days: monthDays });
-    if (monthDays > 0 && declared != null && declared > 0) {
+    if (monthDays > 0) {
       declaredTotals.push({
         month: sn.slice(0, 4) + '-' + sn.slice(4, 6),
         declared: declared, daily_sum: monthRevenue,
-        diff: monthRevenue - declared, days: monthDays
+        diff: (declared == null ? null : monthRevenue - declared),
+        days: monthDays, note: declaredNote || ''
       });
     }
   });
@@ -308,7 +319,7 @@ function saveSelfCheck(branch, rows) {
     const all = loadSelfCheck();
     const now = new Date().toISOString();
     (rows || []).forEach(function (r) {
-      all[branch + '|' + r.month] = { declared: r.declared, daily_sum: r.daily_sum, diff: r.diff, days: r.days, checked_at: now };
+      all[branch + '|' + r.month] = { declared: r.declared, daily_sum: r.daily_sum, diff: r.diff, days: r.days, note: r.note || '', checked_at: now };
     });
     fs.writeFileSync(SELFCHECK_FILE, JSON.stringify(all, null, 2));
   } catch (e) { console.error('[offline-reports] selfcheck save:', e.message); }
@@ -318,8 +329,8 @@ function selfCheckMismatches() {
   const all = loadSelfCheck();
   return Object.keys(all).map(function (k) {
     const v = all[k], i = k.lastIndexOf('|');
-    return { branch: k.slice(0, i), month: k.slice(i + 1), declared: v.declared, daily_sum: v.daily_sum, diff: v.diff, days: v.days, checked_at: v.checked_at };
-  }).filter(function (r) { return Math.abs(r.diff) > SELFCHECK_TOLERANCE; })
+    return { branch: k.slice(0, i), month: k.slice(i + 1), declared: v.declared, daily_sum: v.daily_sum, diff: v.diff, days: v.days, note: v.note || '', checked_at: v.checked_at };
+  }).filter(function (r) { return r.diff != null && Math.abs(r.diff) > SELFCHECK_TOLERANCE; })
     .sort(function (a, b) { return (a.branch + a.month).localeCompare(b.branch + b.month); });
 }
 
@@ -330,7 +341,10 @@ function loadTargets() {
 }
 function saveTargets(t) { try { fs.writeFileSync(TARGETS_FILE, JSON.stringify(t, null, 2)); } catch {} }
 router.get('/selfcheck', (req, res) => {
-  res.json({ ok: true, tolerance: SELFCHECK_TOLERANCE, mismatches: selfCheckMismatches(), all: loadSelfCheck() });
+  const _all = loadSelfCheck();
+  const _unreadable = Object.keys(_all).filter(function (k) { return _all[k].declared == null; })
+    .map(function (k) { return { key: k, note: _all[k].note || '', daily_sum: _all[k].daily_sum, days: _all[k].days }; });
+  res.json({ ok: true, tolerance: SELFCHECK_TOLERANCE, mismatches: selfCheckMismatches(), unreadable_count: _unreadable.length, unreadable: _unreadable.slice(0, 40), all: _all });
 });
 router.get('/targets', (req, res) => { res.json({ ok: true, targets: loadTargets() }); });
 router.post('/targets', (req, res) => {
