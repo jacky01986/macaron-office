@@ -8,6 +8,11 @@
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--dark)}
 header{background:var(--o);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
 header h1{font-size:18px;margin:0}.upd{font-size:12px;opacity:.9}
+.hr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ctl{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);border-radius:8px;padding:5px 8px}
+.ctl select,.ctl input{font:inherit;font-size:12.5px;border:1px solid rgba(255,255,255,.5);border-radius:6px;padding:4px 6px;background:#fff;color:var(--dark);height:28px}
+.ctl .sep{opacity:.8;font-size:12px}
+.ctl [hidden]{display:none!important}
 .wrap{max-width:1100px;margin:0 auto;padding:16px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
@@ -28,23 +33,41 @@ th{color:var(--grey);font-weight:600;font-size:12px}
 .err{color:var(--red);font-size:12px}
 canvas{max-height:280px}
 </style></head><body>
-<header><h1>溫點 WarmPlace ｜ 營運即時儀表板</h1><span class="upd" id="upd">載入中…</span></header>
+<header>
+  <h1>溫點 WarmPlace ｜ 營運即時儀表板</h1>
+  <div class="hr">
+    <div class="ctl" id="ctl">
+      <select id="mode" title="統計期間">
+        <option value="mtd">本月至今</option>
+        <option value="day">單日</option>
+        <option value="month">單月</option>
+        <option value="year">整年</option>
+        <option value="custom">自訂區間</option>
+      </select>
+      <input type="date" id="inDay" hidden>
+      <input type="month" id="inMonth" hidden>
+      <select id="inYear" hidden></select>
+      <input type="date" id="inFrom" hidden><span class="sep" id="sepTo" hidden>～</span><input type="date" id="inTo" hidden>
+    </div>
+    <span class="upd" id="upd">載入中…</span>
+  </div>
+</header>
 <div class="wrap">
   <div class="kpis" id="kpis"></div>
 
   <div class="card">
     <h2>各店營收明細 <span class="tag" id="mtdNote"></span></h2>
     <table id="storeTbl"><thead><tr>
-      <th>門店</th><th>本月至今</th><th>上月同期</th><th>變化</th><th>月目標</th><th>達成率</th><th>資料更新至</th>
+      <th>門店</th><th id="thCur">本月至今</th><th id="thPrev">上月同期</th><th>變化</th><th id="thTarget">月目標</th><th>達成率</th><th>資料更新至</th>
     </tr></thead><tbody></tbody></table>
     <div class="muted" id="storeErr"></div>
   </div>
 
-  <div class="card"><h2>各店本月至今營收</h2><canvas id="branchChart"></canvas></div>
+  <div class="card"><h2 id="hBranch">各店本月至今營收</h2><canvas id="branchChart"></canvas></div>
 
   <div class="card"><h2>全店月營收趨勢</h2><canvas id="trendChart"></canvas></div>
 
-  <div class="card"><h2>Shopline 線上銷售（近 31 天）</h2><div id="shopline"></div></div>
+  <div class="card"><h2 id="hShopline">Shopline 線上銷售（近 31 天）</h2><div id="shopline"></div></div>
 
   <div class="card"><h2>門市異樣偵測</h2><div id="anom"></div></div>
 
@@ -59,86 +82,173 @@ canvas{max-height:280px}
 var branchChart=null, trendChart=null;
 function nf(n){return (n==null||isNaN(n))?"—":Number(n).toLocaleString("en-US");}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-function pctTxt(p){return (p==null||isNaN(p))?"—":(p.toFixed(1)+"%");}
+function pctTxt(p){if(p==null||isNaN(p))return "—"; if(Math.abs(p)<0.05)p=0; return p.toFixed(1)+"%";}
+function $(id){return document.getElementById(id);}
 
+/* ===== 日期選擇器（右上角） ===== */
+function twToday(){ return new Date(Date.now()+8*3600000).toISOString().slice(0,10); }
+function daysInMonth(ym){ var y=+ym.slice(0,4), m=+ym.slice(5,7); return new Date(Date.UTC(y,m,0)).getUTCDate(); }
+function minD(a,b){ return a<b?a:b; }
+var SEL={mode:"mtd", v:"", from:"", to:""};
+function readUrl(){
+  var q=new URLSearchParams(location.search);
+  var m=q.get("mode"); if(["mtd","day","month","year","custom"].indexOf(m)>=0) SEL.mode=m;
+  SEL.v=q.get("v")||""; SEL.from=q.get("from")||""; SEL.to=q.get("to")||"";
+}
+function writeUrl(){
+  var q=new URLSearchParams();
+  if(SEL.mode!=="mtd"){ q.set("mode",SEL.mode); if(SEL.mode==="custom"){ q.set("from",SEL.from); q.set("to",SEL.to); } else q.set("v",SEL.v); }
+  var s=q.toString(); history.replaceState(null,"",location.pathname+(s?"?"+s:""));
+}
+/* 回傳 {from,to,cmp,label} ；mtd 回 null＝走原本 metrics */
+function rangeOf(){
+  var t=twToday();
+  if(SEL.mode==="day"){ var d=SEL.v||t; return {from:d,to:d,cmp:"prev_period"}; }
+  if(SEL.mode==="month"){ var ym=SEL.v||t.slice(0,7); var last=ym+"-"+String(daysInMonth(ym)).padStart(2,"0"); return {from:ym+"-01",to:minD(last,t),cmp:"prev_month"}; }
+  if(SEL.mode==="year"){ var y=SEL.v||t.slice(0,4); return {from:y+"-01-01",to:minD(y+"-12-31",t),cmp:"prev_year"}; }
+  if(SEL.mode==="custom"){ var f=SEL.from||t.slice(0,7)+"-01", e=SEL.to||t; if(e<f){var x=f;f=e;e=x;} return {from:f,to:e,cmp:"prev_period"}; }
+  return null;
+}
+function cmpName(c){ return c==="prev_month"?"上月同期":(c==="prev_year"?"去年同期":"前一段等長期間"); }
+function initCtl(){
+  readUrl();
+  var t=twToday(), ys=$("inYear"), y0=+t.slice(0,4);
+  for(var y=y0;y>=y0-3;y--){ var o=document.createElement("option"); o.value=String(y); o.textContent=y+" 年"; ys.appendChild(o); }
+  $("mode").value=SEL.mode;
+  $("inDay").value=(SEL.mode==="day"&&SEL.v)?SEL.v:t;
+  $("inMonth").value=(SEL.mode==="month"&&SEL.v)?SEL.v:t.slice(0,7);
+  ys.value=(SEL.mode==="year"&&SEL.v)?SEL.v:t.slice(0,4);
+  $("inFrom").value=(SEL.mode==="custom"&&SEL.from)?SEL.from:t.slice(0,7)+"-01";
+  $("inTo").value=(SEL.mode==="custom"&&SEL.to)?SEL.to:t;
+  ["inDay","inMonth","inTo","inFrom"].forEach(function(id){ $(id).max=t; });
+  syncInputs();
+  $("mode").onchange=function(){ SEL.mode=this.value; syncInputs(); applySel(); };
+  $("inDay").onchange=$("inMonth").onchange=$("inYear").onchange=$("inFrom").onchange=$("inTo").onchange=applySel;
+}
+function syncInputs(){
+  var m=SEL.mode;
+  $("inDay").hidden=m!=="day"; $("inMonth").hidden=m!=="month"; $("inYear").hidden=m!=="year";
+  $("inFrom").hidden=$("inTo").hidden=$("sepTo").hidden=m!=="custom";
+}
+function applySel(){
+  var m=SEL.mode;
+  if(m==="day") SEL.v=$("inDay").value; else if(m==="month") SEL.v=$("inMonth").value; else if(m==="year") SEL.v=$("inYear").value;
+  else if(m==="custom"){ SEL.from=$("inFrom").value; SEL.to=$("inTo").value; if(!SEL.from||!SEL.to) return; } else SEL.v="";
+  writeUrl(); load(); soRender();
+}
+function fmtMD(d){ return d.slice(5).replace("-","/"); }
+function rangeLabel(r){ return (r.from===r.to)? r.from : (r.from+"～"+(r.to.slice(0,4)===r.from.slice(0,4)?r.to.slice(5):r.to)); }
+
+/* ===== 主載入 ===== */
 async function load(){
-  var o;
-  try{ var r=await fetch("/api/dashboard/metrics",{cache:"no-store"}); o=await r.json(); }
-  catch(e){ document.getElementById("upd").textContent="讀取失敗"; return; }
-  document.getElementById("upd").textContent="更新：" + new Date(o.updatedAt||Date.now()).toLocaleString("zh-TW",{hour12:false});
+  var o, rg=null, R=rangeOf();
+  try{
+    var reqs=[fetch("/api/dashboard/metrics",{cache:"no-store"})];
+    if(R) reqs.push(fetch("/api/dashboard/range?from="+R.from+"&to="+R.to+"&cmp="+R.cmp,{cache:"no-store"}));
+    var rs=await Promise.all(reqs); o=await rs[0].json(); if(R){ rg=await rs[1].json(); }
+  }
+  catch(e){ $("upd").textContent="讀取失敗"; return; }
+  $("upd").textContent="更新：" + new Date(o.updatedAt||Date.now()).toLocaleString("zh-TW",{hour12:false});
 
   var stores=o.stores||{}, mtd=o.mtd||null;
   var byMonth=stores.by_month_all_stores||[];
   var curM = mtd? mtd.cur_month : (byMonth[0]&&byMonth[0].month);
   var prevM = mtd? mtd.prev_month : (byMonth[1]&&byMonth[1].month);
-  // sort byMonth desc
   var bmSorted=byMonth.slice().sort(function(a,b){return a.month<b.month?1:-1;});
   var curRec=bmSorted.find(function(x){return x.month===curM;})||bmSorted[0]||{by_branch:{}};
   var prevRec=bmSorted.find(function(x){return x.month===prevM;})||bmSorted[1]||{by_branch:{}};
 
-  // build per-branch rows
+  var useRange = !!(R && rg && rg.range && rg.range.by_branch);
+  var labCur, labPrev, labTarget, noteTxt, chartTitle;
+  if(useRange){
+    var r=rg.range;
+    labCur="本期"; labPrev="前期"; labTarget=(r.from.slice(0,7)===r.to.slice(0,7)&&r.days===daysInMonth(r.from.slice(0,7)))?"月目標":"目標（按天數換算）";
+    noteTxt=rangeLabel({from:r.from,to:r.to})+"（"+r.days+" 天）vs "+rangeLabel({from:r.prev_from,to:r.prev_to})+"・"+cmpName(r.cmp);
+    chartTitle="各店本期營收（"+rangeLabel({from:r.from,to:r.to})+"）";
+  } else {
+    labCur="本月至今"; labPrev="上月同期"; labTarget="月目標";
+    noteTxt= mtd? ("本月至今 "+curM+" 到第"+mtd.through_day+"天 vs 上月同期") : (curM+" vs "+prevM);
+    chartTitle="各店本月至今營收";
+  }
+  $("thCur").textContent=labCur; $("thPrev").textContent=labPrev; $("thTarget").textContent=labTarget; $("hBranch").textContent=chartTitle;
+
+  // 各店列
   var branches={};
-  Object.keys(curRec.by_branch||{}).forEach(function(b){branches[b]=1;});
-  Object.keys(prevRec.by_branch||{}).forEach(function(b){branches[b]=1;});
-  if(mtd&&mtd.by_branch)Object.keys(mtd.by_branch).forEach(function(b){branches[b]=1;});
+  if(useRange){ Object.keys(rg.range.by_branch).forEach(function(b){branches[b]=1;}); }
+  else {
+    Object.keys(curRec.by_branch||{}).forEach(function(b){branches[b]=1;});
+    Object.keys(prevRec.by_branch||{}).forEach(function(b){branches[b]=1;});
+    if(mtd&&mtd.by_branch)Object.keys(mtd.by_branch).forEach(function(b){branches[b]=1;});
+  }
   var list=Object.keys(branches);
+  if(useRange) list.sort(function(a,b){ return (rg.range.by_branch[b].cur-rg.range.by_branch[a].cur)||a.localeCompare(b,"zh-Hant"); });
 
   var rows=[], chartLabels=[], chartVals=[], sumCur=0,sumPrev=0,sumTarget=0;
   list.forEach(function(b){
-    var cur, prev;
-    if(mtd&&mtd.by_branch&&mtd.by_branch[b]){ cur=mtd.by_branch[b].cur; prev=mtd.by_branch[b].prev; }
-    else { cur=(curRec.by_branch[b]||{}).revenue||0; prev=(prevRec.by_branch[b]||{}).revenue||0; }
-    var target=(mtd&&mtd.by_branch&&mtd.by_branch[b]&&mtd.by_branch[b].target!=null)?mtd.by_branch[b].target:((curRec.by_branch[b]||{}).target);
-    if(target==null && curRec.by_branch[b] && curRec.by_branch[b].target===0) target=0;
+    var cur, prev, target, ld;
+    if(useRange){
+      var x=rg.range.by_branch[b]; cur=x.cur; prev=x.prev; target=x.target; ld=x.last_date?fmtMD(x.last_date):"—";
+    } else {
+      if(mtd&&mtd.by_branch&&mtd.by_branch[b]){ cur=mtd.by_branch[b].cur; prev=mtd.by_branch[b].prev; }
+      else { cur=(curRec.by_branch[b]||{}).revenue||0; prev=(prevRec.by_branch[b]||{}).revenue||0; }
+      target=(mtd&&mtd.by_branch&&mtd.by_branch[b]&&mtd.by_branch[b].target!=null)?mtd.by_branch[b].target:((curRec.by_branch[b]||{}).target);
+      if(target==null && curRec.by_branch[b] && curRec.by_branch[b].target===0) target=0;
+      ld=(mtd&&mtd.by_branch&&mtd.by_branch[b]&&mtd.by_branch[b].last_date)?fmtMD(mtd.by_branch[b].last_date):"—";
+    }
     var delta=cur-prev;
     var dpct=prev? (cur/prev-1)*100 : null;
     var ach=(target)? (cur/target)*100 : null;
     sumCur+=cur; sumPrev+=prev; if(target)sumTarget+=target;
     chartLabels.push(b); chartVals.push(cur);
     var dcls=delta>=0?"pos":"neg";
-    var dtxt=(prev? (delta>=0?"+":"")+pctTxt(dpct) : "新開");
+    var dtxt=(prev? (delta>=0?"+":"")+pctTxt(dpct) : (cur?"新開":"—"));
     var achBar = (ach!=null)? '<div class="bar"><i style="width:'+Math.min(100,ach).toFixed(0)+'%"></i></div>' : "";
-    var ld=(mtd&&mtd.by_branch&&mtd.by_branch[b]&&mtd.by_branch[b].last_date)?mtd.by_branch[b].last_date.slice(5).replace("-","/"):"—";
     rows.push("<tr><td>"+esc(b)+"</td><td>"+nf(cur)+"</td><td>"+nf(prev)+"</td>"+
       "<td class=\""+dcls+"\">"+dtxt+"<br><span style=\"font-size:11px\">"+(delta>=0?"+":"")+nf(delta)+"</span></td>"+
       "<td>"+nf(target)+"</td><td>"+(ach!=null?pctTxt(ach):"—")+achBar+"</td><td class=\"muted\">"+ld+"</td></tr>");
   });
   var totDelta=sumCur-sumPrev, totDpct=sumPrev?(sumCur/sumPrev-1)*100:null, totAch=sumTarget?(sumCur/sumTarget)*100:null;
+  var totLd = useRange ? (rg.range.last_date?fmtMD(rg.range.last_date):"—") : ((mtd&&mtd.last_date)?fmtMD(mtd.last_date):"—");
   rows.push("<tr style=\"font-weight:700\"><td>全店合計</td><td>"+nf(sumCur)+"</td><td>"+nf(sumPrev)+"</td>"+
     "<td class=\""+(totDelta>=0?"pos":"neg")+"\">"+(sumPrev?(totDelta>=0?"+":"")+pctTxt(totDpct):"—")+"</td>"+
-    "<td>"+nf(sumTarget)+"</td><td>"+(totAch!=null?pctTxt(totAch):"—")+"</td><td class=\"muted\">"+((mtd&&mtd.last_date)?mtd.last_date.slice(5).replace("-","/"):"—")+"</td></tr>");
+    "<td>"+nf(sumTarget)+"</td><td>"+(totAch!=null?pctTxt(totAch):"—")+"</td><td class=\"muted\">"+totLd+"</td></tr>");
   document.querySelector("#storeTbl tbody").innerHTML=rows.join("");
-  document.getElementById("storeErr").textContent=stores.storesErr||o.storesErr||"";
-  document.getElementById("mtdNote").textContent = mtd? ("本月至今 "+curM+" 到第"+mtd.through_day+"天 vs 上月同期") : (curM+" vs "+prevM);
+  $("storeErr").textContent=(useRange?(rg.rangeErr||""):(stores.storesErr||o.storesErr||""));
+  $("mtdNote").textContent=noteTxt;
 
-  // KPI cards
-  var sl=o.shopline||{}, ss=o.ss||{}, anom=o.anomalies||{};
+  // KPI 卡
+  var sl=(useRange?rg.shopline:o.shopline)||{}, ss=(useRange?rg.ss:o.ss)||{}, anom=o.anomalies||{};
+  var so=soStats();
   var kpis=[
-    {lab:"本月至今全店營收",val:"NT$"+nf(sumCur),sub:"上月同期 NT$"+nf(sumPrev)},
-    {lab:"本月特殊訂單",val:"NT$"+nf((soData&&soData.monthTotal)||0),sub:((soData&&soData.monthCount)||0)+" 筆"},
-    {lab:"全店達成率",val:totAch!=null?pctTxt(totAch):"—",sub:"月目標 NT$"+nf(sumTarget)},
-    {lab:"vs 上月同期",val:(sumPrev?(totDelta>=0?"+":"")+pctTxt(totDpct):"—"),sub:(totDelta>=0?"+":"")+"NT$"+nf(totDelta)},
-    {lab:"Shopline 近31天",val:"NT$"+nf(sl.total_revenue),sub:(nf(sl.paid_count)+" 筆已付・AOV "+nf(sl.aov_paid))},
-    {lab:"客服進線",val:nf(ss.inbox_24h)+" / 24h",sub:nf(ss.inbox_7d)+" 近7天"},
+    {lab:(useRange?"本期全店營收":"本月至今全店營收"),val:"NT$"+nf(sumCur),sub:(useRange?"前期":"上月同期")+" NT$"+nf(sumPrev)},
+    {lab:(useRange?"本期特殊訂單":"本月特殊訂單"),val:"NT$"+nf(so.total),sub:so.count+" 筆"},
+    {lab:"全店達成率",val:totAch!=null?pctTxt(totAch):"—",sub:labTarget+" NT$"+nf(sumTarget)},
+    {lab:(useRange?"vs 前期":"vs 上月同期"),val:(sumPrev?(totDelta>=0?"+":"")+pctTxt(totDpct):"—"),sub:(totDelta>=0?"+":"")+"NT$"+nf(totDelta)},
+    {lab:(useRange?"Shopline 本期":"Shopline 近31天"),val:"NT$"+nf(sl.total_revenue),sub:(nf(sl.paid_count)+" 筆已付・AOV "+nf(sl.aov_paid))},
+    (useRange? {lab:"客服進線（本期）",val:nf(ss.inbox_range)+" 則",sub:nf(ss.inbox_24h)+" / 24h・"+nf(ss.inbox_7d)+" 近7天"}
+             : {lab:"客服進線",val:nf(ss.inbox_24h)+" / 24h",sub:nf(ss.inbox_7d)+" 近7天"}),
   ];
-  document.getElementById("kpis").innerHTML=kpis.map(function(k){
+  $("kpis").innerHTML=kpis.map(function(k){
     return '<div class="kpi"><div class="lab">'+esc(k.lab)+'</div><div class="val">'+k.val+'</div><div class="sub">'+esc(k.sub)+'</div></div>';
   }).join("");
 
-  // branch chart
+  // 各店長條圖
+  try{
   if(branchChart)branchChart.destroy();
-  branchChart=new Chart(document.getElementById("branchChart"),{type:"bar",
-    data:{labels:chartLabels,datasets:[{label:"本月至今營收",data:chartVals,backgroundColor:"#C65D2E"}]},
+  branchChart=new Chart($("branchChart"),{type:"bar",
+    data:{labels:chartLabels,datasets:[{label:(useRange?"本期營收":"本月至今營收"),data:chartVals,backgroundColor:"#C65D2E"}]},
     options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return nf(v);}}}}}});
 
-  // trend chart (total by month asc)
+  // 月趨勢折線（維持全年逐月）
   var tr=byMonth.slice().sort(function(a,b){return a.month<b.month?-1:1;});
   if(trendChart)trendChart.destroy();
-  trendChart=new Chart(document.getElementById("trendChart"),{type:"line",
+  trendChart=new Chart($("trendChart"),{type:"line",
     data:{labels:tr.map(function(x){return x.month;}),datasets:[{label:"全店月營收",data:tr.map(function(x){return x.total_revenue;}),borderColor:"#C65D2E",backgroundColor:"rgba(198,93,46,.15)",fill:true,tension:.25}]},
     options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return nf(v);}}}}}});
+  }catch(e){ console.warn("chart",e.message); }
 
-  // shopline
+  // Shopline
+  $("hShopline").textContent = useRange ? ("Shopline 線上銷售（"+rangeLabel({from:R.from,to:R.to})+"）") : "Shopline 線上銷售（近 31 天）";
   var slh="";
   if(sl&&sl.total_revenue!=null){
     slh='<table><tr><td>營收</td><td>NT$'+nf(sl.total_revenue)+'</td></tr>'+
@@ -146,14 +256,14 @@ async function load(){
       '<tr><td>客單價 AOV</td><td>NT$'+nf(sl.aov_paid)+'</td></tr>'+
       '<tr><td>銷售件數</td><td>'+nf(sl.total_qty)+'</td></tr></table>';
     if(sl.top_skus&&sl.top_skus.length){
-      slh+='<div class="muted" style="margin-top:8px">熱銷：'+sl.top_skus.slice(0,5).map(function(s){return esc(s.name||s.sku||s.title||"")+(s.qty?"×"+s.qty:"");}).join("・")+'</div>';
+      slh+='<div class="muted" style="margin-top:8px">熱銷：'+sl.top_skus.slice(0,5).map(function(s){return esc(s.name||s.sku||s.title||"")+(s.qty?"×"+s.qty:(s.q?"×"+s.q:""));}).join("・")+'</div>';
     }
-  } else { slh='<div class="err">'+esc(o.shoplineErr||"無資料")+'</div>'; }
-  document.getElementById("shopline").innerHTML=slh;
+  } else { slh='<div class="err">'+esc((useRange?rg.shoplineErr:o.shoplineErr)||(sl&&sl.reason)||"無資料")+'</div>'; }
+  $("shopline").innerHTML=slh;
 
-  // anomalies
+  // 異樣
   var af=(anom.findings||[]);
-  document.getElementById("anom").innerHTML = af.length
+  $("anom").innerHTML = af.length
     ? '<ul style="margin:0;padding-left:18px;font-size:13px">'+af.map(function(f){return "<li>"+esc(typeof f==="string"?f:(f.text||f.msg||JSON.stringify(f)))+"</li>";}).join("")+'</ul>'
     : '<div class="muted">無異樣</div>';
 
@@ -169,31 +279,48 @@ async function load(){
     });
     oh+='</table>';
     if(op.syncedAt)oh+='<div class="muted" style="margin-top:6px">同步時間：'+new Date(op.syncedAt).toLocaleString("zh-TW",{hour12:false})+'</div>';
-    document.getElementById("ops").innerHTML=oh;
+    $("ops").innerHTML=oh;
   } else {
-    document.getElementById("ops").innerHTML='<div class="muted">尚未同步（活動檔期／人事出勤／備品叫貨・報廢／員購／調貨由排程或 ops-sync 推送後顯示）</div>';
+    $("ops").innerHTML='<div class="muted">尚未同步（活動檔期／人事出勤／備品叫貨・報廢／員購／調貨由排程或 ops-sync 推送後顯示）</div>';
   }
 }
+
+/* ===== 特殊訂單（依選擇期間過濾；r.s = YYYYMMDD 數字） ===== */
 var soData=null, soPage=0;
 function sv(x){ var s=(x==null?"":String(x)).trim(); return s?esc(s):"沒有填寫"; }
+function ymdNum(d){ return +d.replace(/-/g,""); }
+function soRows(){
+  var rows=(soData&&soData.rows)||[]; var R=rangeOf();
+  if(!R) return rows;
+  var a=ymdNum(R.from), b=ymdNum(R.to);
+  return rows.filter(function(r){ return r.s>=a && r.s<=b; });
+}
+function soStats(){
+  var R=rangeOf();
+  if(!R) return {total:(soData&&soData.monthTotal)||0, count:(soData&&soData.monthCount)||0};
+  var t=0,c=0; soRows().forEach(function(r){ var n=parseInt(String(r.amt||"").replace(/[^0-9]/g,""),10); if(!isNaN(n))t+=n; c++; });
+  return {total:t,count:c};
+}
 function soRender(){
-  var tb=document.querySelector("#soTbl tbody"); var pg=document.getElementById("soPager");
-  if(!soData||!soData.rows||!soData.rows.length){ tb.innerHTML="<tr><td colspan=\"8\" class=\"muted\">沒有填寫</td></tr>"; pg.innerHTML=""; return; }
-  var rows=soData.rows, per=10, total=Math.ceil(rows.length/per);
+  var tb=document.querySelector("#soTbl tbody"); var pg=$("soPager"); var note=$("soNote");
+  var rows=soRows(); var st=soStats(); var R=rangeOf();
+  if(note) note.textContent=(R?("本期 "):"本月 ")+(st.count||0)+" 筆／NT$"+nf(st.total||0)+(R?("・"+rangeLabel(R)):"");
+  if(!rows.length){ tb.innerHTML="<tr><td colspan=\"8\" class=\"muted\">"+(R?"此期間沒有特殊訂單":"沒有填寫")+"</td></tr>"; pg.innerHTML=""; return; }
+  var per=10, total=Math.ceil(rows.length/per);
   if(soPage>=total)soPage=total-1; if(soPage<0)soPage=0;
   var part=rows.slice(soPage*per,soPage*per+per);
   tb.innerHTML=part.map(function(r){
     return "<tr><td>"+sv(r.d)+"</td><td>"+sv(r.pri)+"</td><td>"+sv(r.item)+"</td><td>"+sv(r.cat)+"</td><td>"+sv(r.qty)+"</td><td>"+sv(r.pay)+"</td><td>"+sv(r.amt)+"</td><td>"+sv(r.who)+"</td></tr>";
   }).join("");
   pg.innerHTML="<button id=\"soPrev\">上一頁</button><span>第 "+(soPage+1)+" / "+total+" 頁（共 "+rows.length+" 筆）</span><button id=\"soNext\">下一頁</button>";
-  document.getElementById("soPrev").onclick=function(){ soPage--; soRender(); };
-  document.getElementById("soNext").onclick=function(){ soPage++; soRender(); };
+  $("soPrev").onclick=function(){ soPage--; soRender(); };
+  $("soNext").onclick=function(){ soPage++; soRender(); };
 }
 async function loadSpecialOrders(){
   try{ var r=await fetch("/api/dashboard/special-orders",{cache:"no-store"}); soData=await r.json(); }catch(e){ soData=null; }
-  var note=document.getElementById("soNote");
-  if(soData&&note){ note.textContent="本月 "+(soData.monthCount||0)+" 筆／NT$"+nf(soData.monthTotal||0); }
   soPage=0; soRender();
 }
-load();loadSpecialOrders();setInterval(function(){load();loadSpecialOrders();},60000);
+initCtl();
+loadSpecialOrders().then(load);
+setInterval(function(){ loadSpecialOrders().then(load); },60000);
 </script></body></html>
