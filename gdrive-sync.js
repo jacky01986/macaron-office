@@ -198,7 +198,10 @@ async function syncAll(opts = {}) {
             mimeType: exportedMime || file.mimeType,
             source: 'gdrive',
             gdriveFileId: file.id,
-            modifiedTime: file.modifiedTime
+            modifiedTime: file.modifiedTime,
+            // force 原本只跳過本模組的 modifiedTime 快取，沒有傳進解析層，
+            // 於是 processBuffer 的 sha256 去重仍然直接 return，等於強制重掃無效。
+            force: !!opts.force
           });
         }
       } catch (e) {
