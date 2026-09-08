@@ -306,22 +306,39 @@ router.get('/uploads', (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-const SELFCHECK_FILE = path.join(DATA_DIR, 'offline-selfcheck.json');
+const SELFCHECK_DIR = path.join(DATA_DIR, 'offline-selfcheck');
 // 門市檔案自檢：把每個月份分頁自己寫的「總業績」跟逐日加總比對。
 // 兩者應該相等；不等代表門市檔案的 SUM 範圍壞了（例：樹林 7、8 月漏算最後一天）。
+// 一店一檔：5 份門市檔是同時同步的，共用一個 JSON 會互相覆蓋，導致只留下最後寫入的那幾家。
 const SELFCHECK_TOLERANCE = 1; // 元；四捨五入誤差以外一律視為不符
+function selfCheckPath(branch) {
+  const safe = Buffer.from(String(branch || 'unknown')).toString('hex').slice(0, 80);
+  return path.join(SELFCHECK_DIR, safe + '.json');
+}
 function loadSelfCheck() {
-  try { if (!fs.existsSync(SELFCHECK_FILE)) return {}; return JSON.parse(fs.readFileSync(SELFCHECK_FILE, 'utf8')); }
-  catch { return {}; }
+  const out = {};
+  try {
+    if (!fs.existsSync(SELFCHECK_DIR)) return out;
+    fs.readdirSync(SELFCHECK_DIR).forEach(function (f) {
+      if (!f.endsWith('.json')) return;
+      try {
+        const o = JSON.parse(fs.readFileSync(path.join(SELFCHECK_DIR, f), 'utf8'));
+        const br = o.branch || '';
+        Object.keys(o.months || {}).forEach(function (m) { out[br + '|' + m] = o.months[m]; });
+      } catch (e) {}
+    });
+  } catch (e) {}
+  return out;
 }
 function saveSelfCheck(branch, rows) {
   try {
-    const all = loadSelfCheck();
+    if (!fs.existsSync(SELFCHECK_DIR)) fs.mkdirSync(SELFCHECK_DIR, { recursive: true });
     const now = new Date().toISOString();
+    const months = {};
     (rows || []).forEach(function (r) {
-      all[branch + '|' + r.month] = { declared: r.declared, daily_sum: r.daily_sum, diff: r.diff, days: r.days, note: r.note || '', checked_at: now };
+      months[r.month] = { declared: r.declared, daily_sum: r.daily_sum, diff: r.diff, days: r.days, note: r.note || '', checked_at: now };
     });
-    fs.writeFileSync(SELFCHECK_FILE, JSON.stringify(all, null, 2));
+    fs.writeFileSync(selfCheckPath(branch), JSON.stringify({ branch: branch, checked_at: now, months: months }, null, 2));
   } catch (e) { console.error('[offline-reports] selfcheck save:', e.message); }
 }
 // 回傳所有對不上的月份（給 API 與 09:30 示警共用）
