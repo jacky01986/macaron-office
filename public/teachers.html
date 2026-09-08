@@ -110,6 +110,16 @@ function rangeOf(){
   return null;
 }
 function cmpName(c){ return c==="prev_month"?"上月同期":(c==="prev_year"?"去年同期":"前一段等長期間"); }
+/* 特殊訂單看的是「到貨日期」，常落在未來（中秋預購等），
+   所以用整個日曆期間，不跟著營收的「至今／資料最後一天」被截掉。 */
+function spanOf(){
+  var t=twToday();
+  if(SEL.mode==="day"){ var d=SEL.v||t; return {from:d,to:d}; }
+  if(SEL.mode==="month"){ var ym=SEL.v||t.slice(0,7); return {from:ym+"-01",to:ym+"-"+String(daysInMonth(ym)).padStart(2,"0")}; }
+  if(SEL.mode==="year"){ var y=SEL.v||t.slice(0,4); return {from:y+"-01-01",to:y+"-12-31"}; }
+  if(SEL.mode==="custom"){ var f=SEL.from||t.slice(0,7)+"-01", e=SEL.to||t; if(e<f){var x=f;f=e;e=x;} return {from:f,to:e}; }
+  var cm=t.slice(0,7); return {from:cm+"-01",to:cm+"-"+String(daysInMonth(cm)).padStart(2,"0")};
+}
 function initCtl(){
   readUrl();
   var t=twToday(), ys=$("inYear"), y0=+t.slice(0,4);
@@ -163,7 +173,8 @@ async function load(){
   if(useRange){
     var r=rg.range;
     labCur="本期"; labPrev="前期"; labTarget=(r.from.slice(0,7)===r.to.slice(0,7)&&r.days===daysInMonth(r.from.slice(0,7)))?"月目標":"目標（按天數換算）";
-    noteTxt=rangeLabel({from:r.from,to:r.to})+"（"+r.days+" 天）vs "+rangeLabel({from:r.prev_from,to:r.prev_to})+"・"+cmpName(r.cmp);
+    noteTxt=rangeLabel({from:r.from,to:r.to})+"（"+r.days+" 天）vs "+rangeLabel({from:r.prev_from,to:r.prev_to})+"・"+cmpName(r.cmp)
+      +(r.clamped?("・已對齊資料最後一天 "+fmtMD(r.data_last)+"（選到 "+fmtMD(r.to_requested)+"）"):"");
     chartTitle="各店本期營收（"+rangeLabel({from:r.from,to:r.to})+"）";
   } else {
     labCur="本月至今"; labPrev="上月同期"; labTarget="月目標";
@@ -290,22 +301,19 @@ var soData=null, soPage=0;
 function sv(x){ var s=(x==null?"":String(x)).trim(); return s?esc(s):"沒有填寫"; }
 function ymdNum(d){ return +d.replace(/-/g,""); }
 function soRows(){
-  var rows=(soData&&soData.rows)||[]; var R=rangeOf();
-  if(!R) return rows;
-  var a=ymdNum(R.from), b=ymdNum(R.to);
+  var rows=(soData&&soData.rows)||[]; var S=spanOf();
+  var a=ymdNum(S.from), b=ymdNum(S.to);
   return rows.filter(function(r){ return r.s>=a && r.s<=b; });
 }
 function soStats(){
-  var R=rangeOf();
-  if(!R) return {total:(soData&&soData.monthTotal)||0, count:(soData&&soData.monthCount)||0};
   var t=0,c=0; soRows().forEach(function(r){ var n=parseInt(String(r.amt||"").replace(/[^0-9]/g,""),10); if(!isNaN(n))t+=n; c++; });
   return {total:t,count:c};
 }
 function soRender(){
   var tb=document.querySelector("#soTbl tbody"); var pg=$("soPager"); var note=$("soNote");
   var rows=soRows(); var st=soStats(); var R=rangeOf();
-  if(note) note.textContent=(R?("本期 "):"本月 ")+(st.count||0)+" 筆／NT$"+nf(st.total||0)+(R?("・"+rangeLabel(R)):"");
-  if(!rows.length){ tb.innerHTML="<tr><td colspan=\"8\" class=\"muted\">"+(R?"此期間沒有特殊訂單":"沒有填寫")+"</td></tr>"; pg.innerHTML=""; return; }
+  if(note) note.textContent=(R?"本期 ":"本月 ")+(st.count||0)+" 筆／NT$"+nf(st.total||0)+"・到貨 "+rangeLabel(spanOf());
+  if(!rows.length){ tb.innerHTML="<tr><td colspan=\"8\" class=\"muted\">此期間沒有特殊訂單</td></tr>"; pg.innerHTML=""; return; }
   var per=10, total=Math.ceil(rows.length/per);
   if(soPage>=total)soPage=total-1; if(soPage<0)soPage=0;
   var part=rows.slice(soPage*per,soPage*per+per);
