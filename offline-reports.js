@@ -197,16 +197,19 @@ async function extractExcelHybrid(buffer, hintFilename) {
     // 值可能是公式；ExcelJS 只在有快取結果時給得出數字，讀不到就記下原因不硬猜。
     let declared = null, declaredNote = '';
     try {
-      const row2 = sheet.getRow(2);
-      let labelCol = -1;
-      for (let c = 1; c <= 16; c++) {
-        const v = row2.getCell(c).value;
-        const txt = String(typeof v === 'object' && v ? (v.text || v.result || '') : (v == null ? '' : v));
-        if (txt.indexOf('總業績') >= 0) { labelCol = c; break; }
+      // 標籤不一定固定在第 2 列（部分月份分頁多了一列表頭），前 6 列都掃。
+      let labelRow = -1, labelCol = -1;
+      for (let r2 = 1; r2 <= 6 && labelCol < 0; r2++) {
+        const rowN = sheet.getRow(r2);
+        for (let c = 1; c <= 16; c++) {
+          const v = rowN.getCell(c).value;
+          const txt = String(typeof v === 'object' && v ? (v.text || v.result || '') : (v == null ? '' : v));
+          if (txt.indexOf('總業績') >= 0) { labelRow = r2; labelCol = c; break; }
+        }
       }
       if (labelCol < 0) { declaredNote = 'no_label'; }
       else {
-        const raw = row2.getCell(labelCol + 1).value;
+        const raw = sheet.getRow(labelRow).getCell(labelCol + 1).value;
         const n = parseNumber(raw);
         if (n > 0) declared = n;
         else if (raw && typeof raw === 'object' && raw.formula) declaredNote = 'formula_no_cache:' + String(raw.formula).slice(0, 40);
