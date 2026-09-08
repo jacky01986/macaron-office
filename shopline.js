@@ -307,12 +307,16 @@ async function deleteBlogPost(postId, { confirmed = false } = {}) {
 }
 
 // ─────────── DEX 訂單分析輔助 (拿到 token 後 plug-and-play) ───────────
-async function getOrdersSummary({ days = 1, monthToDate = false } = {}) {
+async function getOrdersSummary({ days = 1, monthToDate = false, from: fromArg = null, to: toArg = null } = {}) {
   if (!OPEN_API_TOKEN) return { ok: false, skipped: true, reason: 'no token yet' };
   try {
-    // 日期區間：monthToDate=本月 1 號(台灣時間)到現在；否則滾動 days 天
+    // 日期區間：from/to=指定區間(台灣時間, 含 to 當天)；monthToDate=本月 1 號(台灣時間)到現在；否則滾動 days 天
     let from, period;
-    if (monthToDate) {
+    const toMs = (toArg && /^\d{4}-\d{2}-\d{2}$/.test(toArg)) ? new Date(toArg + 'T00:00:00+08:00').getTime() + 86400000 : null;
+    if (fromArg && /^\d{4}-\d{2}-\d{2}$/.test(fromArg)) {
+      from = fromArg;
+      period = from + '~' + (toArg || 'now');
+    } else if (monthToDate) {
       const tw = new Date(Date.now() + 8 * 3600000);
       from = tw.getUTCFullYear() + '-' + String(tw.getUTCMonth() + 1).padStart(2, '0') + '-01';
       period = 'month_to_date';
@@ -335,7 +339,7 @@ async function getOrdersSummary({ days = 1, monthToDate = false } = {}) {
     // 銷售額 = 付款完成(payment_status completed)；排除 cancelled/failed/refunded
     // API 端 created_at 篩選失效，改在程式端依當地時間篩期間
     const fromMs = new Date(from + 'T00:00:00+08:00').getTime();
-    const scoped = orders.filter(o => { const c = o.created_at || o.created_time || o.order_created_at; return c && new Date(c).getTime() >= fromMs; });
+    const scoped = orders.filter(o => { const c = o.created_at || o.created_time || o.order_created_at; if (!c) return false; const t = new Date(c).getTime(); return t >= fromMs && (toMs == null || t < toMs); });
     const PAID = ['paid', 'confirmed', 'completed'];
     const count = scoped.length;
     let grossRevenue = 0, paidRevenue = 0, qty = 0, paidCount = 0, cancelledCount = 0;
