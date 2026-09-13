@@ -147,8 +147,12 @@ async function buildBoard({ days = 14, limit = 30 } = {}) {
 }
 
 // ── HANA 人設 prompt ──
+// 完整品牌／產品知識庫（四份門市手冊）— 客服型模組吃完整版，一般員工吃精簡版
+function _brandKbFull() { try { return require('./brand-kb').full(); } catch (e) { console.error('[closer] brand-kb unavailable:', e.message); return ''; } }
+
 function hanaPrompt(playbook) {
-  return `你是 HANA — 溫點 WarmPlace 的 AI 私訊成交客服顧問。
+  const _kb = _brandKbFull();
+  return (_kb ? _kb + '\n\n' : '') + `你是 HANA — 溫點 WarmPlace 的 AI 私訊成交客服顧問。
 你不是「客服機器人」，你是把「冷掉的詢問」變成「結單」的成交高手，同時保有台南手工職人精品品牌的溫柔得體。
 品牌：精品胖卡龍台南手工職人禮贈。禮盒 NT$480–2,280，主力 6 入 NT$880 / 12 入 NT$1,580。
 四家門店：台南本店、新光西門 B2、新光中港 B2、新光南西 B2。
