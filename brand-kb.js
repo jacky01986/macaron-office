@@ -91,6 +91,18 @@ function section(name) {
   return map[String(name || '').toLowerCase()] || '';
 }
 
+// 供 MIRA 知識庫預載：門市可在知識庫頁查完整內容；標記 noPrompt，不重複進全員 prompt
+function miraDocs() {
+  return [
+    { seedId: 'wp_core_2026', title: '溫點品牌與工作手冊｜核心重點', text: CORE, source: '新進員工品牌與工作手冊 2026' },
+    { seedId: 'wp_service_2026', title: '門市標準話術與顧客引導', text: SERVICE, source: '員工手冊｜產品介紹與顧客引導版' },
+    { seedId: 'wp_faq_2026', title: '顧客常見問題標準回應', text: FAQ, source: '產品知識附件｜顧客常見問題' },
+    { seedId: 'wp_flavor_pc_2026', title: '胖卡龍完整風味表', text: FLAVOR_PC, source: '產品知識附件｜風味表' },
+    { seedId: 'wp_flavor_603_2026', title: '603 費南雪完整風味表', text: FLAVOR_603, source: '產品知識附件｜風味表' },
+    { seedId: 'wp_classic_2026', title: '經典甜點基礎認識（馬卡龍／費南雪）', text: CLASSIC, source: '品牌手冊附件 1' }
+  ];
+}
+
 function register(app) {
   app.get('/api/brand-kb', function (req, res) {
     const s = req.query && req.query.section;
@@ -99,4 +111,4 @@ function register(app) {
   });
 }
 
-module.exports = { head, full, section, register, CORE, FAQ, FLAVOR_PC, FLAVOR_603, SERVICE, CLASSIC };
+module.exports = { head, full, section, register, miraDocs, CORE, FAQ, FLAVOR_PC, FLAVOR_603, SERVICE, CLASSIC };
