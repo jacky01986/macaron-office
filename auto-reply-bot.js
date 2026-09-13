@@ -39,10 +39,14 @@ async function getPageToken(pageId) {
   return { token: page.access_token, name: page.name };
 }
 
+// 完整品牌／產品知識庫（四份門市手冊）— 客服型模組吃完整版
+function _brandKbFull() { try { return require('./brand-kb').full(); } catch (e) { console.error('[auto-reply-bot] brand-kb unavailable:', e.message); return ''; } }
+
 async function generateReply(customerMessage, pageName) {
   const Anthropic = require('@anthropic-ai/sdk');
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const sysPrompt = [
+    _brandKbFull(),
     '你是 溫點 WarmPlace（' + pageName + ' 粉專）的客服 AI。',
     '回覆規則：',
     '1. 親切、專業、簡短（80 字內）',
