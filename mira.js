@@ -311,11 +311,26 @@ function registerCron(cron) {
 }
 
 // ── 給全員工帶上用(employees.js 會 require)──
+// 系統預載文件（brand-kb 等）：進 MIRA 知識庫供查詢，但標記 noPrompt 不重複塞進全員 prompt
+function seedDocs(list) {
+  if (!Array.isArray(list) || !list.length) return 0;
+  const kb = loadKB();
+  const have = new Set((kb.docs || []).map(function (d) { return d.seedId; }).filter(Boolean));
+  let added = 0;
+  list.forEach(function (it) {
+    if (!it || !it.seedId || !it.text || have.has(it.seedId)) return;
+    kb.docs.unshift({ id: 'kb_seed_' + it.seedId, seedId: it.seedId, noPrompt: true, title: it.title || it.seedId, text: String(it.text), source: it.source || 'system', ts: new Date().toISOString() });
+    added++;
+  });
+  if (added) saveJSON(KB_FILE, kb);
+  return added;
+}
+
 function kbAsBrandBlock(maxChars = 4000) {
   const kb = loadKB();
   if (!kb.docs || !kb.docs.length) return '';
   let out = '【★ 老闆上傳的長期知識庫(MIRA 門市教育中心 · 自動傳達全 AI 員工)★】\n';
-  for (const d of kb.docs.slice(0, 20)) {
+  for (const d of kb.docs.filter(function (x) { return !x.noPrompt; }).slice(0, 20)) {
     const chunk = '◆ ' + (d.title || '未命名') + '\n' + (d.text || '').slice(0, 800) + '\n\n';
     if (out.length + chunk.length > maxChars) break;
     out += chunk;
@@ -347,5 +362,6 @@ module.exports = router;
 module.exports.kbAsBrandBlock = kbAsBrandBlock;
 module.exports.playbookAsBrandBlock = playbookAsBrandBlock;
 module.exports.loadKB = loadKB;
+module.exports.seedDocs = seedDocs;
 module.exports.registerCron = registerCron;
 module.exports.selfOptimize = selfOptimize;
