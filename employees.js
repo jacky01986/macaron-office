@@ -716,6 +716,16 @@ try {
     console.log('[employees] ✓ MIRA playbook hook loaded — daily 08:30 self-optimized insights reach all 12 employees');
   }
 } catch (e) { console.error('[employees] mira hook fail:', e.message); }
+// 品牌知識庫 hook（2026 新進員工手冊四份：品牌/產品/常見問題風味表/經典甜點）
+let _brandKbFn = () => '';
+try {
+  const _bkb = require('./brand-kb');
+  if (_bkb && typeof _bkb.head === 'function') {
+    _brandKbFn = () => _bkb.head();
+    console.log('[employees] ✅ brand-kb hook loaded — 品牌手冊已進全員 prompt');
+  }
+} catch (e) { console.error('[employees] brand-kb hook fail:', e.message); }
+function getBrandKbHead() { try { return _brandKbFn() || ''; } catch { return ''; } }
 function getMiraKbHead() { try { return _miraKbFn() || ''; } catch { return ''; } }
 function getMiraPlaybookHead() { try { return _miraPbFn() || ''; } catch { return ''; } }
 
@@ -735,7 +745,9 @@ const EMPLOYEES_WITH_DYNAMIC = new Proxy(_origEmployees, {
           const kbSection = miraKb ? miraKb + '\n' : '';
           const miraPb = getMiraPlaybookHead();
           const pbSection = miraPb ? miraPb + '\n\n' : '';
-          return memorySection + statsSection + pbSection + kbSection + t[k] + getMarketIntelTail();
+          const brandKb = getBrandKbHead();
+          const brandSection = brandKb ? brandKb + '\n\n' : '';
+          return memorySection + statsSection + pbSection + kbSection + brandSection + t[k] + getMarketIntelTail();
         }
         return t[k];
       },
